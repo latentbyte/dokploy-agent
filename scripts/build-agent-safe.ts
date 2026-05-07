@@ -5,16 +5,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const GENERATED_PATH = path.join(ROOT, "src", "generated", "commands.ts");
+const SRC_PATH = path.join(ROOT, "src");
+const DIST_PATH = path.join(ROOT, "dist");
+const TMP_ROOT = path.join(ROOT, "tmp");
 const AGENT_SAFE_TAG = "agent-safe";
 
-interface GeneratedBackup {
-	existed: boolean;
-	content?: string;
-}
-
-function run(args: string[], env: NodeJS.ProcessEnv = {}): void {
-	execFileSync("pnpm", args, {
+function run(cmd: string, args: string[], env: NodeJS.ProcessEnv = {}): void {
+	execFileSync(cmd, args, {
 		cwd: ROOT,
 		stdio: "inherit",
 		env: {
@@ -24,34 +21,45 @@ function run(args: string[], env: NodeJS.ProcessEnv = {}): void {
 	});
 }
 
-function readGeneratedBackup(): GeneratedBackup {
-	if (!fs.existsSync(GENERATED_PATH)) {
-		return { existed: false };
-	}
-
-	return {
-		existed: true,
-		content: fs.readFileSync(GENERATED_PATH, "utf8"),
-	};
+function writeBuildTsconfig(tempDir: string, tempSrcPath: string): string {
+	const tsconfigPath = path.join(tempDir, "tsconfig.agent-safe.json");
+	fs.writeFileSync(
+		tsconfigPath,
+		`${JSON.stringify(
+			{
+				extends: path.join(ROOT, "tsconfig.json"),
+				compilerOptions: {
+					rootDir: tempSrcPath,
+					outDir: DIST_PATH,
+				},
+				include: [`${tempSrcPath}/**/*`],
+			},
+			null,
+			2,
+		)}\n`,
+	);
+	return tsconfigPath;
 }
 
-function restoreGenerated(backup: GeneratedBackup): void {
-	if (!backup.existed) {
-		fs.rmSync(GENERATED_PATH, { force: true });
-		return;
-	}
-
-	fs.writeFileSync(GENERATED_PATH, backup.content ?? "");
-}
-
-const backup = readGeneratedBackup();
+fs.mkdirSync(TMP_ROOT, { recursive: true });
+const tempDir = fs.mkdtempSync(path.join(TMP_ROOT, "dokploy-agent-build-"));
+const tempSrcPath = path.join(tempDir, "src");
+const tempGeneratedPath = path.join(tempSrcPath, "generated", "commands.ts");
 
 try {
-	run(["run", "generate:agent-safe"]);
-	run(["exec", "tsc", "-b"]);
-	run(["exec", "tsx", "scripts/write-build-info.ts"], {
+	fs.cpSync(SRC_PATH, tempSrcPath, { recursive: true });
+	run("pnpm", [
+		"exec",
+		"tsx",
+		"scripts/generate.ts",
+		"--agent-safe",
+		"--out",
+		tempGeneratedPath,
+	]);
+	run("pnpm", ["exec", "tsc", "-p", writeBuildTsconfig(tempDir, tempSrcPath)]);
+	run("pnpm", ["exec", "tsx", "scripts/write-build-info.ts"], {
 		DOKPLOY_BUILD_TAG: AGENT_SAFE_TAG,
 	});
 } finally {
-	restoreGenerated(backup);
+	fs.rmSync(tempDir, { recursive: true, force: true });
 }

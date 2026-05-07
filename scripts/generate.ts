@@ -4,9 +4,10 @@
  * Usage:
  *   npx tsx scripts/generate.ts
  *   npx tsx scripts/generate.ts --agent-safe
+ *   npx tsx scripts/generate.ts --agent-safe --out /tmp/src/generated/commands.ts
  *
  * Reads openapi.json from the project root and generates:
- *   - src/generated/commands.ts
+ *   - src/generated/commands.ts by default
  */
 
 import * as fs from "node:fs";
@@ -17,7 +18,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const SPEC_PATH = path.join(ROOT, "openapi.json");
-const OUT_PATH = path.join(ROOT, "src", "generated", "commands.ts");
+const DEFAULT_OUT_PATH = path.join(ROOT, "src", "generated", "commands.ts");
 const AGENT_BLACKLIST_PATH = path.join(
 	ROOT,
 	"docs",
@@ -31,10 +32,28 @@ const USER_AGENT_BLACKLIST_PATH = path.join(
 );
 
 const AGENT_SAFE_ARG = "--agent-safe";
+const OUT_ARG = "--out";
 const AGENT_SAFE_TAG = "agent-safe";
 const isAgentSafeBuild =
 	process.argv.includes(AGENT_SAFE_ARG) ||
 	process.env.DOKPLOY_BUILD_TAG === AGENT_SAFE_TAG;
+
+function readArgValue(name: string): string | undefined {
+	const equalsArg = process.argv.find((arg) => arg.startsWith(`${name}=`));
+	if (equalsArg) return equalsArg.slice(name.length + 1);
+
+	const index = process.argv.indexOf(name);
+	if (index === -1) return undefined;
+
+	const value = process.argv[index + 1];
+	if (!value || value.startsWith("--")) {
+		throw new Error(`${name} requires a value`);
+	}
+	return value;
+}
+
+const outArg = readArgValue(OUT_ARG);
+const OUT_PATH = outArg ? path.resolve(ROOT, outArg) : DEFAULT_OUT_PATH;
 
 interface OpenAPISpec {
 	paths: Record<string, Record<string, OperationObject>>;

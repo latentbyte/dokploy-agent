@@ -74,6 +74,7 @@ describe("generator", () => {
 	it("agent-safe builds should merge custom wildcard blacklists", () => {
 		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-cli-test-"));
 		const blacklistPath = path.join(tempDir, "blacklist.json");
+		const outPath = path.join(tempDir, "generated", "commands.ts");
 		fs.writeFileSync(
 			blacklistPath,
 			JSON.stringify({
@@ -90,7 +91,14 @@ describe("generator", () => {
 		try {
 			execFileSync(
 				"pnpm",
-				["exec", "tsx", "scripts/generate.ts", "--agent-safe"],
+				[
+					"exec",
+					"tsx",
+					"scripts/generate.ts",
+					"--agent-safe",
+					"--out",
+					outPath,
+				],
 				{
 					cwd: ROOT,
 					env: {
@@ -99,15 +107,41 @@ describe("generator", () => {
 					},
 				},
 			);
-			const content = fs.readFileSync(generatedPath, "utf8");
+			const content = fs.readFileSync(outPath, "utf8");
 			expect(content).not.toContain('apiGet("libsql.');
 			expect(content).not.toContain('apiGet("settings.getLogCleanupStatus');
 			expect(content).toContain("command('state')");
 		} finally {
-			execFileSync("pnpm", ["exec", "tsx", "scripts/generate.ts"], {
-				cwd: ROOT,
-				env: process.env,
-			});
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("agent-safe --out should not rewrite tracked generated commands", () => {
+		const before = fs.readFileSync(generatedPath, "utf8");
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-cli-test-"));
+		const outPath = path.join(tempDir, "commands.ts");
+
+		try {
+			execFileSync(
+				"pnpm",
+				[
+					"exec",
+					"tsx",
+					"scripts/generate.ts",
+					"--agent-safe",
+					"--out",
+					outPath,
+				],
+				{
+					cwd: ROOT,
+					env: process.env,
+				},
+			);
+
+			const generatedContent = fs.readFileSync(outPath, "utf8");
+			expect(generatedContent).toContain("const AGENT_SAFE_BUILD = true");
+			expect(fs.readFileSync(generatedPath, "utf8")).toBe(before);
+		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
 	});
