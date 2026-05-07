@@ -1,4 +1,6 @@
+import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -67,5 +69,46 @@ describe("generator", () => {
 
 		const apiCalls = (content.match(/await api(Post|Get)\(/g) || []).length;
 		expect(apiCalls).toBe(validEndpoints);
+	});
+
+	it("agent-safe builds should merge custom wildcard blacklists", () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-cli-test-"));
+		const blacklistPath = path.join(tempDir, "blacklist.json");
+		fs.writeFileSync(
+			blacklistPath,
+			JSON.stringify({
+				version: 1,
+				commands: [
+					{
+						endpoint: "libsql.*",
+						reason: "service type unused in this account",
+					},
+				],
+			}),
+		);
+
+		try {
+			execFileSync(
+				"pnpm",
+				["exec", "tsx", "scripts/generate.ts", "--agent-safe"],
+				{
+					cwd: ROOT,
+					env: {
+						...process.env,
+						DOKPLOY_AGENT_BLACKLIST_PATH: blacklistPath,
+					},
+				},
+			);
+			const content = fs.readFileSync(generatedPath, "utf8");
+			expect(content).not.toContain('apiGet("libsql.');
+			expect(content).not.toContain('apiGet("settings.getLogCleanupStatus');
+			expect(content).toContain("command('state')");
+		} finally {
+			execFileSync("pnpm", ["exec", "tsx", "scripts/generate.ts"], {
+				cwd: ROOT,
+				env: process.env,
+			});
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
 	});
 });

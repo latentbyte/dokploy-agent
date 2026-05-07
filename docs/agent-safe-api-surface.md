@@ -79,7 +79,7 @@ Agent-safe build behavior:
 
 - generates a CLI surface with safe GET endpoints and explicit deploy allowlist
 - registers blocked command stubs for disallowed endpoints so the agent sees why it cannot use them
-- adds `dokploy agent-safety summary|allowed|disallowed|unavailable|logs`
+- adds `dokploy-agent logs`, `dokploy-agent state`, and `dokploy-agent agent-safety summary|allowed|disallowed|unavailable|logs`
 - redacts responses before printing them
 - limits log output before sending it to the agent
 
@@ -90,9 +90,9 @@ Disallowed means command exists in the generated CLI surface but policy blocks i
 Unavailable means command exists in `openapi.json` but is not generated into `src/generated/commands.ts`, so the current CLI cannot expose it without generator/client work.
 
 - generated total: 524
-- safe total: 146
+- safe total: 145
 - disallowed total: 212
-- hidden total: 166
+- hidden total: 167
 - not available total (in `openapi.json` but not generated): 0
 
 Full machine-readable list is in `docs/agent-safe-api-surface.json`.
@@ -146,7 +146,7 @@ Full machine-readable list is in `docs/agent-safe-api-surface.json`.
   - license-key: 6
   - notification: 41
   - organization: 11
-  - settings: 16
+  - settings: 17
   - ssh-key: 4
   - sso: 10
   - stripe: 8
@@ -159,6 +159,16 @@ Full machine-readable list is in `docs/agent-safe-api-surface.json`.
 - total: 0
 - the generator now emits all supported `get` and `post` OpenAPI endpoints
 - future unsupported HTTP methods should go here
+
+## State discovery commands
+
+`dokploy-agent state` lists read-only endpoints useful for deploy/debug context:
+
+- Docker state: container lists, app label/name container lookup, Docker config, disk usage
+- Traefik state: app and server Traefik config, env, file reads, ports, dashboard port flag
+- Domain state: domains by application ID or compose ID, one domain lookup, Traefik.me capability
+
+The OpenAPI spec exposes application/compose/database logs only. It does not currently expose raw Docker daemon logs or Traefik runtime logs.
 
 ## Logs-specific commands
 
@@ -175,10 +185,10 @@ Safe after redaction and output limits in the agent-safe build:
 - `mysql.read-logs` (get)
 - `postgres.read-logs` (get)
 - `redis.read-logs` (get)
-- `settings.get-log-cleanup-status` (get)
 
-Keep blocked:
+Keep hidden or blocked:
 
+- `settings.get-log-cleanup-status` (get), hidden because cleanup status is noisy for deploy/debug work
 - `ai.analyze-logs` (post), sends logs to configured AI provider and can leak data externally
 - `settings.update-log-cleanup` (post), changes cleanup policy
 

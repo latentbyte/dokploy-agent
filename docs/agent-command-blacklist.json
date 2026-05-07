@@ -415,6 +415,10 @@
       "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
     },
     {
+      "endpoint": "settings.getLogCleanupStatus",
+      "reason": "log cleanup status is noisy and not useful for normal deploy/debug agent work"
+    },
+    {
       "endpoint": "settings.getOpenApiDocument",
       "reason": "huge schema output, redundant with local openapi.json and safety metadata"
     },

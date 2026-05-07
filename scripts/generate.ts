@@ -10,6 +10,7 @@
  */
 
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,6 +22,12 @@ const AGENT_BLACKLIST_PATH = path.join(
 	ROOT,
 	"docs",
 	"agent-command-blacklist.json",
+);
+const USER_AGENT_BLACKLIST_PATH = path.join(
+	os.homedir(),
+	".config",
+	"dokploy-agent",
+	"command-blacklist.json",
 );
 
 const AGENT_SAFE_ARG = "--agent-safe";
@@ -173,6 +180,29 @@ const AGENT_HELP_GROUPS = new Set([
 	"server",
 ]);
 
+const AGENT_STATE_ENDPOINTS = [
+	"application.readTraefikConfig",
+	"domain.byApplicationId",
+	"domain.byComposeId",
+	"domain.canGenerateTraefikMeDomains",
+	"domain.one",
+	"docker.getConfig",
+	"docker.getContainers",
+	"docker.getContainersByAppLabel",
+	"docker.getContainersByAppNameMatch",
+	"docker.getServiceContainersByAppName",
+	"docker.getStackContainersByAppName",
+	"settings.getDockerDiskUsage",
+	"settings.getTraefikPorts",
+	"settings.haveTraefikDashboardPortEnabled",
+	"settings.health",
+	"settings.readMiddlewareTraefikConfig",
+	"settings.readTraefikConfig",
+	"settings.readTraefikEnv",
+	"settings.readTraefikFile",
+	"settings.readWebServerTraefikConfig",
+];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -286,15 +316,49 @@ function unavailableToSafetyEntry(item: UnavailableInfo): SafetyEntry {
 	return entry;
 }
 
-function loadAgentCommandBlacklist(): Map<string, string> {
-	if (!fs.existsSync(AGENT_BLACKLIST_PATH)) return new Map();
+function loadAgentCommandBlacklistFile(
+	blacklistPath: string,
+): BlacklistCommand[] {
+	if (!fs.existsSync(blacklistPath)) return [];
 
 	const parsed = JSON.parse(
-		fs.readFileSync(AGENT_BLACKLIST_PATH, "utf8"),
+		fs.readFileSync(blacklistPath, "utf8"),
 	) as AgentCommandBlacklist;
-	return new Map(
-		parsed.commands.map((command) => [command.endpoint, command.reason]),
-	);
+	return parsed.commands;
+}
+
+function loadAgentCommandBlacklist(): Map<string, string> {
+	const customPath = process.env.DOKPLOY_AGENT_BLACKLIST_PATH;
+	const paths = [
+		AGENT_BLACKLIST_PATH,
+		USER_AGENT_BLACKLIST_PATH,
+		...(customPath ? [customPath] : []),
+	];
+	const blacklist = new Map<string, string>();
+
+	for (const blacklistPath of paths) {
+		for (const command of loadAgentCommandBlacklistFile(blacklistPath)) {
+			blacklist.set(command.endpoint, command.reason);
+		}
+	}
+
+	return blacklist;
+}
+
+function getBlacklistReason(
+	endpoint: string,
+	blacklist: Map<string, string>,
+): string | undefined {
+	const exact = blacklist.get(endpoint);
+	if (exact) return exact;
+
+	for (const [pattern, reason] of blacklist) {
+		if (pattern.endsWith(".*") && endpoint.startsWith(pattern.slice(0, -1))) {
+			return reason;
+		}
+	}
+
+	return undefined;
 }
 
 function classifyCommand(cmd: CommandInfo): {
@@ -337,7 +401,7 @@ function buildSafetyReport(
 	const unavailableEntries = unavailable.map(unavailableToSafetyEntry);
 
 	for (const cmd of commands) {
-		const hiddenReason = blacklist.get(cmd.endpoint);
+		const hiddenReason = getBlacklistReason(cmd.endpoint, blacklist);
 		if (isAgentSafeBuild && hiddenReason) {
 			hidden.push(toSafetyEntry(cmd, hiddenReason));
 			continue;
@@ -530,8 +594,10 @@ function generateBlockedCommandCode(
 
 function generateSafetyCommandCode(report: SafetyReport): string {
 	const reportJson = JSON.stringify(report, null, "\t");
+	const stateEndpointJson = JSON.stringify(AGENT_STATE_ENDPOINTS, null, "\t");
 	return `
 const AGENT_SAFETY_REPORT = ${reportJson} as const;
+const AGENT_STATE_ENDPOINTS = new Set(${stateEndpointJson});
 
 function printSafetyEntries(entries: readonly SafetyEntry[], jsonOutput: boolean) {
 	if (jsonOutput) {
@@ -548,19 +614,34 @@ function printSafetyEntries(entries: readonly SafetyEntry[], jsonOutput: boolean
 	}
 }
 
+function printCommandExamples(entries: readonly SafetyEntry[]) {
+	const bin = process.env.DOKPLOY_AGENT_BIN ?? 'dokploy';
+	console.log('');
+	console.log('examples');
+	for (const entry of entries) {
+		console.log(bin + ' ' + entry.group + ' ' + entry.action + ' --help');
+	}
+}
+
 function printAgentLogCommands(jsonOutput: boolean) {
 	if (jsonOutput) {
 		console.log(JSON.stringify(AGENT_SAFETY_REPORT.logs, null, 2));
 		return;
 	}
-	const bin = process.env.DOKPLOY_AGENT_BIN ?? 'dokploy';
 	console.log('agent-safe log commands');
 	printSafetyEntries(AGENT_SAFETY_REPORT.logs.allowed, false);
-	console.log('');
-	console.log('examples');
-	for (const entry of AGENT_SAFETY_REPORT.logs.allowed) {
-		console.log(bin + ' ' + entry.group + ' ' + entry.action + ' --help');
+	printCommandExamples(AGENT_SAFETY_REPORT.logs.allowed);
+}
+
+function printAgentStateCommands(jsonOutput: boolean) {
+	const entries = AGENT_SAFETY_REPORT.allowed.filter((entry) => AGENT_STATE_ENDPOINTS.has(entry.endpoint));
+	if (jsonOutput) {
+		console.log(JSON.stringify(entries, null, 2));
+		return;
 	}
+	console.log('agent-safe docker, traefik, and domain state commands');
+	printSafetyEntries(entries, false);
+	printCommandExamples(entries);
 }
 
 function registerAgentSafetyCommands(program: Command) {
@@ -569,6 +650,12 @@ function registerAgentSafetyCommands(program: Command) {
 		.description('show agent-safe log commands')
 		.option('--json', 'Output raw JSON')
 		.action((opts: Record<string, any>) => printAgentLogCommands(opts.json));
+
+	program
+		.command('state')
+		.description('show docker, traefik, and domain state commands')
+		.option('--json', 'Output raw JSON')
+		.action((opts: Record<string, any>) => printAgentStateCommands(opts.json));
 
 	const safety = program.command('agent-safety').description('agent-safe policy metadata');
 
@@ -647,7 +734,7 @@ function generateFile(
 	blacklist: Map<string, string>,
 ): string {
 	const visibleCommands = isAgentSafeBuild
-		? commands.filter((cmd) => !blacklist.has(cmd.endpoint))
+		? commands.filter((cmd) => !getBlacklistReason(cmd.endpoint, blacklist))
 		: commands;
 	const safeCommands = isAgentSafeBuild
 		? visibleCommands.filter((cmd) => classifyCommand(cmd).allowed)

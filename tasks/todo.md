@@ -1,5 +1,19 @@
 # TODO
 
+## User agent blacklist config
+
+- [x] Add optional user blacklist config loading for agent-safe builds
+- [x] Seed user config with unused DB commands and hide log-cleanup status by default
+- [x] Add `dokploy-agent state` discovery for Docker, Traefik, and domain state commands
+- [x] Update docs/tests for merged blacklist behavior
+- [x] Verify build/check/test and reinstall `dokploy-agent`
+
+### Review
+
+- User blacklist lives at `~/.config/dokploy-agent/command-blacklist.json` and supports exact endpoints plus `group.*` wildcards.
+- Installed agent hides unused DB groups and omits log cleanup status from `logs`.
+- `dokploy-agent state` lists Docker container/config, Traefik config/ports/env/file, and domain lookup commands.
+
 ## Agent-safe help cleanup
 
 - [x] Confirm why agent-safe help still shows noisy groups
