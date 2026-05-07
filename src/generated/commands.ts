@@ -19,17 +19,17 @@ const AGENT_SAFE_BUILD = false;
 
 function extractAgentLogOptions(opts: Record<string, any>) {
 	const options = {
-		logSearch: opts.agentLogSearch,
-		logContext: opts.agentLogContext == null ? undefined : Number(opts.agentLogContext),
-		logCaseSensitive: opts.agentLogCaseSensitive === true || opts.agentLogCaseSensitive === "true",
-		maxLogLines: opts.agentLogTail == null ? undefined : Number(opts.agentLogTail),
-		maxLogChars: opts.agentLogMaxChars == null ? undefined : Number(opts.agentLogMaxChars),
+		logSearch: opts.localSearch,
+		logContext: opts.localContext == null ? undefined : Number(opts.localContext),
+		logCaseSensitive: opts.localCaseSensitive === true || opts.localCaseSensitive === "true",
+		maxLogLines: opts.localTail == null ? undefined : Number(opts.localTail),
+		maxLogChars: opts.localMaxChars == null ? undefined : Number(opts.localMaxChars),
 	};
-	delete opts.agentLogSearch;
-	delete opts.agentLogContext;
-	delete opts.agentLogCaseSensitive;
-	delete opts.agentLogTail;
-	delete opts.agentLogMaxChars;
+	delete opts.localSearch;
+	delete opts.localContext;
+	delete opts.localCaseSensitive;
+	delete opts.localTail;
+	delete opts.localMaxChars;
 	return options;
 }
 

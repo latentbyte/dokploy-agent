@@ -439,11 +439,11 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 	const agentLogOptionLines =
 		isAgentSafeBuild && isLogCommand(cmd)
 			? [
-					".option('--agent-log-search <value>', 'Filter returned logs locally after redaction')",
-					".option('--agent-log-context <value>', 'Include N lines around local log search matches')",
-					".option('--agent-log-case-sensitive', 'Use case-sensitive local log search')",
-					".option('--agent-log-tail <value>', 'Limit printed logs to last N lines after redaction/filtering, 0 disables line limit')",
-					".option('--agent-log-max-chars <value>', 'Limit printed logs to last N chars after redaction/filtering, 0 disables char limit')",
+					".option('--local-search <value>', 'Filter returned logs locally after redaction')",
+					".option('--local-context <value>', 'Include N lines around local log search matches')",
+					".option('--local-case-sensitive', 'Use case-sensitive local log search')",
+					".option('--local-tail <value>', 'Limit printed logs to last N lines after redaction/filtering, 0 disables line limit')",
+					".option('--local-max-chars <value>', 'Limit printed logs to last N chars after redaction/filtering, 0 disables char limit')",
 				]
 			: [];
 	const optionLines = [
@@ -671,17 +671,17 @@ const AGENT_SAFE_BUILD = ${isAgentSafeBuild ? "true" : "false"};
 ${safetyCommands}
 function extractAgentLogOptions(opts: Record<string, any>) {
 	const options = {
-		logSearch: opts.agentLogSearch,
-		logContext: opts.agentLogContext == null ? undefined : Number(opts.agentLogContext),
-		logCaseSensitive: opts.agentLogCaseSensitive === true || opts.agentLogCaseSensitive === "true",
-		maxLogLines: opts.agentLogTail == null ? undefined : Number(opts.agentLogTail),
-		maxLogChars: opts.agentLogMaxChars == null ? undefined : Number(opts.agentLogMaxChars),
+		logSearch: opts.localSearch,
+		logContext: opts.localContext == null ? undefined : Number(opts.localContext),
+		logCaseSensitive: opts.localCaseSensitive === true || opts.localCaseSensitive === "true",
+		maxLogLines: opts.localTail == null ? undefined : Number(opts.localTail),
+		maxLogChars: opts.localMaxChars == null ? undefined : Number(opts.localMaxChars),
 	};
-	delete opts.agentLogSearch;
-	delete opts.agentLogContext;
-	delete opts.agentLogCaseSensitive;
-	delete opts.agentLogTail;
-	delete opts.agentLogMaxChars;
+	delete opts.localSearch;
+	delete opts.localContext;
+	delete opts.localCaseSensitive;
+	delete opts.localTail;
+	delete opts.localMaxChars;
 	return options;
 }
 

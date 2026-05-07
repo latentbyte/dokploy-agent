@@ -189,11 +189,11 @@ Log exposure rules:
 - read-log API endpoints already support server-side `tail`, `since`, and `search`
 - audit logs support server-side `limit` and `offset`
 - agent-safe builds also add local output flags for log commands:
-  - `--agent-log-search <value>` filters returned logs locally after redaction
-  - `--agent-log-context <value>` includes nearby lines around local search matches
-  - `--agent-log-case-sensitive` makes local search case-sensitive
-  - `--agent-log-tail <value>` limits printed logs to last N lines, `0` disables line limit
-  - `--agent-log-max-chars <value>` limits printed logs to last N chars, `0` disables char limit
+  - `--local-search <value>` filters returned logs locally after redaction
+  - `--local-context <value>` includes nearby lines around local search matches
+  - `--local-case-sensitive` makes local search case-sensitive
+  - `--local-tail <value>` limits printed logs to last N lines, `0` disables line limit
+  - `--local-max-chars <value>` limits printed logs to last N chars, `0` disables char limit
 - mark audit logs as higher risk because they can expose users, IPs, emails, and admin actions
 
 ## Response redaction policy for agent
