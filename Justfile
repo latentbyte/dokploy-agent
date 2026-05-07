@@ -43,7 +43,13 @@ build-agent-safe:
 
 # install agent-safe cli in ~/.local/bin
 install: build-agent-safe
-	mkdir -p "$HOME/.local/bin"
-	chmod +x dist/index.js
-	ln -sf "$(pwd)/dist/index.js" "$HOME/.local/bin/dokploy-agent"
+	install_dir="$HOME/.local/share/dokploy-agent"; \
+	bin_path="$HOME/.local/bin/dokploy-agent"; \
+	rm -rf "$install_dir"; \
+	rm -f "$bin_path"; \
+	mkdir -p "$install_dir" "$HOME/.local/bin"; \
+	cp -R dist "$install_dir/dist"; \
+	ln -s "$(pwd)/node_modules" "$install_dir/node_modules"; \
+	printf '%s\n' '#!/usr/bin/env bash' 'exec node "$HOME/.local/share/dokploy-agent/dist/index.js" "$@"' > "$bin_path"; \
+	chmod +x "$bin_path"
 	@echo "installed $HOME/.local/bin/dokploy-agent"
