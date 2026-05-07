@@ -47,9 +47,11 @@ describe("CLI", () => {
 		expect(output).toContain("project");
 	});
 
-	it("should show version with --version", () => {
-		const output = run("--version");
-		expect(output.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+	it("should show version with build metadata", () => {
+		const output = run("--version").trim();
+		expect(output).toMatch(
+			/^\d+\.\d+\.\d+ \(commit ([0-9a-f]{7,12}|unknown), built .+, mode full\)$/,
+		);
 	});
 
 	it("should show subcommands for application", () => {

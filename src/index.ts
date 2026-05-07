@@ -1,19 +1,47 @@
 #!/usr/bin/env node
 
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import { program } from "commander";
 import { registerAuthCommand } from "./commands/auth.js";
 import { registerGeneratedCommands } from "./generated/commands.js";
 
+interface BuildInfo {
+	version: string;
+	commit: string;
+	builtAt: string;
+	mode: string;
+}
+
 const pkg = {
 	name: "dokploy",
-	version: "0.3.0",
+	version: "0.29.2",
 	description: "Dokploy CLI - Manage your Dokploy server",
 };
 
+function readBuildInfo(): BuildInfo | undefined {
+	try {
+		const buildInfoPath = path.join(
+			path.dirname(fileURLToPath(import.meta.url)),
+			"build-info.json",
+		);
+		return JSON.parse(fs.readFileSync(buildInfoPath, "utf8")) as BuildInfo;
+	} catch {
+		return undefined;
+	}
+}
+
+function formatVersion(): string {
+	const buildInfo = readBuildInfo();
+	if (!buildInfo) return pkg.version;
+	return `${buildInfo.version} (commit ${buildInfo.commit}, built ${buildInfo.builtAt}, mode ${buildInfo.mode})`;
+}
+
 program
 	.name(process.env.DOKPLOY_AGENT_BIN ?? pkg.name)
-	.version(pkg.version)
+	.version(formatVersion())
 	.description(pkg.description)
 	.showHelpAfterError()
 	.showSuggestionAfterError();

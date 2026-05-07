@@ -1,5 +1,17 @@
 # TODO
 
+## Version build metadata
+
+- [x] Generate build metadata with package version, commit hash, build time, and mode
+- [x] Show build metadata in `--version`
+- [x] Verify full and agent-safe version output plus tests
+- [x] Reinstall `dokploy-agent` and commit
+
+### Review
+
+- `--version` prints package version, short commit, build timestamp, and build mode.
+- `dokploy-agent --version` uses `mode agent-safe`; full build uses `mode full`.
+
 ## User agent blacklist config
 
 - [x] Add optional user blacklist config loading for agent-safe builds
