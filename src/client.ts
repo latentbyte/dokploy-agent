@@ -4,12 +4,14 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import axios, { type AxiosInstance } from "axios";
 import chalk from "chalk";
+import { redactString, sanitizeForAgent } from "./redact.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const legacyConfigPath = path.join(__dirname, "..", "config.json");
 const CONFIG_DIR_NAME = "dokploy";
 const CONFIG_FILE_NAME = "config.json";
+const MAX_ERROR_BODY_CHARS = 4000;
 
 export interface AuthConfig {
 	token: string;
@@ -120,14 +122,42 @@ export async function apiPost(
 	return response.data?.result?.data?.json ?? response.data;
 }
 
+export function buildGetInputQuery(params?: Record<string, unknown>): string {
+	if (!params || Object.keys(params).length === 0) return "";
+	return `?input=${encodeURIComponent(JSON.stringify({ json: params }))}`;
+}
+
+function formatErrorBody(data: unknown): string {
+	const sanitized =
+		typeof data === "string" ? redactString(data) : sanitizeForAgent(data);
+	const body =
+		typeof sanitized === "string"
+			? sanitized
+			: (JSON.stringify(sanitized, null, 2) ?? String(sanitized));
+	if (body.length <= MAX_ERROR_BODY_CHARS) return body;
+	return `${body.slice(0, MAX_ERROR_BODY_CHARS)}\n[truncated ${body.length - MAX_ERROR_BODY_CHARS} chars]`;
+}
+
+export function formatCliError(err: unknown): string {
+	if (axios.isAxiosError(err)) {
+		const lines = [err.message];
+		if (err.response?.data !== undefined) {
+			lines.push(`Response body:\n${formatErrorBody(err.response.data)}`);
+		}
+		return lines.join("\n");
+	}
+
+	if (err instanceof Error) return err.message;
+	return String(err);
+}
+
 export async function apiGet(
 	endpoint: string,
 	params?: Record<string, unknown>,
 ) {
 	const client = createClient();
-	const query = params
-		? `?input=${encodeURIComponent(JSON.stringify(params))}`
-		: "";
-	const response = await client.get(`/trpc/${endpoint}${query}`);
+	const response = await client.get(
+		`/trpc/${endpoint}${buildGetInputQuery(params)}`,
+	);
 	return response.data?.result?.data?.json ?? response.data;
 }

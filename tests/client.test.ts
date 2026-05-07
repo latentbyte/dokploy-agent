@@ -3,6 +3,12 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+function decodeInput(query: string): unknown {
+	const input = new URLSearchParams(query.slice(1)).get("input");
+	if (!input) return undefined;
+	return JSON.parse(input);
+}
+
 describe("readAuthConfig", () => {
 	const originalEnv = { ...process.env };
 
@@ -50,6 +56,46 @@ describe("readAuthConfig", () => {
 		const config = readAuthConfig();
 
 		expect(config.token).toBe("api-key");
+	});
+});
+
+describe("apiGet", () => {
+	it("should encode GET input with tRPC json wrapper", async () => {
+		const { buildGetInputQuery } = await import("../src/client.js");
+		const query = buildGetInputQuery({ applicationId: "app-1" });
+
+		expect(decodeInput(query)).toEqual({
+			json: { applicationId: "app-1" },
+		});
+	});
+
+	it("should omit GET input when params are empty", async () => {
+		const { buildGetInputQuery } = await import("../src/client.js");
+
+		expect(buildGetInputQuery()).toBe("");
+		expect(buildGetInputQuery({})).toBe("");
+	});
+});
+
+describe("formatCliError", () => {
+	it("should include redacted HTTP response body", async () => {
+		const { formatCliError } = await import("../src/client.js");
+		const output = formatCliError({
+			isAxiosError: true,
+			message: "Request failed with status code 400",
+			response: {
+				data: {
+					message: "Invalid input",
+					token: "secret-token-value",
+				},
+			},
+		});
+
+		expect(output).toContain("Request failed with status code 400");
+		expect(output).toContain("Response body:");
+		expect(output).toContain("Invalid input");
+		expect(output).toContain("secr***");
+		expect(output).not.toContain("secret-token-value");
 	});
 });
 

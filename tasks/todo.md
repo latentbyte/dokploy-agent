@@ -1,5 +1,19 @@
 # TODO
 
+## Fix GET input encoding and error output
+
+- [x] Review client request/error flow and generated command usage
+- [x] Fix GET `input` wrapper for tRPC params
+- [x] Add readable HTTP error formatting without leaking headers/config
+- [x] Add tests for GET query shape and HTTP error body
+- [x] Run build/check/test and update review notes
+
+### Review
+
+- `apiGet` now encodes GET params as tRPC input `{ json: params }` and omits empty input.
+- CLI axios failures now print the response body with agent redaction and length limiting.
+- Verified with build, full Vitest, Biome check, and live CLI GET calls for `application one`, `deployment all`, and `application read-logs`.
+
 ## Version build metadata
 
 - [x] Generate build metadata with package version, commit hash, build time, and mode

@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import { program } from "commander";
+import { formatCliError } from "./client.js";
 import { registerAuthCommand } from "./commands/auth.js";
 import { registerGeneratedCommands } from "./generated/commands.js";
 
@@ -57,6 +58,6 @@ if (argv.length <= 2) {
 }
 
 program.parseAsync(argv).catch((err) => {
-	console.error(chalk.red(err.message));
+	console.error(chalk.red(formatCliError(err)));
 	process.exit(1);
 });
