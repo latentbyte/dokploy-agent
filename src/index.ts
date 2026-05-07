@@ -7,6 +7,7 @@ import chalk from "chalk";
 import { program } from "commander";
 import { formatCliError } from "./client.js";
 import { registerAuthCommand } from "./commands/auth.js";
+import { registerDeploymentLogsCommand } from "./commands/deployment-logs.js";
 import { registerGeneratedCommands } from "./generated/commands.js";
 
 interface BuildInfo {
@@ -49,6 +50,7 @@ program
 
 registerAuthCommand(program);
 registerGeneratedCommands(program);
+registerDeploymentLogsCommand(program);
 
 const argv = process.argv.filter((arg) => arg !== "--");
 

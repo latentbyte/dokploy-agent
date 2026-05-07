@@ -75,6 +75,13 @@ describe("CLI", () => {
 		expect(output).toContain("--environmentId");
 	});
 
+	it("should show deployment log command options", () => {
+		const output = run("deployment", "read-logs", "--help");
+		expect(output).toContain("--logPath");
+		expect(output).toContain("--deploymentId");
+		expect(output).toContain("--tail");
+	});
+
 	it("should show auth command options", () => {
 		const output = run("auth", "--help");
 		expect(output).toContain("--url");

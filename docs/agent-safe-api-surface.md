@@ -174,6 +174,13 @@ The OpenAPI spec exposes application/compose/database logs only. It does not cur
 
 These log related endpoints are currently not on the safe list because most are not generated into the CLI yet. Logs are read-only but can contain secrets, tokens, connection strings, env dumps, headers, or user data.
 
+Custom non-OpenAPI deployment log support:
+
+- `deployment.read-logs` is a CLI overlay, not generated from `openapi.json`
+- it reads Dokploy deployment logs through the server WebSocket endpoint using a `logPath` from deployment metadata or a deployment source selector
+- prefer `--applicationId`, `--composeId`, `--serverId`, or `--deploymentId` over raw `--logPath`
+- always use `--tail`, `--search`, and output limits for agent use
+
 Safe after redaction and output limits in the agent-safe build:
 
 - `application.read-logs` (get)

@@ -63,6 +63,9 @@ dokploy postgres stop --postgresId pg123
 
 # Get raw JSON output
 dokploy project all --json
+
+# Read bounded deployment logs from the latest application deployment
+dokploy deployment read-logs --applicationId app123 --tail 200 --json
 ```
 
 ### Getting help
