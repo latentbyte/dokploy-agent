@@ -45,6 +45,14 @@ describe("generator", () => {
 		}
 	});
 
+	it("generated file should include read log endpoints", () => {
+		const content = fs.readFileSync(generatedPath, "utf8");
+
+		expect(content).toContain('apiGet("application.readLogs"');
+		expect(content).toContain('apiGet("compose.readLogs"');
+		expect(content).toContain('apiGet("postgres.readLogs"');
+	});
+
 	it("number of apiPost/apiGet calls should match valid endpoints", () => {
 		const spec = JSON.parse(fs.readFileSync(specPath, "utf8"));
 		const content = fs.readFileSync(generatedPath, "utf8");

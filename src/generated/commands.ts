@@ -1,20 +1,44 @@
-// Auto-generated from openapi.json — do not edit manually.
+// Auto-generated from openapi.json, do not edit manually.
 // Run: npx tsx scripts/generate.ts
 
 import type { Command } from "commander";
 import chalk from "chalk";
 import { apiPost, apiGet } from "../client.js";
+import { sanitizeForAgent } from "../redact.js";
 
-function printOutput(data: unknown) {
-	if (data === null || data === undefined) {
+interface SafetyEntry {
+	endpoint: string;
+	group: string;
+	action: string;
+	method: string;
+	reason: string;
+	risk?: string;
+}
+
+const AGENT_SAFE_BUILD = false;
+
+function printOutput(data: unknown, jsonOutput: boolean, logOutput: boolean) {
+	const output = AGENT_SAFE_BUILD ? sanitizeForAgent(data, { logOutput }) : data;
+	if (jsonOutput) {
+		console.log(JSON.stringify(output, null, 2));
+		return;
+	}
+	if (output === null || output === undefined) {
 		console.log(chalk.green("OK"));
 		return;
 	}
-	if (typeof data === "string") {
-		console.log(data);
+	if (typeof output === "string") {
+		console.log(output);
 		return;
 	}
-	console.log(JSON.stringify(data, null, 2));
+	console.log(JSON.stringify(output, null, 2));
+}
+
+function printBlockedCommand(endpoint: string, reason: string) {
+	console.error(chalk.red(`Blocked by agent-safe policy: ${endpoint}`));
+	console.error(reason);
+	console.error("Ask the user for approval or use the full CLI outside agent-safe mode.");
+	process.exitCode = 2;
 }
 
 export function registerGeneratedCommands(program: Command) {
@@ -29,13 +53,23 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("admin.setupMonitoring", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_ai = program.command('ai').description('ai commands');
+
+	g_ai
+		.command('analyze-logs')
+		.description('ai analyzeLogs')
+		.requiredOption('--aiId <value>', 'aiId')
+		.requiredOption('--logs <value>', 'logs')
+		.requiredOption('--context <value>', 'context (build, runtime)')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("ai.analyzeLogs", opts);
+			printOutput(data, jsonOutput, true);
+		});
 
 	g_ai
 		.command('create')
@@ -50,11 +84,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["isEnabled"] != null) opts["isEnabled"] = opts["isEnabled"] === true || opts["isEnabled"] === "true";
 			const data = await apiPost("ai.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_ai
@@ -66,11 +96,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("ai.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_ai
@@ -90,11 +116,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("ai.deploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_ai
@@ -106,11 +128,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("ai.get", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_ai
@@ -122,11 +140,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("ai.getAll", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_ai
+		.command('get-enabled-providers')
+		.description('ai getEnabledProviders')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("ai.getEnabledProviders", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_ai
@@ -139,11 +165,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("ai.getModels", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_ai
@@ -155,11 +177,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("ai.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_ai
@@ -173,11 +191,21 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("ai.suggest", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_ai
+		.command('test-connection')
+		.description('ai testConnection')
+		.requiredOption('--apiUrl <value>', 'apiUrl')
+		.requiredOption('--apiKey <value>', 'apiKey')
+		.requiredOption('--model <value>', 'model')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("ai.testConnection", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_ai
@@ -195,11 +223,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["isEnabled"] != null) opts["isEnabled"] = opts["isEnabled"] === true || opts["isEnabled"] === "true";
 			const data = await apiPost("ai.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_application = program.command('application').description('application commands');
 
@@ -212,11 +236,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.cancelDeployment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -228,11 +248,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.cleanQueues", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -244,11 +260,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.clearDeployments", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -264,11 +276,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -280,11 +288,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -298,11 +302,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.deploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -314,11 +314,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.disconnectGitProvider", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_application
+		.command('drop-deployment')
+		.description('application dropDeployment')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("application.dropDeployment", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -330,11 +338,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.killBuild", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -346,11 +350,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.markRunning", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -363,11 +363,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.move", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -379,11 +375,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("application.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -395,11 +387,22 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("application.readAppMonitoring", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_application
+		.command('read-logs')
+		.description('application readLogs')
+		.requiredOption('--applicationId <value>', 'applicationId')
+		.option('--tail <value>', 'tail')
+		.option('--since <value>', 'since')
+		.option('--search <value>', 'search')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
+			const data = await apiGet("application.readLogs", opts);
+			printOutput(data, jsonOutput, true);
 		});
 
 	g_application
@@ -411,11 +414,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("application.readTraefikConfig", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -429,11 +428,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.redeploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -445,11 +440,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.refreshToken", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -462,11 +453,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.reload", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -486,11 +473,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveBitbucketProvider", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -510,11 +493,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = opts["isStaticSpa"] === true || opts["isStaticSpa"] === "true";
 			const data = await apiPost("application.saveBuildType", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -530,11 +509,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.saveDockerProvider", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -550,11 +525,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
 			const data = await apiPost("application.saveEnvironment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -573,11 +544,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveGiteaProvider", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -597,11 +564,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveGithubProvider", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -623,11 +586,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveGitlabProvider", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -645,11 +604,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveGitProvider", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -672,11 +627,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("application.search", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -688,11 +639,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.start", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -704,11 +651,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.stop", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -745,6 +688,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--subtitle <value>', 'subtitle')
 		.option('--command <value>', 'command')
 		.option('--args <value>', 'args')
+		.option('--icon <value>', 'icon')
 		.option('--refreshToken <value>', 'refreshToken')
 		.option('--sourceType <value>', 'sourceType (github, docker, git, gitlab, bitbucket, gitea, drop)')
 		.option('--cleanCache', 'cleanCache')
@@ -829,11 +773,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = opts["isStaticSpa"] === true || opts["isStaticSpa"] === "true";
 			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
 			const data = await apiPost("application.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_application
@@ -846,11 +786,29 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("application.updateTraefikConfig", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+	const g_auditLog = program.command('audit-log').description('audit-log commands');
+
+	g_auditLog
+		.command('all')
+		.description('auditLog all')
+		.option('--userId <value>', 'userId')
+		.option('--userEmail <value>', 'userEmail')
+		.option('--resourceName <value>', 'resourceName')
+		.option('--action <value>', 'action (create, update, delete, deploy, cancel, redeploy, login, logout)')
+		.option('--resourceType <value>', 'resourceType (project, service, environment, deployment, user, customRole, domain, certificate, registry, server, sshKey, gitProvider, notification, settings, session)')
+		.option('--from <value>', 'from')
+		.option('--to <value>', 'to')
+		.option('--limit <value>', 'limit')
+		.option('--offset <value>', 'offset')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
+			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
+			const data = await apiGet("auditLog.all", opts);
+			printOutput(data, jsonOutput, true);
 		});
 	const g_backup = program.command('backup').description('backup commands');
 
@@ -867,7 +825,8 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--mysqlId <value>', 'mysqlId')
 		.option('--postgresId <value>', 'postgresId')
 		.option('--mongoId <value>', 'mongoId')
-		.requiredOption('--databaseType <value>', 'databaseType (postgres, mariadb, mysql, mongo, web-server)')
+		.option('--libsqlId <value>', 'libsqlId')
+		.requiredOption('--databaseType <value>', 'databaseType (postgres, mariadb, mysql, mongo, web-server, libsql)')
 		.option('--userId <value>', 'userId')
 		.option('--backupType <value>', 'backupType (database, compose)')
 		.option('--composeId <value>', 'composeId')
@@ -879,11 +838,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			const data = await apiPost("backup.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -897,11 +852,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("backup.listBackupFiles", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -913,11 +864,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("backup.manualBackupCompose", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_backup
+		.command('manual-backup-libsql')
+		.description('backup manualBackupLibsql')
+		.requiredOption('--backupId <value>', 'backupId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("backup.manualBackupLibsql", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -929,11 +888,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("backup.manualBackupMariadb", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -945,11 +900,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("backup.manualBackupMongo", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -961,11 +912,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("backup.manualBackupMySql", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -977,11 +924,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("backup.manualBackupPostgres", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -993,11 +936,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("backup.manualBackupWebServer", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -1009,11 +948,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("backup.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -1025,11 +960,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("backup.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_backup
@@ -1044,18 +975,14 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--keepLatestCount <value>', 'keepLatestCount')
 		.requiredOption('--serviceName <value>', 'serviceName')
 		.requiredOption('--metadata <value>', 'metadata')
-		.requiredOption('--databaseType <value>', 'databaseType (postgres, mariadb, mysql, mongo, web-server)')
+		.requiredOption('--databaseType <value>', 'databaseType (postgres, mariadb, mysql, mongo, web-server, libsql)')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			const data = await apiPost("backup.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_bitbucket = program.command('bitbucket').description('bitbucket commands');
 
@@ -1068,11 +995,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("bitbucket.bitbucketProviders", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_bitbucket
@@ -1092,11 +1015,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("bitbucket.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_bitbucket
@@ -1110,11 +1029,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("bitbucket.getBitbucketBranches", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_bitbucket
@@ -1126,11 +1041,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("bitbucket.getBitbucketRepositories", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_bitbucket
@@ -1142,11 +1053,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("bitbucket.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_bitbucket
@@ -1163,11 +1070,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("bitbucket.testConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_bitbucket
@@ -1187,11 +1090,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("bitbucket.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_certificates = program.command('certificates').description('certificates commands');
 
@@ -1204,11 +1103,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("certificates.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_certificates
@@ -1227,11 +1122,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["autoRenew"] != null) opts["autoRenew"] = opts["autoRenew"] === true || opts["autoRenew"] === "true";
 			const data = await apiPost("certificates.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_certificates
@@ -1243,11 +1134,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("certificates.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_certificates
@@ -1259,11 +1146,22 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("certificates.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_certificates
+		.command('update')
+		.description('certificates update')
+		.requiredOption('--certificateId <value>', 'certificateId')
+		.option('--name <value>', 'name')
+		.option('--certificateData <value>', 'certificateData')
+		.option('--privateKey <value>', 'privateKey')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("certificates.update", opts);
+			printOutput(data, jsonOutput, false);
 		});
 	const g_cluster = program.command('cluster').description('cluster commands');
 
@@ -1276,11 +1174,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("cluster.addManager", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_cluster
@@ -1292,11 +1186,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("cluster.addWorker", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_cluster
@@ -1308,11 +1198,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("cluster.getNodes", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_cluster
@@ -1325,11 +1211,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("cluster.removeWorker", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_compose = program.command('compose').description('compose commands');
 
@@ -1342,11 +1224,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.cancelDeployment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1358,11 +1236,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.cleanQueues", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1374,11 +1248,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.clearDeployments", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1396,11 +1266,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1413,11 +1279,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["deleteVolumes"] != null) opts["deleteVolumes"] = opts["deleteVolumes"] === true || opts["deleteVolumes"] === "true";
 			const data = await apiPost("compose.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1431,11 +1293,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.deploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1450,11 +1308,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.deployTemplate", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1466,11 +1320,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.disconnectGitProvider", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1482,11 +1332,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.fetchSourceType", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1498,11 +1344,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("compose.getConvertedCompose", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1514,11 +1356,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("compose.getDefaultCommand", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1530,11 +1368,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("compose.getTags", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1547,11 +1381,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.import", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1564,11 +1394,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.isolatedDeployment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1580,11 +1406,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.killBuild", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1597,11 +1419,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("compose.loadMountsByService", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1614,11 +1432,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("compose.loadServices", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1631,11 +1445,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.move", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1647,11 +1457,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("compose.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1664,11 +1470,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.processTemplate", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1681,11 +1483,23 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.randomizeCompose", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_compose
+		.command('read-logs')
+		.description('compose readLogs')
+		.requiredOption('--composeId <value>', 'composeId')
+		.requiredOption('--containerId <value>', 'containerId')
+		.option('--tail <value>', 'tail')
+		.option('--since <value>', 'since')
+		.option('--search <value>', 'search')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
+			const data = await apiGet("compose.readLogs", opts);
+			printOutput(data, jsonOutput, true);
 		});
 
 	g_compose
@@ -1699,11 +1513,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.redeploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1715,11 +1525,20 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.refreshToken", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_compose
+		.command('save-environment')
+		.description('compose saveEnvironment')
+		.requiredOption('--composeId <value>', 'composeId')
+		.requiredOption('--env <value>', 'env')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("compose.saveEnvironment", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1739,11 +1558,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("compose.search", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1755,11 +1570,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.start", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1771,11 +1582,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("compose.stop", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1787,11 +1594,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("compose.templates", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_compose
@@ -1851,11 +1654,83 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["isolatedDeployment"] != null) opts["isolatedDeployment"] = opts["isolatedDeployment"] === true || opts["isolatedDeployment"] === "true";
 			if (opts["isolatedDeploymentsVolume"] != null) opts["isolatedDeploymentsVolume"] = opts["isolatedDeploymentsVolume"] === true || opts["isolatedDeploymentsVolume"] === "true";
 			const data = await apiPost("compose.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+	const g_customRole = program.command('custom-role').description('custom-role commands');
+
+	g_customRole
+		.command('all')
+		.description('customRole all')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("customRole.all", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_customRole
+		.command('create')
+		.description('customRole create')
+		.requiredOption('--roleName <value>', 'roleName')
+		.requiredOption('--permissions <value>', 'permissions')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("customRole.create", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_customRole
+		.command('get-statements')
+		.description('customRole getStatements')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("customRole.getStatements", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_customRole
+		.command('members-by-role')
+		.description('customRole membersByRole')
+		.requiredOption('--roleName <value>', 'roleName')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("customRole.membersByRole", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_customRole
+		.command('remove')
+		.description('customRole remove')
+		.requiredOption('--roleName <value>', 'roleName')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("customRole.remove", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_customRole
+		.command('update')
+		.description('customRole update')
+		.requiredOption('--roleName <value>', 'roleName')
+		.option('--newRoleName <value>', 'newRoleName')
+		.requiredOption('--permissions <value>', 'permissions')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("customRole.update", opts);
+			printOutput(data, jsonOutput, false);
 		});
 	const g_deployment = program.command('deployment').description('deployment commands');
 
@@ -1868,11 +1743,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("deployment.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_deployment
@@ -1884,11 +1755,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("deployment.allByCompose", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_deployment
@@ -1900,11 +1767,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("deployment.allByServer", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_deployment
@@ -1917,11 +1780,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("deployment.allByType", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_deployment
@@ -1933,11 +1792,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("deployment.allCentralized", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_deployment
@@ -1949,11 +1804,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("deployment.killProcess", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_deployment
@@ -1965,11 +1816,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("deployment.queueList", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_deployment
@@ -1981,11 +1828,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("deployment.removeDeployment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_destination = program.command('destination').description('destination commands');
 
@@ -1998,11 +1841,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("destination.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_destination
@@ -2015,17 +1854,14 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--region <value>', 'region')
 		.requiredOption('--endpoint <value>', 'endpoint')
 		.requiredOption('--secretAccessKey <value>', 'secretAccessKey')
+		.requiredOption('--additionalFlags <value>', 'additionalFlags')
 		.option('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("destination.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_destination
@@ -2037,11 +1873,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("destination.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_destination
@@ -2053,11 +1885,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("destination.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_destination
@@ -2070,17 +1898,14 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--region <value>', 'region')
 		.requiredOption('--endpoint <value>', 'endpoint')
 		.requiredOption('--secretAccessKey <value>', 'secretAccessKey')
+		.requiredOption('--additionalFlags <value>', 'additionalFlags')
 		.option('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("destination.testConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_destination
@@ -2094,17 +1919,14 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--secretAccessKey <value>', 'secretAccessKey')
 		.requiredOption('--destinationId <value>', 'destinationId')
 		.requiredOption('--provider <value>', 'provider')
+		.requiredOption('--additionalFlags <value>', 'additionalFlags')
 		.option('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("destination.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_docker = program.command('docker').description('docker commands');
 
@@ -2118,11 +1940,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("docker.getConfig", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_docker
@@ -2134,11 +1952,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("docker.getContainers", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_docker
@@ -2152,11 +1966,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("docker.getContainersByAppLabel", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_docker
@@ -2170,11 +1980,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("docker.getContainersByAppNameMatch", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_docker
@@ -2187,11 +1993,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("docker.getServiceContainersByAppName", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_docker
@@ -2204,27 +2006,84 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("docker.getStackContainersByAppName", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_docker
+		.command('kill-container')
+		.description('docker killContainer')
+		.requiredOption('--containerId <value>', 'containerId')
+		.option('--serverId <value>', 'serverId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("docker.killContainer", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_docker
+		.command('remove-container')
+		.description('docker removeContainer')
+		.requiredOption('--containerId <value>', 'containerId')
+		.option('--serverId <value>', 'serverId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("docker.removeContainer", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_docker
 		.command('restart-container')
 		.description('docker restartContainer')
 		.requiredOption('--containerId <value>', 'containerId')
+		.option('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("docker.restartContainer", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_docker
+		.command('start-container')
+		.description('docker startContainer')
+		.requiredOption('--containerId <value>', 'containerId')
+		.option('--serverId <value>', 'serverId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("docker.startContainer", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_docker
+		.command('stop-container')
+		.description('docker stopContainer')
+		.requiredOption('--containerId <value>', 'containerId')
+		.option('--serverId <value>', 'serverId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("docker.stopContainer", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_docker
+		.command('upload-file-to-container')
+		.description('docker uploadFileToContainer')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("docker.uploadFileToContainer", opts);
+			printOutput(data, jsonOutput, false);
 		});
 	const g_domain = program.command('domain').description('domain commands');
 
@@ -2237,11 +2096,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("domain.byApplicationId", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_domain
@@ -2253,11 +2108,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("domain.byComposeId", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_domain
@@ -2269,11 +2120,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("domain.canGenerateTraefikMeDomains", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_domain
@@ -2282,6 +2129,7 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--host <value>', 'host')
 		.option('--path <value>', 'path')
 		.option('--port <value>', 'port')
+		.option('--customEntrypoint <value>', 'customEntrypoint')
 		.option('--https', 'https')
 		.option('--applicationId <value>', 'applicationId')
 		.option('--certificateType <value>', 'certificateType (letsencrypt, none, custom)')
@@ -2292,6 +2140,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--previewDeploymentId <value>', 'previewDeploymentId')
 		.option('--internalPath <value>', 'internalPath')
 		.option('--stripPath', 'stripPath')
+		.option('--middlewares <value>', 'middlewares')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -2299,11 +2148,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
 			if (opts["stripPath"] != null) opts["stripPath"] = opts["stripPath"] === true || opts["stripPath"] === "true";
 			const data = await apiPost("domain.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_domain
@@ -2315,11 +2160,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("domain.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_domain
@@ -2332,11 +2173,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("domain.generateDomain", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_domain
@@ -2348,11 +2185,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("domain.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_domain
@@ -2361,6 +2194,7 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--host <value>', 'host')
 		.option('--path <value>', 'path')
 		.option('--port <value>', 'port')
+		.option('--customEntrypoint <value>', 'customEntrypoint')
 		.option('--https', 'https')
 		.option('--certificateType <value>', 'certificateType (letsencrypt, none, custom)')
 		.option('--customCertResolver <value>', 'customCertResolver')
@@ -2368,6 +2202,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--domainType <value>', 'domainType (compose, application, preview)')
 		.option('--internalPath <value>', 'internalPath')
 		.option('--stripPath', 'stripPath')
+		.option('--middlewares <value>', 'middlewares')
 		.requiredOption('--domainId <value>', 'domainId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
@@ -2376,11 +2211,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
 			if (opts["stripPath"] != null) opts["stripPath"] = opts["stripPath"] === true || opts["stripPath"] === "true";
 			const data = await apiPost("domain.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_domain
@@ -2393,11 +2224,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("domain.validateDomain", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_environment = program.command('environment').description('environment commands');
 
@@ -2410,11 +2237,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("environment.byProjectId", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_environment
@@ -2428,11 +2251,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("environment.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_environment
@@ -2446,11 +2265,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("environment.duplicate", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_environment
@@ -2462,11 +2277,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("environment.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_environment
@@ -2478,11 +2289,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("environment.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_environment
@@ -2500,11 +2307,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("environment.search", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_environment
@@ -2520,11 +2323,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("environment.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_gitea = program.command('gitea').description('gitea commands');
 
@@ -2552,11 +2351,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["expiresAt"] != null) opts["expiresAt"] = Number(opts["expiresAt"]);
 			if (opts["lastAuthenticatedAt"] != null) opts["lastAuthenticatedAt"] = Number(opts["lastAuthenticatedAt"]);
 			const data = await apiPost("gitea.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitea
@@ -2570,11 +2365,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("gitea.getGiteaBranches", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitea
@@ -2586,11 +2377,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("gitea.getGiteaRepositories", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitea
@@ -2602,11 +2389,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("gitea.getGiteaUrl", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitea
@@ -2618,11 +2401,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("gitea.giteaProviders", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitea
@@ -2634,11 +2413,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("gitea.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitea
@@ -2651,11 +2426,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("gitea.testConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitea
@@ -2682,11 +2453,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["expiresAt"] != null) opts["expiresAt"] = Number(opts["expiresAt"]);
 			if (opts["lastAuthenticatedAt"] != null) opts["lastAuthenticatedAt"] = Number(opts["lastAuthenticatedAt"]);
 			const data = await apiPost("gitea.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_github = program.command('github').description('github commands');
 
@@ -2701,11 +2468,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("github.getGithubBranches", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_github
@@ -2717,11 +2480,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("github.getGithubRepositories", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_github
@@ -2733,11 +2492,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("github.githubProviders", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_github
@@ -2749,11 +2504,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("github.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_github
@@ -2765,11 +2516,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("github.testConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_github
@@ -2784,11 +2531,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("github.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_gitlab = program.command('gitlab').description('gitlab commands');
 
@@ -2809,11 +2552,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("gitlab.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitlab
@@ -2828,11 +2567,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["id"] != null) opts["id"] = Number(opts["id"]);
 			const data = await apiGet("gitlab.getGitlabBranches", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitlab
@@ -2844,11 +2579,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("gitlab.getGitlabRepositories", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitlab
@@ -2860,11 +2591,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("gitlab.gitlabProviders", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitlab
@@ -2876,11 +2603,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("gitlab.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitlab
@@ -2893,11 +2616,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("gitlab.testConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitlab
@@ -2917,13 +2636,21 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("gitlab.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_gitProvider = program.command('git-provider').description('git-provider commands');
+
+	g_gitProvider
+		.command('all-for-permissions')
+		.description('gitProvider allForPermissions')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("gitProvider.allForPermissions", opts);
+			printOutput(data, jsonOutput, false);
+		});
 
 	g_gitProvider
 		.command('get-all')
@@ -2934,11 +2661,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("gitProvider.getAll", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_gitProvider
@@ -2950,11 +2673,247 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("gitProvider.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_gitProvider
+		.command('toggle-share')
+		.description('gitProvider toggleShare')
+		.requiredOption('--gitProviderId <value>', 'gitProviderId')
+		.requiredOption('--sharedWithOrganization', 'sharedWithOrganization')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["sharedWithOrganization"] != null) opts["sharedWithOrganization"] = opts["sharedWithOrganization"] === true || opts["sharedWithOrganization"] === "true";
+			const data = await apiPost("gitProvider.toggleShare", opts);
+			printOutput(data, jsonOutput, false);
+		});
+	const g_libsql = program.command('libsql').description('libsql commands');
+
+	g_libsql
+		.command('change-status')
+		.description('libsql changeStatus')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.requiredOption('--applicationStatus <value>', 'applicationStatus (idle, running, done, error)')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("libsql.changeStatus", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('create')
+		.description('libsql create')
+		.requiredOption('--name <value>', 'name')
+		.requiredOption('--appName <value>', 'appName')
+		.requiredOption('--dockerImage <value>', 'dockerImage')
+		.requiredOption('--environmentId <value>', 'environmentId')
+		.requiredOption('--description <value>', 'description')
+		.requiredOption('--databaseUser <value>', 'databaseUser')
+		.requiredOption('--databasePassword <value>', 'databasePassword')
+		.requiredOption('--sqldNode <value>', 'sqldNode (primary, replica)')
+		.requiredOption('--sqldPrimaryUrl <value>', 'sqldPrimaryUrl')
+		.requiredOption('--enableNamespaces', 'enableNamespaces')
+		.requiredOption('--serverId <value>', 'serverId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["enableNamespaces"] != null) opts["enableNamespaces"] = opts["enableNamespaces"] === true || opts["enableNamespaces"] === "true";
+			const data = await apiPost("libsql.create", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('deploy')
+		.description('libsql deploy')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("libsql.deploy", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('move')
+		.description('libsql move')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.requiredOption('--targetEnvironmentId <value>', 'targetEnvironmentId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("libsql.move", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('one')
+		.description('libsql one')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("libsql.one", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('read-logs')
+		.description('libsql readLogs')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.option('--tail <value>', 'tail')
+		.option('--since <value>', 'since')
+		.option('--search <value>', 'search')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
+			const data = await apiGet("libsql.readLogs", opts);
+			printOutput(data, jsonOutput, true);
+		});
+
+	g_libsql
+		.command('rebuild')
+		.description('libsql rebuild')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("libsql.rebuild", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('reload')
+		.description('libsql reload')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.requiredOption('--appName <value>', 'appName')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("libsql.reload", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('remove')
+		.description('libsql remove')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("libsql.remove", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('save-environment')
+		.description('libsql saveEnvironment')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.requiredOption('--env <value>', 'env')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("libsql.saveEnvironment", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('save-external-ports')
+		.description('libsql saveExternalPorts')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.option('--externalPort <value>', 'externalPort')
+		.option('--externalGRPCPort <value>', 'externalGRPCPort')
+		.option('--externalAdminPort <value>', 'externalAdminPort')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
+			if (opts["externalGRPCPort"] != null) opts["externalGRPCPort"] = Number(opts["externalGRPCPort"]);
+			if (opts["externalAdminPort"] != null) opts["externalAdminPort"] = Number(opts["externalAdminPort"]);
+			const data = await apiPost("libsql.saveExternalPorts", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('start')
+		.description('libsql start')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("libsql.start", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('stop')
+		.description('libsql stop')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("libsql.stop", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_libsql
+		.command('update')
+		.description('libsql update')
+		.requiredOption('--libsqlId <value>', 'libsqlId')
+		.option('--name <value>', 'name')
+		.option('--appName <value>', 'appName')
+		.option('--description <value>', 'description')
+		.option('--databaseUser <value>', 'databaseUser')
+		.option('--databasePassword <value>', 'databasePassword')
+		.option('--sqldNode <value>', 'sqldNode (primary, replica)')
+		.option('--sqldPrimaryUrl <value>', 'sqldPrimaryUrl')
+		.option('--enableNamespaces', 'enableNamespaces')
+		.option('--dockerImage <value>', 'dockerImage')
+		.option('--command <value>', 'command')
+		.option('--env <value>', 'env')
+		.option('--memoryReservation <value>', 'memoryReservation')
+		.option('--memoryLimit <value>', 'memoryLimit')
+		.option('--cpuReservation <value>', 'cpuReservation')
+		.option('--cpuLimit <value>', 'cpuLimit')
+		.option('--externalPort <value>', 'externalPort')
+		.option('--externalGRPCPort <value>', 'externalGRPCPort')
+		.option('--externalAdminPort <value>', 'externalAdminPort')
+		.option('--applicationStatus <value>', 'applicationStatus (idle, running, done, error)')
+		.option('--healthCheckSwarm <value>', 'healthCheckSwarm')
+		.option('--restartPolicySwarm <value>', 'restartPolicySwarm')
+		.option('--placementSwarm <value>', 'placementSwarm')
+		.option('--updateConfigSwarm <value>', 'updateConfigSwarm')
+		.option('--rollbackConfigSwarm <value>', 'rollbackConfigSwarm')
+		.option('--modeSwarm <value>', 'modeSwarm')
+		.option('--labelsSwarm <value>', 'labelsSwarm')
+		.option('--networkSwarm <value>', 'networkSwarm')
+		.option('--stopGracePeriodSwarm <value>', 'stopGracePeriodSwarm')
+		.option('--endpointSpecSwarm <value>', 'endpointSpecSwarm')
+		.option('--replicas <value>', 'replicas')
+		.option('--createdAt <value>', 'createdAt')
+		.option('--environmentId <value>', 'environmentId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["enableNamespaces"] != null) opts["enableNamespaces"] = opts["enableNamespaces"] === true || opts["enableNamespaces"] === "true";
+			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
+			if (opts["externalGRPCPort"] != null) opts["externalGRPCPort"] = Number(opts["externalGRPCPort"]);
+			if (opts["externalAdminPort"] != null) opts["externalAdminPort"] = Number(opts["externalAdminPort"]);
+			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
+			const data = await apiPost("libsql.update", opts);
+			printOutput(data, jsonOutput, false);
 		});
 	const g_licenseKey = program.command('license-key').description('license-key commands');
 
@@ -2967,11 +2926,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("licenseKey.activate", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_licenseKey
@@ -2983,11 +2938,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("licenseKey.deactivate", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_licenseKey
@@ -2999,11 +2950,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("licenseKey.getEnterpriseSettings", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_licenseKey
@@ -3015,11 +2962,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("licenseKey.haveValidLicenseKey", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_licenseKey
@@ -3031,11 +2974,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enableEnterpriseFeatures"] != null) opts["enableEnterpriseFeatures"] = opts["enableEnterpriseFeatures"] === true || opts["enableEnterpriseFeatures"] === "true";
 			const data = await apiPost("licenseKey.updateEnterpriseSettings", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_licenseKey
@@ -3047,13 +2986,23 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("licenseKey.validate", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_mariadb = program.command('mariadb').description('mariadb commands');
+
+	g_mariadb
+		.command('change-password')
+		.description('mariadb changePassword')
+		.requiredOption('--mariadbId <value>', 'mariadbId')
+		.requiredOption('--password <value>', 'password')
+		.option('--type <value>', 'type (user, root)')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("mariadb.changePassword", opts);
+			printOutput(data, jsonOutput, false);
+		});
 
 	g_mariadb
 		.command('change-status')
@@ -3065,11 +3014,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.changeStatus", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3090,11 +3035,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3106,11 +3047,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.deploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3123,11 +3060,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.move", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3139,11 +3072,22 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("mariadb.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_mariadb
+		.command('read-logs')
+		.description('mariadb readLogs')
+		.requiredOption('--mariadbId <value>', 'mariadbId')
+		.option('--tail <value>', 'tail')
+		.option('--since <value>', 'since')
+		.option('--search <value>', 'search')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
+			const data = await apiGet("mariadb.readLogs", opts);
+			printOutput(data, jsonOutput, true);
 		});
 
 	g_mariadb
@@ -3155,11 +3099,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.rebuild", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3172,11 +3112,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.reload", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3188,11 +3124,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3205,11 +3137,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.saveEnvironment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3222,11 +3150,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("mariadb.saveExternalPort", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3246,11 +3170,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("mariadb.search", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3262,11 +3182,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.start", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3278,11 +3194,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mariadb.stop", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mariadb
@@ -3326,13 +3238,22 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("mariadb.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_mongo = program.command('mongo').description('mongo commands');
+
+	g_mongo
+		.command('change-password')
+		.description('mongo changePassword')
+		.requiredOption('--mongoId <value>', 'mongoId')
+		.requiredOption('--password <value>', 'password')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("mongo.changePassword", opts);
+			printOutput(data, jsonOutput, false);
+		});
 
 	g_mongo
 		.command('change-status')
@@ -3344,11 +3265,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mongo.changeStatus", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3368,11 +3285,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["replicaSets"] != null) opts["replicaSets"] = opts["replicaSets"] === true || opts["replicaSets"] === "true";
 			const data = await apiPost("mongo.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3384,11 +3297,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mongo.deploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3401,11 +3310,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mongo.move", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3417,11 +3322,22 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("mongo.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_mongo
+		.command('read-logs')
+		.description('mongo readLogs')
+		.requiredOption('--mongoId <value>', 'mongoId')
+		.option('--tail <value>', 'tail')
+		.option('--since <value>', 'since')
+		.option('--search <value>', 'search')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
+			const data = await apiGet("mongo.readLogs", opts);
+			printOutput(data, jsonOutput, true);
 		});
 
 	g_mongo
@@ -3433,11 +3349,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mongo.rebuild", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3450,11 +3362,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mongo.reload", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3466,11 +3374,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mongo.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3483,11 +3387,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mongo.saveEnvironment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3500,11 +3400,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("mongo.saveExternalPort", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3524,11 +3420,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("mongo.search", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3540,11 +3432,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mongo.start", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3556,11 +3444,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mongo.stop", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mongo
@@ -3604,11 +3488,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			if (opts["replicaSets"] != null) opts["replicaSets"] = opts["replicaSets"] === true || opts["replicaSets"] === "true";
 			const data = await apiPost("mongo.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_mounts = program.command('mounts').description('mounts commands');
 
@@ -3621,11 +3501,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("mounts.allNamedByApplicationId", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mounts
@@ -3636,36 +3512,28 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--volumeName <value>', 'volumeName')
 		.option('--content <value>', 'content')
 		.requiredOption('--mountPath <value>', 'mountPath')
-		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose)')
 		.option('--filePath <value>', 'filePath')
+		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose, libsql)')
 		.requiredOption('--serviceId <value>', 'serviceId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mounts.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mounts
 		.command('list-by-service-id')
 		.description('mounts listByServiceId')
+		.requiredOption('--serviceType <value>', 'serviceType')
 		.requiredOption('--serviceId <value>', 'serviceId')
-		.requiredOption('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose)')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("mounts.listByServiceId", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mounts
@@ -3677,11 +3545,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("mounts.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mounts
@@ -3693,11 +3557,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mounts.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mounts
@@ -3709,27 +3569,38 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--volumeName <value>', 'volumeName')
 		.option('--filePath <value>', 'filePath')
 		.option('--content <value>', 'content')
-		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose)')
+		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose, libsql)')
 		.option('--mountPath <value>', 'mountPath')
 		.option('--applicationId <value>', 'applicationId')
-		.option('--postgresId <value>', 'postgresId')
+		.option('--composeId <value>', 'composeId')
+		.option('--libsqlId <value>', 'libsqlId')
 		.option('--mariadbId <value>', 'mariadbId')
 		.option('--mongoId <value>', 'mongoId')
 		.option('--mysqlId <value>', 'mysqlId')
+		.option('--postgresId <value>', 'postgresId')
 		.option('--redisId <value>', 'redisId')
-		.option('--composeId <value>', 'composeId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mounts.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_mysql = program.command('mysql').description('mysql commands');
+
+	g_mysql
+		.command('change-password')
+		.description('mysql changePassword')
+		.requiredOption('--mysqlId <value>', 'mysqlId')
+		.requiredOption('--password <value>', 'password')
+		.option('--type <value>', 'type (user, root)')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("mysql.changePassword", opts);
+			printOutput(data, jsonOutput, false);
+		});
 
 	g_mysql
 		.command('change-status')
@@ -3741,11 +3612,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.changeStatus", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3766,11 +3633,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3782,11 +3645,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.deploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3799,11 +3658,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.move", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3815,11 +3670,22 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("mysql.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_mysql
+		.command('read-logs')
+		.description('mysql readLogs')
+		.requiredOption('--mysqlId <value>', 'mysqlId')
+		.option('--tail <value>', 'tail')
+		.option('--since <value>', 'since')
+		.option('--search <value>', 'search')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
+			const data = await apiGet("mysql.readLogs", opts);
+			printOutput(data, jsonOutput, true);
 		});
 
 	g_mysql
@@ -3831,11 +3697,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.rebuild", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3848,11 +3710,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.reload", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3864,11 +3722,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3881,11 +3735,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.saveEnvironment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3898,11 +3748,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("mysql.saveExternalPort", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3922,11 +3768,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("mysql.search", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3938,11 +3780,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.start", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -3954,11 +3792,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("mysql.stop", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_mysql
@@ -4002,11 +3836,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("mysql.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_notification = program.command('notification').description('notification commands');
 
@@ -4019,11 +3849,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("notification.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4031,6 +3857,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createCustom')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4044,17 +3871,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.createCustom", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4062,6 +3886,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createDiscord')
 		.requiredOption('--appBuildError', 'appBuildError')
 		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
 		.requiredOption('--volumeBackup', 'volumeBackup')
 		.requiredOption('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4075,6 +3900,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
@@ -4082,11 +3908,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
 			const data = await apiPost("notification.createDiscord", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4094,6 +3916,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createEmail')
 		.requiredOption('--appBuildError', 'appBuildError')
 		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
 		.requiredOption('--volumeBackup', 'volumeBackup')
 		.requiredOption('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4111,6 +3934,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
@@ -4118,11 +3942,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			if (opts["smtpPort"] != null) opts["smtpPort"] = Number(opts["smtpPort"]);
 			const data = await apiPost("notification.createEmail", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4130,6 +3950,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createGotify')
 		.requiredOption('--appBuildError', 'appBuildError')
 		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
 		.requiredOption('--volumeBackup', 'volumeBackup')
 		.requiredOption('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4144,6 +3965,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
@@ -4151,11 +3973,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
 			const data = await apiPost("notification.createGotify", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4163,6 +3981,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createLark')
 		.requiredOption('--appBuildError', 'appBuildError')
 		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
 		.requiredOption('--volumeBackup', 'volumeBackup')
 		.requiredOption('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4175,17 +3994,44 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.createLark", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_notification
+		.command('create-mattermost')
+		.description('notification createMattermost')
+		.requiredOption('--appBuildError', 'appBuildError')
+		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
+		.requiredOption('--volumeBackup', 'volumeBackup')
+		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--name <value>', 'name')
+		.requiredOption('--appDeploy', 'appDeploy')
+		.requiredOption('--dockerCleanup', 'dockerCleanup')
+		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--webhookUrl <value>', 'webhookUrl')
+		.option('--channel <value>', 'channel')
+		.option('--username <value>', 'username')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
+			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			const data = await apiPost("notification.createMattermost", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4193,6 +4039,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createNtfy')
 		.requiredOption('--appBuildError', 'appBuildError')
 		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
 		.requiredOption('--volumeBackup', 'volumeBackup')
 		.requiredOption('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4207,17 +4054,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			const data = await apiPost("notification.createNtfy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4225,6 +4069,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createPushover')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4241,6 +4086,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
@@ -4250,11 +4096,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["retry"] != null) opts["retry"] = Number(opts["retry"]);
 			if (opts["expire"] != null) opts["expire"] = Number(opts["expire"]);
 			const data = await apiPost("notification.createPushover", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4262,6 +4104,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createResend')
 		.requiredOption('--appBuildError', 'appBuildError')
 		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
 		.requiredOption('--volumeBackup', 'volumeBackup')
 		.requiredOption('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4276,17 +4119,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.createResend", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4294,6 +4134,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createSlack')
 		.requiredOption('--appBuildError', 'appBuildError')
 		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
 		.requiredOption('--volumeBackup', 'volumeBackup')
 		.requiredOption('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4307,17 +4148,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.createSlack", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4325,6 +4163,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createTeams')
 		.requiredOption('--appBuildError', 'appBuildError')
 		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
 		.requiredOption('--volumeBackup', 'volumeBackup')
 		.requiredOption('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4337,17 +4176,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.createTeams", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4355,6 +4191,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification createTelegram')
 		.requiredOption('--appBuildError', 'appBuildError')
 		.requiredOption('--databaseBackup', 'databaseBackup')
+		.requiredOption('--dokployBackup', 'dokployBackup')
 		.requiredOption('--volumeBackup', 'volumeBackup')
 		.requiredOption('--dokployRestart', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
@@ -4369,17 +4206,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.createTelegram", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4391,11 +4225,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("notification.getEmailProviders", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4407,11 +4237,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("notification.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4430,11 +4256,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["Value"] != null) opts["Value"] = Number(opts["Value"]);
 			if (opts["Threshold"] != null) opts["Threshold"] = Number(opts["Threshold"]);
 			const data = await apiPost("notification.receiveNotification", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4446,11 +4268,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("notification.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4463,11 +4281,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("notification.testCustomConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4480,11 +4294,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
 			const data = await apiPost("notification.testDiscordConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4501,11 +4311,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["smtpPort"] != null) opts["smtpPort"] = Number(opts["smtpPort"]);
 			const data = await apiPost("notification.testEmailConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4521,11 +4327,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
 			const data = await apiPost("notification.testGotifyConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4537,11 +4339,21 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("notification.testLarkConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_notification
+		.command('test-mattermost-connection')
+		.description('notification testMattermostConnection')
+		.requiredOption('--webhookUrl <value>', 'webhookUrl')
+		.option('--channel <value>', 'channel')
+		.option('--username <value>', 'username')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("notification.testMattermostConnection", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4556,11 +4368,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			const data = await apiPost("notification.testNtfyConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4578,11 +4386,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["retry"] != null) opts["retry"] = Number(opts["retry"]);
 			if (opts["expire"] != null) opts["expire"] = Number(opts["expire"]);
 			const data = await apiPost("notification.testPushoverConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4596,11 +4400,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("notification.testResendConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4613,11 +4413,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("notification.testSlackConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4629,11 +4425,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("notification.testTeamsConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4647,11 +4439,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("notification.testTelegramConnection", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4659,6 +4447,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateCustom')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4675,17 +4464,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.updateCustom", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4693,6 +4479,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateDiscord')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4709,6 +4496,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
@@ -4716,11 +4504,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
 			const data = await apiPost("notification.updateDiscord", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4728,6 +4512,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateEmail')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4748,6 +4533,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
@@ -4755,11 +4541,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			if (opts["smtpPort"] != null) opts["smtpPort"] = Number(opts["smtpPort"]);
 			const data = await apiPost("notification.updateEmail", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4767,6 +4549,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateGotify')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4784,6 +4567,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
@@ -4791,11 +4575,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
 			const data = await apiPost("notification.updateGotify", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4803,6 +4583,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateLark')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4818,17 +4599,47 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.updateLark", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_notification
+		.command('update-mattermost')
+		.description('notification updateMattermost')
+		.option('--appBuildError', 'appBuildError')
+		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
+		.option('--volumeBackup', 'volumeBackup')
+		.option('--dokployRestart', 'dokployRestart')
+		.option('--name <value>', 'name')
+		.option('--appDeploy', 'appDeploy')
+		.option('--dockerCleanup', 'dockerCleanup')
+		.option('--serverThreshold', 'serverThreshold')
+		.option('--webhookUrl <value>', 'webhookUrl')
+		.option('--channel <value>', 'channel')
+		.option('--username <value>', 'username')
+		.requiredOption('--notificationId <value>', 'notificationId')
+		.requiredOption('--mattermostId <value>', 'mattermostId')
+		.option('--organizationId <value>', 'organizationId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
+			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			const data = await apiPost("notification.updateMattermost", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4836,6 +4647,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateNtfy')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4853,17 +4665,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			const data = await apiPost("notification.updateNtfy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4879,6 +4688,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--expire <value>', 'expire')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4893,17 +4703,14 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["expire"] != null) opts["expire"] = Number(opts["expire"]);
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.updatePushover", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4911,6 +4718,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateResend')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4928,17 +4736,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.updateResend", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4946,6 +4751,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateSlack')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4962,17 +4768,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.updateSlack", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -4980,6 +4783,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateTeams')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -4995,17 +4799,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.updateTeams", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_notification
@@ -5013,6 +4814,7 @@ export function registerGeneratedCommands(program: Command) {
 		.description('notification updateTelegram')
 		.option('--appBuildError', 'appBuildError')
 		.option('--databaseBackup', 'databaseBackup')
+		.option('--dokployBackup', 'dokployBackup')
 		.option('--volumeBackup', 'volumeBackup')
 		.option('--dokployRestart', 'dokployRestart')
 		.option('--name <value>', 'name')
@@ -5030,17 +4832,14 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
 			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
 			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			const data = await apiPost("notification.updateTelegram", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_organization = program.command('organization').description('organization commands');
 
@@ -5053,11 +4852,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("organization.active", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_organization
@@ -5069,11 +4864,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("organization.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_organization
@@ -5085,11 +4876,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("organization.allInvitations", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_organization
@@ -5102,11 +4889,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("organization.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_organization
@@ -5118,11 +4901,20 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("organization.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_organization
+		.command('invite-member')
+		.description('organization inviteMember')
+		.requiredOption('--email <value>', 'email')
+		.requiredOption('--role <value>', 'role')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("organization.inviteMember", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_organization
@@ -5134,11 +4926,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("organization.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_organization
@@ -5150,11 +4938,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("organization.removeInvitation", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_organization
@@ -5166,11 +4950,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("organization.setDefault", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_organization
@@ -5184,28 +4964,20 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("organization.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_organization
 		.command('update-member-role')
 		.description('organization updateMemberRole')
 		.requiredOption('--memberId <value>', 'memberId')
-		.requiredOption('--role <value>', 'role (admin, member)')
+		.requiredOption('--role <value>', 'role')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("organization.updateMemberRole", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_patch = program.command('patch').description('patch commands');
 
@@ -5219,11 +4991,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("patch.byEntityId", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5235,11 +5003,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("patch.cleanPatchRepos", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5256,11 +5020,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("patch.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5272,11 +5032,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("patch.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5289,11 +5045,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("patch.ensureRepo", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5307,11 +5059,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("patch.markFileForDeletion", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5323,11 +5071,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("patch.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5341,11 +5085,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("patch.readRepoDirectories", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5359,11 +5099,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("patch.readRepoFile", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5379,11 +5115,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("patch.saveFileAsPatch", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5396,11 +5128,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("patch.toggleEnabled", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_patch
@@ -5418,11 +5146,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("patch.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_port = program.command('port').description('port commands');
 
@@ -5440,11 +5164,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["publishedPort"] != null) opts["publishedPort"] = Number(opts["publishedPort"]);
 			if (opts["targetPort"] != null) opts["targetPort"] = Number(opts["targetPort"]);
 			const data = await apiPost("port.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_port
@@ -5456,11 +5176,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("port.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_port
@@ -5472,11 +5188,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("port.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_port
@@ -5493,13 +5205,22 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["publishedPort"] != null) opts["publishedPort"] = Number(opts["publishedPort"]);
 			if (opts["targetPort"] != null) opts["targetPort"] = Number(opts["targetPort"]);
 			const data = await apiPost("port.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_postgres = program.command('postgres').description('postgres commands');
+
+	g_postgres
+		.command('change-password')
+		.description('postgres changePassword')
+		.requiredOption('--postgresId <value>', 'postgresId')
+		.requiredOption('--password <value>', 'password')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("postgres.changePassword", opts);
+			printOutput(data, jsonOutput, false);
+		});
 
 	g_postgres
 		.command('change-status')
@@ -5511,11 +5232,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.changeStatus", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5535,11 +5252,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5551,11 +5264,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.deploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5568,11 +5277,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.move", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5584,11 +5289,22 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("postgres.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_postgres
+		.command('read-logs')
+		.description('postgres readLogs')
+		.requiredOption('--postgresId <value>', 'postgresId')
+		.option('--tail <value>', 'tail')
+		.option('--since <value>', 'since')
+		.option('--search <value>', 'search')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
+			const data = await apiGet("postgres.readLogs", opts);
+			printOutput(data, jsonOutput, true);
 		});
 
 	g_postgres
@@ -5600,11 +5316,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.rebuild", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5617,11 +5329,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.reload", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5633,11 +5341,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5650,11 +5354,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.saveEnvironment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5667,11 +5367,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("postgres.saveExternalPort", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5691,11 +5387,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("postgres.search", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5707,11 +5399,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.start", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5723,11 +5411,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("postgres.stop", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_postgres
@@ -5770,11 +5454,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("postgres.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_previewDeployment = program.command('preview-deployment').description('preview-deployment commands');
 
@@ -5787,11 +5467,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("previewDeployment.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_previewDeployment
@@ -5803,11 +5479,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("previewDeployment.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_previewDeployment
@@ -5819,11 +5491,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("previewDeployment.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_previewDeployment
@@ -5837,11 +5505,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("previewDeployment.redeploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_project = program.command('project').description('project commands');
 
@@ -5854,11 +5518,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("project.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_project
@@ -5870,11 +5530,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("project.allForPermissions", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_project
@@ -5888,11 +5544,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("project.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_project
@@ -5910,11 +5562,19 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["includeServices"] != null) opts["includeServices"] = opts["includeServices"] === true || opts["includeServices"] === "true";
 			if (opts["duplicateInSameProject"] != null) opts["duplicateInSameProject"] = opts["duplicateInSameProject"] === true || opts["duplicateInSameProject"] === "true";
 			const data = await apiPost("project.duplicate", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_project
+		.command('home-stats')
+		.description('project homeStats')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("project.homeStats", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_project
@@ -5926,11 +5586,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("project.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_project
@@ -5942,11 +5598,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("project.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_project
@@ -5963,11 +5615,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("project.search", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_project
@@ -5984,11 +5632,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("project.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_redirects = program.command('redirects').description('redirects commands');
 
@@ -6004,11 +5648,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["permanent"] != null) opts["permanent"] = opts["permanent"] === true || opts["permanent"] === "true";
 			const data = await apiPost("redirects.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redirects
@@ -6020,11 +5660,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redirects.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redirects
@@ -6036,11 +5672,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("redirects.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redirects
@@ -6055,13 +5687,22 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["permanent"] != null) opts["permanent"] = opts["permanent"] === true || opts["permanent"] === "true";
 			const data = await apiPost("redirects.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_redis = program.command('redis').description('redis commands');
+
+	g_redis
+		.command('change-password')
+		.description('redis changePassword')
+		.requiredOption('--redisId <value>', 'redisId')
+		.requiredOption('--password <value>', 'password')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("redis.changePassword", opts);
+			printOutput(data, jsonOutput, false);
+		});
 
 	g_redis
 		.command('change-status')
@@ -6073,11 +5714,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.changeStatus", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6095,11 +5732,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6111,11 +5744,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.deploy", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6128,11 +5757,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.move", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6144,11 +5769,22 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("redis.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_redis
+		.command('read-logs')
+		.description('redis readLogs')
+		.requiredOption('--redisId <value>', 'redisId')
+		.option('--tail <value>', 'tail')
+		.option('--since <value>', 'since')
+		.option('--search <value>', 'search')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
+			const data = await apiGet("redis.readLogs", opts);
+			printOutput(data, jsonOutput, true);
 		});
 
 	g_redis
@@ -6160,11 +5796,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.rebuild", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6177,11 +5809,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.reload", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6193,11 +5821,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6210,11 +5834,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.saveEnvironment", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6227,11 +5847,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("redis.saveExternalPort", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6251,11 +5867,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("redis.search", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6267,11 +5879,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.start", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6283,11 +5891,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("redis.stop", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_redis
@@ -6328,11 +5932,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("redis.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_registry = program.command('registry').description('registry commands');
 
@@ -6345,11 +5945,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("registry.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_registry
@@ -6367,11 +5963,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("registry.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_registry
@@ -6383,11 +5975,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("registry.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_registry
@@ -6399,11 +5987,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("registry.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_registry
@@ -6421,11 +6005,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("registry.testRegistry", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_registry
@@ -6438,11 +6018,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("registry.testRegistryById", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_registry
@@ -6463,11 +6039,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("registry.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_rollback = program.command('rollback').description('rollback commands');
 
@@ -6480,11 +6052,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("rollback.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_rollback
@@ -6496,11 +6064,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("rollback.rollback", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_schedule = program.command('schedule').description('schedule commands');
 
@@ -6528,11 +6092,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("schedule.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_schedule
@@ -6544,11 +6104,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("schedule.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_schedule
@@ -6561,11 +6117,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("schedule.list", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_schedule
@@ -6577,11 +6129,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("schedule.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_schedule
@@ -6593,11 +6141,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("schedule.runManually", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_schedule
@@ -6624,11 +6168,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("schedule.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_security = program.command('security').description('security commands');
 
@@ -6643,11 +6183,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("security.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_security
@@ -6659,11 +6195,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("security.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_security
@@ -6675,11 +6207,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("security.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_security
@@ -6693,11 +6221,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("security.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_server = program.command('server').description('server commands');
 
@@ -6710,11 +6234,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_server
+		.command('all-for-permissions')
+		.description('server allForPermissions')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("server.allForPermissions", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6726,11 +6258,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.buildServers", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6742,11 +6270,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.count", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6764,11 +6288,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			const data = await apiPost("server.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6780,11 +6300,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.getDefaultCommand", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6798,11 +6314,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.getServerMetrics", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6814,11 +6326,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.getServerTime", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6830,11 +6338,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6846,11 +6350,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.publicIp", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6862,11 +6362,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("server.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6878,11 +6374,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.security", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6894,11 +6386,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("server.setup", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6911,11 +6399,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("server.setupMonitoring", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6935,11 +6419,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			const data = await apiPost("server.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6951,11 +6431,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.validate", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_server
@@ -6967,11 +6443,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("server.withSSHKey", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_settings = program.command('settings').description('settings commands');
 
@@ -6987,11 +6459,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
 			const data = await apiPost("settings.assignDomainServer", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7003,11 +6471,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.checkGPUStatus", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_settings
+		.command('check-infrastructure-health')
+		.description('settings checkInfrastructureHealth')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("settings.checkInfrastructureHealth", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7019,11 +6495,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanAll", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7035,11 +6507,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanAllDeploymentQueue", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7051,11 +6519,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanDockerBuilder", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7067,11 +6531,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanDockerPrune", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7083,11 +6543,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanMonitoring", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7099,11 +6555,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanRedis", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7115,11 +6567,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanSSHPrivateKey", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7131,11 +6579,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanStoppedContainers", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7147,11 +6591,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanUnusedImages", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7163,11 +6603,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.cleanUnusedVolumes", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_settings
+		.command('get-docker-disk-usage')
+		.description('settings getDockerDiskUsage')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("settings.getDockerDiskUsage", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7179,11 +6627,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.getDokployCloudIps", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7195,11 +6639,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.getDokployVersion", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7211,11 +6651,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.getIp", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7227,11 +6663,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.getLogCleanupStatus", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, true);
 		});
 
 	g_settings
@@ -7243,11 +6675,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.getOpenApiDocument", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7259,11 +6687,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.getReleaseTag", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7275,11 +6699,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.getTraefikPorts", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7291,11 +6711,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.getUpdateData", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7307,11 +6723,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.getWebServerSettings", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7323,11 +6735,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.haveActivateRequests", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7339,11 +6747,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.haveTraefikDashboardPortEnabled", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7355,11 +6759,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.health", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7371,11 +6771,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.isCloud", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7387,11 +6783,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.isUserSubscribed", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7403,11 +6795,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.readDirectories", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7419,11 +6807,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.readMiddlewareTraefikConfig", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7435,11 +6819,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.readTraefikConfig", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7451,11 +6831,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.readTraefikEnv", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7468,11 +6844,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.readTraefikFile", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7484,11 +6856,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("settings.readWebServerTraefikConfig", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7500,11 +6868,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.reloadRedis", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7516,11 +6880,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.reloadServer", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7532,11 +6892,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.reloadTraefik", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7548,11 +6904,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.saveSSHPrivateKey", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7564,11 +6916,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.setupGPU", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7581,11 +6929,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enableDashboard"] != null) opts["enableDashboard"] = opts["enableDashboard"] === true || opts["enableDashboard"] === "true";
 			const data = await apiPost("settings.toggleDashboard", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7597,11 +6941,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enable"] != null) opts["enable"] = opts["enable"] === true || opts["enable"] === "true";
 			const data = await apiPost("settings.toggleRequests", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7614,11 +6954,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = opts["enableDockerCleanup"] === true || opts["enableDockerCleanup"] === "true";
 			const data = await apiPost("settings.updateDockerCleanup", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7630,11 +6966,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.updateLogCleanup", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, true);
 		});
 
 	g_settings
@@ -7646,11 +6978,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.updateMiddlewareTraefikConfig", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7662,11 +6990,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.updateServer", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7678,11 +7002,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.updateServerIp", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7694,11 +7014,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.updateTraefikConfig", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7712,11 +7028,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.updateTraefikFile", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7729,11 +7041,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.updateTraefikPorts", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7745,11 +7053,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.updateWebServerTraefikConfig", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_settings
@@ -7762,11 +7066,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("settings.writeTraefikEnv", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_sshKey = program.command('ssh-key').description('ssh-key commands');
 
@@ -7779,11 +7079,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("sshKey.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_sshKey
+		.command('all-for-apps')
+		.description('sshKey allForApps')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("sshKey.allForApps", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sshKey
@@ -7799,11 +7107,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("sshKey.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sshKey
@@ -7815,11 +7119,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("sshKey.generate", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sshKey
@@ -7831,11 +7131,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("sshKey.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sshKey
@@ -7847,11 +7143,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("sshKey.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sshKey
@@ -7866,11 +7158,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("sshKey.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_sso = program.command('sso').description('sso commands');
 
@@ -7883,11 +7171,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("sso.addTrustedOrigin", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sso
@@ -7899,11 +7183,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("sso.deleteProvider", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sso
@@ -7915,11 +7195,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("sso.getTrustedOrigins", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sso
@@ -7931,11 +7207,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("sso.listProviders", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sso
@@ -7947,11 +7219,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("sso.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sso
@@ -7969,11 +7237,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = opts["overrideUserInfo"] === true || opts["overrideUserInfo"] === "true";
 			const data = await apiPost("sso.register", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sso
@@ -7985,11 +7249,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("sso.removeTrustedOrigin", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sso
@@ -8001,11 +7261,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("sso.showSignInWithSSO", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sso
@@ -8023,11 +7279,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = opts["overrideUserInfo"] === true || opts["overrideUserInfo"] === "true";
 			const data = await apiPost("sso.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_sso
@@ -8040,11 +7292,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("sso.updateTrustedOrigin", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_stripe = program.command('stripe').description('stripe commands');
 
@@ -8057,11 +7305,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("stripe.canCreateMoreServers", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_stripe
@@ -8077,11 +7321,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["serverQuantity"] != null) opts["serverQuantity"] = Number(opts["serverQuantity"]);
 			if (opts["isAnnual"] != null) opts["isAnnual"] = opts["isAnnual"] === true || opts["isAnnual"] === "true";
 			const data = await apiPost("stripe.createCheckoutSession", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_stripe
@@ -8093,11 +7333,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("stripe.createCustomerPortalSession", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_stripe
@@ -8109,11 +7345,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("stripe.getCurrentPlan", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_stripe
@@ -8125,11 +7357,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("stripe.getInvoices", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_stripe
@@ -8141,11 +7369,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("stripe.getProducts", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_stripe
+		.command('update-invoice-notifications')
+		.description('stripe updateInvoiceNotifications')
+		.requiredOption('--enabled', 'enabled')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			const data = await apiPost("stripe.updateInvoiceNotifications", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_stripe
@@ -8160,13 +7396,21 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["serverQuantity"] != null) opts["serverQuantity"] = Number(opts["serverQuantity"]);
 			if (opts["isAnnual"] != null) opts["isAnnual"] = opts["isAnnual"] === true || opts["isAnnual"] === "true";
 			const data = await apiPost("stripe.upgradeSubscription", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_swarm = program.command('swarm').description('swarm commands');
+
+	g_swarm
+		.command('get-container-stats')
+		.description('swarm getContainerStats')
+		.option('--serverId <value>', 'serverId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("swarm.getContainerStats", opts);
+			printOutput(data, jsonOutput, false);
+		});
 
 	g_swarm
 		.command('get-node-apps')
@@ -8177,11 +7421,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("swarm.getNodeApps", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_swarm
@@ -8194,11 +7434,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("swarm.getNodeInfo", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_swarm
@@ -8210,11 +7446,112 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("swarm.getNodes", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+	const g_tag = program.command('tag').description('tag commands');
+
+	g_tag
+		.command('all')
+		.description('tag all')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("tag.all", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_tag
+		.command('assign-to-project')
+		.description('tag assignToProject')
+		.requiredOption('--projectId <value>', 'projectId')
+		.requiredOption('--tagId <value>', 'tagId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("tag.assignToProject", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_tag
+		.command('bulk-assign')
+		.description('tag bulkAssign')
+		.requiredOption('--projectId <value>', 'projectId')
+		.requiredOption('--tagIds <value>', 'tagIds')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("tag.bulkAssign", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_tag
+		.command('create')
+		.description('tag create')
+		.requiredOption('--name <value>', 'name')
+		.option('--color <value>', 'color')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("tag.create", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_tag
+		.command('one')
+		.description('tag one')
+		.requiredOption('--tagId <value>', 'tagId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("tag.one", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_tag
+		.command('remove')
+		.description('tag remove')
+		.requiredOption('--tagId <value>', 'tagId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("tag.remove", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_tag
+		.command('remove-from-project')
+		.description('tag removeFromProject')
+		.requiredOption('--projectId <value>', 'projectId')
+		.requiredOption('--tagId <value>', 'tagId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("tag.removeFromProject", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_tag
+		.command('update')
+		.description('tag update')
+		.requiredOption('--tagId <value>', 'tagId')
+		.option('--name <value>', 'name')
+		.option('--color <value>', 'color')
+		.option('--createdAt <value>', 'createdAt')
+		.option('--organizationId <value>', 'organizationId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("tag.update", opts);
+			printOutput(data, jsonOutput, false);
 		});
 	const g_user = program.command('user').description('user commands');
 
@@ -8227,11 +7564,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.all", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8241,6 +7574,8 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--accessedProjects <value>', 'accessedProjects')
 		.requiredOption('--accessedEnvironments <value>', 'accessedEnvironments')
 		.requiredOption('--accessedServices <value>', 'accessedServices')
+		.requiredOption('--accessedGitProviders <value>', 'accessedGitProviders')
+		.requiredOption('--accessedServers <value>', 'accessedServers')
 		.requiredOption('--canCreateProjects', 'canCreateProjects')
 		.requiredOption('--canCreateServices', 'canCreateServices')
 		.requiredOption('--canDeleteProjects', 'canDeleteProjects')
@@ -8267,11 +7602,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["canDeleteEnvironments"] != null) opts["canDeleteEnvironments"] = opts["canDeleteEnvironments"] === true || opts["canDeleteEnvironments"] === "true";
 			if (opts["canCreateEnvironments"] != null) opts["canCreateEnvironments"] = opts["canCreateEnvironments"] === true || opts["canCreateEnvironments"] === "true";
 			const data = await apiPost("user.assignPermissions", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8283,11 +7614,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.checkUserOrganizations", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8314,11 +7641,21 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["refillAmount"] != null) opts["refillAmount"] = Number(opts["refillAmount"]);
 			if (opts["refillInterval"] != null) opts["refillInterval"] = Number(opts["refillInterval"]);
 			const data = await apiPost("user.createApiKey", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_user
+		.command('create-user-with-credentials')
+		.description('user createUserWithCredentials')
+		.requiredOption('--email <value>', 'email')
+		.requiredOption('--password <value>', 'password')
+		.requiredOption('--role <value>', 'role')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("user.createUserWithCredentials", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8330,11 +7667,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("user.deleteApiKey", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8346,11 +7679,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("user.generateToken", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8362,11 +7691,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.get", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8378,11 +7703,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.getBackups", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_user
+		.command('get-bookmarked-templates')
+		.description('user getBookmarkedTemplates')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("user.getBookmarkedTemplates", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8397,11 +7730,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.getContainerMetrics", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8413,11 +7742,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.getInvitations", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8429,11 +7754,19 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.getMetricsToken", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_user
+		.command('get-permissions')
+		.description('user getPermissions')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("user.getPermissions", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8445,11 +7778,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.getServerMetrics", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8461,11 +7790,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.getUserByToken", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8477,11 +7802,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.haveRootAccess", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8493,11 +7814,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("user.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8509,11 +7826,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("user.remove", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8526,11 +7839,31 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("user.sendInvitation", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_user
+		.command('session')
+		.description('user session')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("user.session", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_user
+		.command('toggle-template-bookmark')
+		.description('user toggleTemplateBookmark')
+		.requiredOption('--templateId <value>', 'templateId')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("user.toggleTemplateBookmark", opts);
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_user
@@ -8558,6 +7891,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--stripeCustomerId <value>', 'stripeCustomerId')
 		.option('--stripeSubscriptionId <value>', 'stripeSubscriptionId')
 		.option('--serversQuantity <value>', 'serversQuantity')
+		.option('--sendInvoiceNotifications', 'sendInvoiceNotifications')
 		.option('--password <value>', 'password')
 		.option('--currentPassword <value>', 'currentPassword')
 		.option('--json', 'Output raw JSON')
@@ -8571,12 +7905,9 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["allowImpersonation"] != null) opts["allowImpersonation"] = opts["allowImpersonation"] === true || opts["allowImpersonation"] === "true";
 			if (opts["enableEnterpriseFeatures"] != null) opts["enableEnterpriseFeatures"] = opts["enableEnterpriseFeatures"] === true || opts["enableEnterpriseFeatures"] === "true";
 			if (opts["serversQuantity"] != null) opts["serversQuantity"] = Number(opts["serversQuantity"]);
+			if (opts["sendInvoiceNotifications"] != null) opts["sendInvoiceNotifications"] = opts["sendInvoiceNotifications"] === true || opts["sendInvoiceNotifications"] === "true";
 			const data = await apiPost("user.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 	const g_volumeBackups = program.command('volume-backups').description('volume-backups commands');
 
@@ -8586,7 +7917,7 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--name <value>', 'name')
 		.requiredOption('--volumeName <value>', 'volumeName')
 		.requiredOption('--prefix <value>', 'prefix')
-		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose)')
+		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose, libsql)')
 		.option('--appName <value>', 'appName')
 		.option('--serviceName <value>', 'serviceName')
 		.option('--turnOff', 'turnOff')
@@ -8599,6 +7930,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--mongoId <value>', 'mongoId')
 		.option('--mysqlId <value>', 'mysqlId')
 		.option('--redisId <value>', 'redisId')
+		.option('--libsqlId <value>', 'libsqlId')
 		.option('--composeId <value>', 'composeId')
 		.option('--createdAt <value>', 'createdAt')
 		.requiredOption('--destinationId <value>', 'destinationId')
@@ -8609,11 +7941,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("volumeBackups.create", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_volumeBackups
@@ -8625,28 +7953,20 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("volumeBackups.delete", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_volumeBackups
 		.command('list')
 		.description('volumeBackups list')
 		.requiredOption('--id <value>', 'id')
-		.requiredOption('--volumeBackupType <value>', 'volumeBackupType (application, postgres, mysql, mariadb, mongo, redis, compose)')
+		.requiredOption('--volumeBackupType <value>', 'volumeBackupType (application, postgres, mysql, mariadb, mongo, redis, compose, libsql)')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("volumeBackups.list", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_volumeBackups
@@ -8658,11 +7978,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiGet("volumeBackups.one", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_volumeBackups
@@ -8674,11 +7990,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			const data = await apiPost("volumeBackups.runManually", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
 		});
 
 	g_volumeBackups
@@ -8687,7 +7999,7 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--name <value>', 'name')
 		.requiredOption('--volumeName <value>', 'volumeName')
 		.requiredOption('--prefix <value>', 'prefix')
-		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose)')
+		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose, libsql)')
 		.option('--appName <value>', 'appName')
 		.option('--serviceName <value>', 'serviceName')
 		.option('--turnOff', 'turnOff')
@@ -8700,6 +8012,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--mongoId <value>', 'mongoId')
 		.option('--mysqlId <value>', 'mysqlId')
 		.option('--redisId <value>', 'redisId')
+		.option('--libsqlId <value>', 'libsqlId')
 		.option('--composeId <value>', 'composeId')
 		.option('--createdAt <value>', 'createdAt')
 		.requiredOption('--destinationId <value>', 'destinationId')
@@ -8711,10 +8024,55 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("volumeBackups.update", opts);
-			if (jsonOutput) {
-				console.log(JSON.stringify(data, null, 2));
-			} else {
-				printOutput(data);
-			}
+			printOutput(data, jsonOutput, false);
+		});
+	const g_whitelabeling = program.command('whitelabeling').description('whitelabeling commands');
+
+	g_whitelabeling
+		.command('get')
+		.description('whitelabeling get')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("whitelabeling.get", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_whitelabeling
+		.command('get-public')
+		.description('whitelabeling getPublic')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiGet("whitelabeling.getPublic", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_whitelabeling
+		.command('reset')
+		.description('whitelabeling reset')
+		
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("whitelabeling.reset", opts);
+			printOutput(data, jsonOutput, false);
+		});
+
+	g_whitelabeling
+		.command('update')
+		.description('whitelabeling update')
+		.requiredOption('--whitelabelingConfig <value>', 'whitelabelingConfig')
+		.option('--json', 'Output raw JSON')
+		.action(async (opts: Record<string, any>) => {
+			const jsonOutput = opts.json; delete opts.json;
+
+			const data = await apiPost("whitelabeling.update", opts);
+			printOutput(data, jsonOutput, false);
 		});
 }
