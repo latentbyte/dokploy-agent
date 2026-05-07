@@ -45,7 +45,7 @@
   "repository": "Dokploy/cli",
   "scripts": {
     "build": "tsc -b && tsx scripts/write-build-info.ts",
-    "build:agent-safe": "pnpm run generate:agent-safe && tsc -b && DOKPLOY_BUILD_TAG=agent-safe tsx scripts/write-build-info.ts",
+    "build:agent-safe": "tsx scripts/build-agent-safe.ts",
     "generate": "tsx scripts/generate.ts",
     "generate:agent-safe": "tsx scripts/generate.ts --agent-safe",
     "prebuild": "pnpm run generate",
