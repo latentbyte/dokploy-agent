@@ -12,17 +12,21 @@ const pkg = {
 };
 
 program
-	.name(pkg.name)
+	.name(process.env.DOKPLOY_AGENT_BIN ?? pkg.name)
 	.version(pkg.version)
 	.description(pkg.description)
-	.action(() => {
-		program.help();
-	});
+	.showHelpAfterError()
+	.showSuggestionAfterError();
 
 registerAuthCommand(program);
 registerGeneratedCommands(program);
 
 const argv = process.argv.filter((arg) => arg !== "--");
+
+if (argv.length <= 2) {
+	program.outputHelp();
+	process.exit(0);
+}
 
 program.parseAsync(argv).catch((err) => {
 	console.error(chalk.red(err.message));

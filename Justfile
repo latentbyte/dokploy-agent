@@ -50,6 +50,6 @@ install: build-agent-safe
 	mkdir -p "$install_dir" "$HOME/.local/bin"; \
 	cp -R dist "$install_dir/dist"; \
 	ln -s "$(pwd)/node_modules" "$install_dir/node_modules"; \
-	printf '%s\n' '#!/usr/bin/env bash' 'exec node "$HOME/.local/share/dokploy-agent/dist/index.js" "$@"' > "$bin_path"; \
+	printf '%s\n' '#!/usr/bin/env bash' 'export DOKPLOY_AGENT_BIN=dokploy-agent' 'exec node "$HOME/.local/share/dokploy-agent/dist/index.js" "$@"' > "$bin_path"; \
 	chmod +x "$bin_path"
 	@echo "installed $HOME/.local/bin/dokploy-agent"

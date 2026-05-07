@@ -155,6 +155,24 @@ const SAFE_POST_ENDPOINTS = new Set([
 	"previewDeployment.redeploy",
 ]);
 
+const AGENT_HELP_GROUPS = new Set([
+	"application",
+	"compose",
+	"deployment",
+	"docker",
+	"domain",
+	"environment",
+	"libsql",
+	"mariadb",
+	"mongo",
+	"mysql",
+	"postgres",
+	"previewDeployment",
+	"project",
+	"redis",
+	"server",
+]);
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -485,6 +503,10 @@ ${coercions}
 		});`;
 }
 
+function shouldShowAgentHelpGroup(group: string): boolean {
+	return !isAgentSafeBuild || AGENT_HELP_GROUPS.has(group);
+}
+
 function generateBlockedCommandCode(
 	cmd: CommandInfo,
 	groupVar: string,
@@ -497,7 +519,7 @@ function generateBlockedCommandCode(
 
 	return `
 	${groupVar}
-		.command('${actionName}')
+		.command('${actionName}', { hidden: true })
 		.description('[blocked] ${escapeSingleQuoted(cmd.description)}')
 		.allowUnknownOption(true)
 		.allowExcessArguments(true)
@@ -526,7 +548,28 @@ function printSafetyEntries(entries: readonly SafetyEntry[], jsonOutput: boolean
 	}
 }
 
+function printAgentLogCommands(jsonOutput: boolean) {
+	if (jsonOutput) {
+		console.log(JSON.stringify(AGENT_SAFETY_REPORT.logs, null, 2));
+		return;
+	}
+	const bin = process.env.DOKPLOY_AGENT_BIN ?? 'dokploy';
+	console.log('agent-safe log commands');
+	printSafetyEntries(AGENT_SAFETY_REPORT.logs.allowed, false);
+	console.log('');
+	console.log('examples');
+	for (const entry of AGENT_SAFETY_REPORT.logs.allowed) {
+		console.log(bin + ' ' + entry.group + ' ' + entry.action + ' --help');
+	}
+}
+
 function registerAgentSafetyCommands(program: Command) {
+	program
+		.command('logs')
+		.description('show agent-safe log commands')
+		.option('--json', 'Output raw JSON')
+		.action((opts: Record<string, any>) => printAgentLogCommands(opts.json));
+
 	const safety = program.command('agent-safety').description('agent-safe policy metadata');
 
 	safety
@@ -631,8 +674,11 @@ function generateFile(
 	for (const group of [...allGroups].sort((a, b) => a.localeCompare(b))) {
 		const varName = `g_${group.replace(/[^a-zA-Z0-9]/g, "_")}`;
 		const kebabGroup = camelToKebab(group);
+		const helpVisibility = shouldShowAgentHelpGroup(group)
+			? ""
+			: ", { hidden: true }";
 		groupBlocks.push(
-			`\tconst ${varName} = program.command('${kebabGroup}').description('${kebabGroup} commands');`,
+			`\tconst ${varName} = program.command('${kebabGroup}'${helpVisibility}).description('${kebabGroup} commands');`,
 		);
 		for (const cmd of (groups.get(group) ?? []).sort((a, b) =>
 			a.endpoint.localeCompare(b.endpoint),

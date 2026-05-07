@@ -14,6 +14,30 @@ function run(...args: string[]): string {
 	});
 }
 
+interface FailedCommand {
+	stdout: string;
+	stderr: string;
+	status: number;
+}
+
+function runFail(...args: string[]): FailedCommand {
+	try {
+		run(...args);
+	} catch (err) {
+		const error = err as {
+			stdout?: string;
+			stderr?: string;
+			status?: number;
+		};
+		return {
+			stdout: error.stdout ?? "",
+			stderr: error.stderr ?? "",
+			status: error.status ?? 1,
+		};
+	}
+	throw new Error("command succeeded unexpectedly");
+}
+
 describe("CLI", () => {
 	it("should show help with --help", () => {
 		const output = run("--help");
@@ -82,5 +106,12 @@ describe("CLI", () => {
 	it("should exit with 0 when no args provided", () => {
 		const output = run();
 		expect(output).toContain("Usage:");
+	});
+
+	it("should report unknown commands clearly", () => {
+		const result = runFail("not-a-command");
+		expect(result.status).not.toBe(0);
+		expect(result.stderr).toContain("unknown command 'not-a-command'");
+		expect(result.stderr).not.toContain("too many arguments");
 	});
 });

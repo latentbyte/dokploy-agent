@@ -1,5 +1,19 @@
 # TODO
 
+## Agent-safe help cleanup
+
+- [x] Confirm why agent-safe help still shows noisy groups
+- [x] Hide blocked and low-value groups from default help without removing safety metadata
+- [x] Add `dokploy-agent logs` discovery command and clean unknown command errors
+- [x] Regenerate/build and add tests for CLI error handling
+- [x] Run checks and install updated `dokploy-agent`
+
+### Review
+
+- Agent-safe root help now shows focused deploy/debug groups, plus `logs` and `agent-safety`.
+- Blocked commands remain callable for policy errors but are hidden from command help.
+- Installed `dokploy-agent` uses its own binary name in help and log examples.
+
 ## Agent-safe CLI build
 
 - [x] Document plan and current build process
