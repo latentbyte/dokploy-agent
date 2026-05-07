@@ -84,3 +84,17 @@
 - Added redaction and log output limiting for agent-safe output
 - Included read-log GET endpoints in agent-safe build
 - Verified full build, agent-safe build smoke, targeted Biome check, and Vitest
+
+## Add Dokploy agent skill
+
+- [x] Inspect existing skill layout
+- [x] Add `dokploy` skill with token-efficient workflows
+- [x] Validate frontmatter and review final content
+- [x] Update lessons/memory for project applicability
+
+### Review
+
+- Added `templates/agents/skills/dokploy/SKILL.md` with Dokploy-only activation rules.
+- Workflow prefers agent-safe CLI, search-first discovery, bounded logs, and exact-id deploys.
+- Skill explicitly avoids assuming work projects use Dokploy.
+
