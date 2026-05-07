@@ -103,37 +103,44 @@ async function fetchDeployments(
 	return data as DeploymentRecord[];
 }
 
-async function resolveDeploymentLog(
+async function resolveDeploymentLogCandidates(
 	opts: DeploymentLogOptions,
-): Promise<ResolvedDeploymentLog> {
+): Promise<ResolvedDeploymentLog[]> {
 	if (opts.logPath) {
-		return {
-			logPath: opts.logPath,
-			deploymentId: opts.deploymentId,
-		};
+		return [
+			{
+				logPath: opts.logPath,
+				deploymentId: opts.deploymentId,
+			},
+		];
 	}
 
 	const deployments = await fetchDeployments(opts);
-	const selected = opts.deploymentId
-		? deployments.find(
+	const candidates = opts.deploymentId
+		? deployments.filter(
 				(deployment) => deployment.deploymentId === opts.deploymentId,
 			)
 		: [...deployments].sort(
 				(a, b) => deploymentTimeValue(b) - deploymentTimeValue(a),
-			)[0];
+			);
 
-	if (!selected) {
+	if (candidates.length === 0) {
 		throw new Error("No matching deployment found.");
 	}
-	if (!selected.logPath) {
-		throw new Error("Selected deployment does not include a logPath.");
+
+	const withLogs = candidates
+		.filter((deployment) => deployment.logPath)
+		.map((deployment) => ({
+			logPath: deployment.logPath as string,
+			deploymentId: deployment.deploymentId,
+			deployment,
+		}));
+
+	if (withLogs.length === 0) {
+		throw new Error("No matching deployment includes a logPath.");
 	}
 
-	return {
-		logPath: selected.logPath,
-		deploymentId: selected.deploymentId,
-		deployment: selected,
-	};
+	return withLogs;
 }
 
 function buildWebSocketRequest(
@@ -305,6 +312,14 @@ async function readDeploymentLogWebSocket(
 	});
 }
 
+function isMissingDeploymentLog(input: string): boolean {
+	const lower = input.toLowerCase();
+	return (
+		lower.includes("tail: cannot open") &&
+		lower.includes("no such file or directory")
+	);
+}
+
 function formatDeploymentLogOutput(
 	input: string,
 	opts: DeploymentLogOptions,
@@ -350,12 +365,32 @@ export function registerDeploymentLogsCommand(program: Command): void {
 		.option("--json", "Output raw JSON")
 		.action(async (opts: DeploymentLogOptions) => {
 			try {
-				const resolved = await resolveDeploymentLog(opts);
-				const logs = await readDeploymentLogWebSocket(resolved.logPath, {
-					timeoutMs: asNumber(opts.timeout, DEFAULT_TIMEOUT_MS / 1000) * 1000,
-					idleTimeoutMs:
-						asNumber(opts.idleTimeout, DEFAULT_IDLE_TIMEOUT_MS / 1000) * 1000,
-				});
+				const exactLog = Boolean(opts.logPath || opts.deploymentId);
+				const candidates = await resolveDeploymentLogCandidates(opts);
+				let resolved = candidates[0];
+				let logs = "";
+				let skippedMissingLogs = 0;
+				let triedLogs = 0;
+
+				for (const candidate of candidates) {
+					resolved = candidate;
+					triedLogs += 1;
+					logs = await readDeploymentLogWebSocket(candidate.logPath, {
+						timeoutMs: asNumber(opts.timeout, DEFAULT_TIMEOUT_MS / 1000) * 1000,
+						idleTimeoutMs:
+							asNumber(opts.idleTimeout, DEFAULT_IDLE_TIMEOUT_MS / 1000) * 1000,
+					});
+
+					if (exactLog || !isMissingDeploymentLog(logs)) break;
+					skippedMissingLogs += 1;
+				}
+
+				if (isMissingDeploymentLog(logs)) {
+					throw new Error(
+						`Deployment log file not found for ${resolved.deploymentId ?? resolved.logPath}. Tried ${triedLogs} deployment log(s). Logs may have been cleaned up or stored on a build server.`,
+					);
+				}
+
 				const output = formatDeploymentLogOutput(logs, opts);
 
 				if (opts.json) {
@@ -364,6 +399,7 @@ export function registerDeploymentLogsCommand(program: Command): void {
 							{
 								deploymentId: resolved.deploymentId,
 								logPath: resolved.logPath,
+								skippedMissingLogs,
 								logs: output,
 							},
 							null,
@@ -385,4 +421,5 @@ export const deploymentLogsInternals = {
 	buildWebSocketRequest,
 	consumeFrames,
 	formatDeploymentLogOutput,
+	isMissingDeploymentLog,
 };

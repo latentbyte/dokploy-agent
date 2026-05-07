@@ -36,6 +36,17 @@ describe("deployment log helpers", () => {
 		expect(frames).toEqual(["deploy ok"]);
 	});
 
+	it("should detect missing deployment log responses", () => {
+		expect(
+			deploymentLogsInternals.isMissingDeploymentLog(
+				"tail: cannot open '/x.log' for reading: No such file or directory",
+			),
+		).toBe(true);
+		expect(deploymentLogsInternals.isMissingDeploymentLog("build failed")).toBe(
+			false,
+		);
+	});
+
 	it("should redact, search, and tail deployment log output", () => {
 		const output = deploymentLogsInternals.formatDeploymentLogOutput(
 			[
