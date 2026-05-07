@@ -1,0 +1,3019 @@
+{
+  "generated": {
+    "total": 449,
+    "safe_count": 162,
+    "disallowed_count": 287,
+    "safe": {
+      "ai": [
+        {
+          "action": "get",
+          "method": "Get",
+          "openapi": "get"
+        },
+        {
+          "action": "get-all",
+          "method": "Get",
+          "openapi": "get-all"
+        },
+        {
+          "action": "get-models",
+          "method": "Get",
+          "openapi": "get-models"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "application": [
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "read-app-monitoring",
+          "method": "Get",
+          "openapi": "read-app-monitoring"
+        },
+        {
+          "action": "read-traefik-config",
+          "method": "Get",
+          "openapi": "read-traefik-config"
+        },
+        {
+          "action": "search",
+          "method": "Get",
+          "openapi": "search"
+        },
+        {
+          "action": "deploy",
+          "method": "Post",
+          "openapi": "deploy"
+        },
+        {
+          "action": "redeploy",
+          "method": "Post",
+          "openapi": "redeploy"
+        }
+      ],
+      "backup": [
+        {
+          "action": "list-backup-files",
+          "method": "Get",
+          "openapi": "list-backup-files"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "bitbucket": [
+        {
+          "action": "bitbucket-providers",
+          "method": "Get",
+          "openapi": "bitbucket-providers"
+        },
+        {
+          "action": "get-bitbucket-branches",
+          "method": "Get",
+          "openapi": "get-bitbucket-branches"
+        },
+        {
+          "action": "get-bitbucket-repositories",
+          "method": "Get",
+          "openapi": "get-bitbucket-repositories"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "certificates": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "cluster": [
+        {
+          "action": "get-nodes",
+          "method": "Get",
+          "openapi": "get-nodes"
+        }
+      ],
+      "compose": [
+        {
+          "action": "get-converted-compose",
+          "method": "Get",
+          "openapi": "get-converted-compose"
+        },
+        {
+          "action": "get-default-command",
+          "method": "Get",
+          "openapi": "get-default-command"
+        },
+        {
+          "action": "get-tags",
+          "method": "Get",
+          "openapi": "get-tags"
+        },
+        {
+          "action": "load-mounts-by-service",
+          "method": "Get",
+          "openapi": "load-mounts-by-service"
+        },
+        {
+          "action": "load-services",
+          "method": "Get",
+          "openapi": "load-services"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "search",
+          "method": "Get",
+          "openapi": "search"
+        },
+        {
+          "action": "templates",
+          "method": "Get",
+          "openapi": "templates"
+        },
+        {
+          "action": "deploy",
+          "method": "Post",
+          "openapi": "deploy"
+        },
+        {
+          "action": "deploy-template",
+          "method": "Post",
+          "openapi": "deploy-template"
+        },
+        {
+          "action": "isolated-deployment",
+          "method": "Post",
+          "openapi": "isolated-deployment"
+        }
+      ],
+      "deployment": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "all-by-compose",
+          "method": "Get",
+          "openapi": "all-by-compose"
+        },
+        {
+          "action": "all-by-server",
+          "method": "Get",
+          "openapi": "all-by-server"
+        },
+        {
+          "action": "all-by-type",
+          "method": "Get",
+          "openapi": "all-by-type"
+        },
+        {
+          "action": "all-centralized",
+          "method": "Get",
+          "openapi": "all-centralized"
+        },
+        {
+          "action": "queue-list",
+          "method": "Get",
+          "openapi": "queue-list"
+        }
+      ],
+      "destination": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "docker": [
+        {
+          "action": "get-config",
+          "method": "Get",
+          "openapi": "get-config"
+        },
+        {
+          "action": "get-containers",
+          "method": "Get",
+          "openapi": "get-containers"
+        },
+        {
+          "action": "get-containers-by-app-label",
+          "method": "Get",
+          "openapi": "get-containers-by-app-label"
+        },
+        {
+          "action": "get-containers-by-app-name-match",
+          "method": "Get",
+          "openapi": "get-containers-by-app-name-match"
+        },
+        {
+          "action": "get-service-containers-by-app-name",
+          "method": "Get",
+          "openapi": "get-service-containers-by-app-name"
+        },
+        {
+          "action": "get-stack-containers-by-app-name",
+          "method": "Get",
+          "openapi": "get-stack-containers-by-app-name"
+        }
+      ],
+      "domain": [
+        {
+          "action": "by-application-id",
+          "method": "Get",
+          "openapi": "by-application-id"
+        },
+        {
+          "action": "by-compose-id",
+          "method": "Get",
+          "openapi": "by-compose-id"
+        },
+        {
+          "action": "can-generate-traefik-me-domains",
+          "method": "Get",
+          "openapi": "can-generate-traefik-me-domains"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "environment": [
+        {
+          "action": "by-project-id",
+          "method": "Get",
+          "openapi": "by-project-id"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "search",
+          "method": "Get",
+          "openapi": "search"
+        }
+      ],
+      "git-provider": [
+        {
+          "action": "get-all",
+          "method": "Get",
+          "openapi": "get-all"
+        }
+      ],
+      "gitea": [
+        {
+          "action": "get-gitea-branches",
+          "method": "Get",
+          "openapi": "get-gitea-branches"
+        },
+        {
+          "action": "get-gitea-repositories",
+          "method": "Get",
+          "openapi": "get-gitea-repositories"
+        },
+        {
+          "action": "get-gitea-url",
+          "method": "Get",
+          "openapi": "get-gitea-url"
+        },
+        {
+          "action": "gitea-providers",
+          "method": "Get",
+          "openapi": "gitea-providers"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "github": [
+        {
+          "action": "get-github-branches",
+          "method": "Get",
+          "openapi": "get-github-branches"
+        },
+        {
+          "action": "get-github-repositories",
+          "method": "Get",
+          "openapi": "get-github-repositories"
+        },
+        {
+          "action": "github-providers",
+          "method": "Get",
+          "openapi": "github-providers"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "gitlab": [
+        {
+          "action": "get-gitlab-branches",
+          "method": "Get",
+          "openapi": "get-gitlab-branches"
+        },
+        {
+          "action": "get-gitlab-repositories",
+          "method": "Get",
+          "openapi": "get-gitlab-repositories"
+        },
+        {
+          "action": "gitlab-providers",
+          "method": "Get",
+          "openapi": "gitlab-providers"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "license-key": [
+        {
+          "action": "get-enterprise-settings",
+          "method": "Get",
+          "openapi": "get-enterprise-settings"
+        },
+        {
+          "action": "have-valid-license-key",
+          "method": "Get",
+          "openapi": "have-valid-license-key"
+        }
+      ],
+      "mariadb": [
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "search",
+          "method": "Get",
+          "openapi": "search"
+        }
+      ],
+      "mongo": [
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "search",
+          "method": "Get",
+          "openapi": "search"
+        }
+      ],
+      "mounts": [
+        {
+          "action": "all-named-by-application-id",
+          "method": "Get",
+          "openapi": "all-named-by-application-id"
+        },
+        {
+          "action": "list-by-service-id",
+          "method": "Get",
+          "openapi": "list-by-service-id"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "mysql": [
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "search",
+          "method": "Get",
+          "openapi": "search"
+        }
+      ],
+      "notification": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "get-email-providers",
+          "method": "Get",
+          "openapi": "get-email-providers"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "organization": [
+        {
+          "action": "active",
+          "method": "Get",
+          "openapi": "active"
+        },
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "all-invitations",
+          "method": "Get",
+          "openapi": "all-invitations"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "patch": [
+        {
+          "action": "by-entity-id",
+          "method": "Get",
+          "openapi": "by-entity-id"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "read-repo-directories",
+          "method": "Get",
+          "openapi": "read-repo-directories"
+        },
+        {
+          "action": "read-repo-file",
+          "method": "Get",
+          "openapi": "read-repo-file"
+        }
+      ],
+      "port": [
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "postgres": [
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "search",
+          "method": "Get",
+          "openapi": "search"
+        }
+      ],
+      "preview-deployment": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "redeploy",
+          "method": "Post",
+          "openapi": "redeploy"
+        }
+      ],
+      "project": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "all-for-permissions",
+          "method": "Get",
+          "openapi": "all-for-permissions"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "search",
+          "method": "Get",
+          "openapi": "search"
+        }
+      ],
+      "redirects": [
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "redis": [
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "search",
+          "method": "Get",
+          "openapi": "search"
+        }
+      ],
+      "registry": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "schedule": [
+        {
+          "action": "list",
+          "method": "Get",
+          "openapi": "list"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "security": [
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "server": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "build-servers",
+          "method": "Get",
+          "openapi": "build-servers"
+        },
+        {
+          "action": "count",
+          "method": "Get",
+          "openapi": "count"
+        },
+        {
+          "action": "get-default-command",
+          "method": "Get",
+          "openapi": "get-default-command"
+        },
+        {
+          "action": "get-server-metrics",
+          "method": "Get",
+          "openapi": "get-server-metrics"
+        },
+        {
+          "action": "get-server-time",
+          "method": "Get",
+          "openapi": "get-server-time"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "public-ip",
+          "method": "Get",
+          "openapi": "public-ip"
+        },
+        {
+          "action": "security",
+          "method": "Get",
+          "openapi": "security"
+        },
+        {
+          "action": "validate",
+          "method": "Get",
+          "openapi": "validate"
+        },
+        {
+          "action": "with-sshkey",
+          "method": "Get",
+          "openapi": "with-sshkey"
+        }
+      ],
+      "settings": [
+        {
+          "action": "check-gpustatus",
+          "method": "Get",
+          "openapi": "check-gpustatus"
+        },
+        {
+          "action": "get-dokploy-cloud-ips",
+          "method": "Get",
+          "openapi": "get-dokploy-cloud-ips"
+        },
+        {
+          "action": "get-dokploy-version",
+          "method": "Get",
+          "openapi": "get-dokploy-version"
+        },
+        {
+          "action": "get-ip",
+          "method": "Get",
+          "openapi": "get-ip"
+        },
+        {
+          "action": "get-log-cleanup-status",
+          "method": "Get",
+          "openapi": "get-log-cleanup-status"
+        },
+        {
+          "action": "get-open-api-document",
+          "method": "Get",
+          "openapi": "get-open-api-document"
+        },
+        {
+          "action": "get-release-tag",
+          "method": "Get",
+          "openapi": "get-release-tag"
+        },
+        {
+          "action": "get-traefik-ports",
+          "method": "Get",
+          "openapi": "get-traefik-ports"
+        },
+        {
+          "action": "get-web-server-settings",
+          "method": "Get",
+          "openapi": "get-web-server-settings"
+        },
+        {
+          "action": "have-activate-requests",
+          "method": "Get",
+          "openapi": "have-activate-requests"
+        },
+        {
+          "action": "have-traefik-dashboard-port-enabled",
+          "method": "Get",
+          "openapi": "have-traefik-dashboard-port-enabled"
+        },
+        {
+          "action": "health",
+          "method": "Get",
+          "openapi": "health"
+        },
+        {
+          "action": "is-cloud",
+          "method": "Get",
+          "openapi": "is-cloud"
+        },
+        {
+          "action": "is-user-subscribed",
+          "method": "Get",
+          "openapi": "is-user-subscribed"
+        },
+        {
+          "action": "read-directories",
+          "method": "Get",
+          "openapi": "read-directories"
+        },
+        {
+          "action": "read-middleware-traefik-config",
+          "method": "Get",
+          "openapi": "read-middleware-traefik-config"
+        },
+        {
+          "action": "read-traefik-config",
+          "method": "Get",
+          "openapi": "read-traefik-config"
+        },
+        {
+          "action": "read-traefik-env",
+          "method": "Get",
+          "openapi": "read-traefik-env"
+        },
+        {
+          "action": "read-traefik-file",
+          "method": "Get",
+          "openapi": "read-traefik-file"
+        },
+        {
+          "action": "read-web-server-traefik-config",
+          "method": "Get",
+          "openapi": "read-web-server-traefik-config"
+        }
+      ],
+      "ssh-key": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "sso": [
+        {
+          "action": "get-trusted-origins",
+          "method": "Get",
+          "openapi": "get-trusted-origins"
+        },
+        {
+          "action": "list-providers",
+          "method": "Get",
+          "openapi": "list-providers"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        },
+        {
+          "action": "show-sign-in-with-sso",
+          "method": "Get",
+          "openapi": "show-sign-in-with-sso"
+        }
+      ],
+      "stripe": [
+        {
+          "action": "can-create-more-servers",
+          "method": "Get",
+          "openapi": "can-create-more-servers"
+        },
+        {
+          "action": "get-current-plan",
+          "method": "Get",
+          "openapi": "get-current-plan"
+        },
+        {
+          "action": "get-invoices",
+          "method": "Get",
+          "openapi": "get-invoices"
+        },
+        {
+          "action": "get-products",
+          "method": "Get",
+          "openapi": "get-products"
+        }
+      ],
+      "swarm": [
+        {
+          "action": "get-node-apps",
+          "method": "Get",
+          "openapi": "get-node-apps"
+        },
+        {
+          "action": "get-node-info",
+          "method": "Get",
+          "openapi": "get-node-info"
+        },
+        {
+          "action": "get-nodes",
+          "method": "Get",
+          "openapi": "get-nodes"
+        }
+      ],
+      "user": [
+        {
+          "action": "all",
+          "method": "Get",
+          "openapi": "all"
+        },
+        {
+          "action": "check-user-organizations",
+          "method": "Get",
+          "openapi": "check-user-organizations"
+        },
+        {
+          "action": "get",
+          "method": "Get",
+          "openapi": "get"
+        },
+        {
+          "action": "get-backups",
+          "method": "Get",
+          "openapi": "get-backups"
+        },
+        {
+          "action": "get-container-metrics",
+          "method": "Get",
+          "openapi": "get-container-metrics"
+        },
+        {
+          "action": "get-invitations",
+          "method": "Get",
+          "openapi": "get-invitations"
+        },
+        {
+          "action": "get-metrics-token",
+          "method": "Get",
+          "openapi": "get-metrics-token"
+        },
+        {
+          "action": "get-server-metrics",
+          "method": "Get",
+          "openapi": "get-server-metrics"
+        },
+        {
+          "action": "get-user-by-token",
+          "method": "Get",
+          "openapi": "get-user-by-token"
+        },
+        {
+          "action": "have-root-access",
+          "method": "Get",
+          "openapi": "have-root-access"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ],
+      "volume-backups": [
+        {
+          "action": "list",
+          "method": "Get",
+          "openapi": "list"
+        },
+        {
+          "action": "one",
+          "method": "Get",
+          "openapi": "one"
+        }
+      ]
+    },
+    "disallowed": {
+      "total": 287,
+      "by_group": {
+        "admin": [
+          {
+            "action": "setup-monitoring",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "ai": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "deploy",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "suggest",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "application": [
+          {
+            "action": "cancel-deployment",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-queues",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clear-deployments",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "disconnect-git-provider",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "kill-build",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "mark-running",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "move",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "refresh-token",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "reload",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-bitbucket-provider",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-build-type",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-docker-provider",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-environment",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-git-provider",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-gitea-provider",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-github-provider",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-gitlab-provider",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "start",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "stop",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-traefik-config",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "backup": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "manual-backup-compose",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "manual-backup-mariadb",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "manual-backup-mongo",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "manual-backup-my-sql",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "manual-backup-postgres",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "manual-backup-web-server",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "bitbucket": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "certificates": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "cluster": [
+          {
+            "action": "add-manager",
+            "method": "Get",
+            "reason": "suspicious-get"
+          },
+          {
+            "action": "add-worker",
+            "method": "Get",
+            "reason": "suspicious-get"
+          },
+          {
+            "action": "remove-worker",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "compose": [
+          {
+            "action": "cancel-deployment",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-queues",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clear-deployments",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "disconnect-git-provider",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "fetch-source-type",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "import",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "kill-build",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "move",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "process-template",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "randomize-compose",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "redeploy",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "refresh-token",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "start",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "stop",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "deployment": [
+          {
+            "action": "kill-process",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove-deployment",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "destination": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "docker": [
+          {
+            "action": "restart-container",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "domain": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "generate-domain",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "validate-domain",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "environment": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "duplicate",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "git-provider": [
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "gitea": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "github": [
+          {
+            "action": "test-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "gitlab": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "license-key": [
+          {
+            "action": "activate",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "deactivate",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-enterprise-settings",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "validate",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "mariadb": [
+          {
+            "action": "change-status",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "deploy",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "move",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "rebuild",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "reload",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-environment",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-external-port",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "start",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "stop",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "mongo": [
+          {
+            "action": "change-status",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "deploy",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "move",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "rebuild",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "reload",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-environment",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-external-port",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "start",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "stop",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "mounts": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "mysql": [
+          {
+            "action": "change-status",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "deploy",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "move",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "rebuild",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "reload",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-environment",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-external-port",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "start",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "stop",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "notification": [
+          {
+            "action": "create-custom",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-discord",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-email",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-gotify",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-lark",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-ntfy",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-pushover",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-resend",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-slack",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-teams",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-telegram",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "receive-notification",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-custom-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-discord-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-email-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-gotify-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-lark-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-ntfy-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-pushover-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-resend-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-slack-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-teams-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-telegram-connection",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-custom",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-discord",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-email",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-gotify",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-lark",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-ntfy",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-pushover",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-resend",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-slack",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-teams",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-telegram",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "organization": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove-invitation",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "set-default",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-member-role",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "patch": [
+          {
+            "action": "clean-patch-repos",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "ensure-repo",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "mark-file-for-deletion",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-file-as-patch",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "toggle-enabled",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "port": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "postgres": [
+          {
+            "action": "change-status",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "deploy",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "move",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "rebuild",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "reload",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-environment",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-external-port",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "start",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "stop",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "preview-deployment": [
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "project": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "duplicate",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "redirects": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "redis": [
+          {
+            "action": "change-status",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "deploy",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "move",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "rebuild",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "reload",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-environment",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-external-port",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "start",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "stop",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "registry": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-registry",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "test-registry-by-id",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "rollback": [
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "rollback",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "schedule": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "run-manually",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "security": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "server": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "setup",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "setup-monitoring",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "settings": [
+          {
+            "action": "assign-domain-server",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-all",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-all-deployment-queue",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-docker-builder",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-docker-prune",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-monitoring",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-redis",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-sshprivate-key",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-stopped-containers",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-unused-images",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "clean-unused-volumes",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "get-update-data",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "reload-redis",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "reload-server",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "reload-traefik",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "save-sshprivate-key",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "setup-gpu",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "toggle-dashboard",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "toggle-requests",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-docker-cleanup",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-log-cleanup",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-middleware-traefik-config",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-server",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-server-ip",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-traefik-config",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-traefik-file",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-traefik-ports",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-web-server-traefik-config",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "write-traefik-env",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "ssh-key": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "generate",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "sso": [
+          {
+            "action": "add-trusted-origin",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete-provider",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "register",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove-trusted-origin",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update-trusted-origin",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "stripe": [
+          {
+            "action": "create-checkout-session",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-customer-portal-session",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "upgrade-subscription",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "user": [
+          {
+            "action": "assign-permissions",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "create-api-key",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete-api-key",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "generate-token",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "remove",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "send-invitation",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ],
+        "volume-backups": [
+          {
+            "action": "create",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "delete",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "run-manually",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          },
+          {
+            "action": "update",
+            "method": "Post",
+            "reason": "apiPost-mutate"
+          }
+        ]
+      }
+    },
+    "logs": {
+      "disallowed": [
+        {
+          "group": "settings",
+          "action": "update-log-cleanup",
+          "method": "Post",
+          "reason": "apiPost-mutate"
+        }
+      ]
+    }
+  },
+  "openapi": {
+    "total": 524,
+    "unavailable_count": 79,
+    "unavailable": {
+      "total": 79,
+      "by_group": {
+        "application": [
+          {
+            "method": "get",
+            "path": "application.readLogs",
+            "normalized": "application.read-logs"
+          },
+          {
+            "method": "post",
+            "path": "application.dropDeployment",
+            "normalized": "application.drop-deployment"
+          }
+        ],
+        "backup": [
+          {
+            "method": "post",
+            "path": "backup.manualBackupLibsql",
+            "normalized": "backup.manual-backup-libsql"
+          }
+        ],
+        "certificates": [
+          {
+            "method": "post",
+            "path": "certificates.update",
+            "normalized": "certificates.update"
+          }
+        ],
+        "compose": [
+          {
+            "method": "get",
+            "path": "compose.readLogs",
+            "normalized": "compose.read-logs"
+          },
+          {
+            "method": "post",
+            "path": "compose.saveEnvironment",
+            "normalized": "compose.save-environment"
+          }
+        ],
+        "docker": [
+          {
+            "method": "post",
+            "path": "docker.killContainer",
+            "normalized": "docker.kill-container"
+          },
+          {
+            "method": "post",
+            "path": "docker.removeContainer",
+            "normalized": "docker.remove-container"
+          },
+          {
+            "method": "post",
+            "path": "docker.startContainer",
+            "normalized": "docker.start-container"
+          },
+          {
+            "method": "post",
+            "path": "docker.stopContainer",
+            "normalized": "docker.stop-container"
+          },
+          {
+            "method": "post",
+            "path": "docker.uploadFileToContainer",
+            "normalized": "docker.upload-file-to-container"
+          }
+        ],
+        "git-provider": [
+          {
+            "method": "get",
+            "path": "gitProvider.allForPermissions",
+            "normalized": "git-provider.all-for-permissions"
+          },
+          {
+            "method": "post",
+            "path": "gitProvider.toggleShare",
+            "normalized": "git-provider.toggle-share"
+          }
+        ],
+        "libsql": [
+          {
+            "method": "get",
+            "path": "libsql.one",
+            "normalized": "libsql.one"
+          },
+          {
+            "method": "get",
+            "path": "libsql.readLogs",
+            "normalized": "libsql.read-logs"
+          },
+          {
+            "method": "post",
+            "path": "libsql.changeStatus",
+            "normalized": "libsql.change-status"
+          },
+          {
+            "method": "post",
+            "path": "libsql.create",
+            "normalized": "libsql.create"
+          },
+          {
+            "method": "post",
+            "path": "libsql.deploy",
+            "normalized": "libsql.deploy"
+          },
+          {
+            "method": "post",
+            "path": "libsql.move",
+            "normalized": "libsql.move"
+          },
+          {
+            "method": "post",
+            "path": "libsql.rebuild",
+            "normalized": "libsql.rebuild"
+          },
+          {
+            "method": "post",
+            "path": "libsql.reload",
+            "normalized": "libsql.reload"
+          },
+          {
+            "method": "post",
+            "path": "libsql.remove",
+            "normalized": "libsql.remove"
+          },
+          {
+            "method": "post",
+            "path": "libsql.saveEnvironment",
+            "normalized": "libsql.save-environment"
+          },
+          {
+            "method": "post",
+            "path": "libsql.saveExternalPorts",
+            "normalized": "libsql.save-external-ports"
+          },
+          {
+            "method": "post",
+            "path": "libsql.start",
+            "normalized": "libsql.start"
+          },
+          {
+            "method": "post",
+            "path": "libsql.stop",
+            "normalized": "libsql.stop"
+          },
+          {
+            "method": "post",
+            "path": "libsql.update",
+            "normalized": "libsql.update"
+          }
+        ],
+        "mariadb": [
+          {
+            "method": "get",
+            "path": "mariadb.readLogs",
+            "normalized": "mariadb.read-logs"
+          },
+          {
+            "method": "post",
+            "path": "mariadb.changePassword",
+            "normalized": "mariadb.change-password"
+          }
+        ],
+        "mongo": [
+          {
+            "method": "get",
+            "path": "mongo.readLogs",
+            "normalized": "mongo.read-logs"
+          },
+          {
+            "method": "post",
+            "path": "mongo.changePassword",
+            "normalized": "mongo.change-password"
+          }
+        ],
+        "mysql": [
+          {
+            "method": "get",
+            "path": "mysql.readLogs",
+            "normalized": "mysql.read-logs"
+          },
+          {
+            "method": "post",
+            "path": "mysql.changePassword",
+            "normalized": "mysql.change-password"
+          }
+        ],
+        "notification": [
+          {
+            "method": "post",
+            "path": "notification.createMattermost",
+            "normalized": "notification.create-mattermost"
+          },
+          {
+            "method": "post",
+            "path": "notification.testMattermostConnection",
+            "normalized": "notification.test-mattermost-connection"
+          },
+          {
+            "method": "post",
+            "path": "notification.updateMattermost",
+            "normalized": "notification.update-mattermost"
+          }
+        ],
+        "postgres": [
+          {
+            "method": "get",
+            "path": "postgres.readLogs",
+            "normalized": "postgres.read-logs"
+          },
+          {
+            "method": "post",
+            "path": "postgres.changePassword",
+            "normalized": "postgres.change-password"
+          }
+        ],
+        "project": [
+          {
+            "method": "get",
+            "path": "project.homeStats",
+            "normalized": "project.home-stats"
+          }
+        ],
+        "redis": [
+          {
+            "method": "get",
+            "path": "redis.readLogs",
+            "normalized": "redis.read-logs"
+          },
+          {
+            "method": "post",
+            "path": "redis.changePassword",
+            "normalized": "redis.change-password"
+          }
+        ],
+        "server": [
+          {
+            "method": "get",
+            "path": "server.allForPermissions",
+            "normalized": "server.all-for-permissions"
+          },
+          {
+            "method": "get",
+            "path": "server.withSSHKey",
+            "normalized": "server.with-ssh-key"
+          }
+        ],
+        "settings": [
+          {
+            "method": "get",
+            "path": "settings.checkGPUStatus",
+            "normalized": "settings.check-gpu-status"
+          },
+          {
+            "method": "get",
+            "path": "settings.checkInfrastructureHealth",
+            "normalized": "settings.check-infrastructure-health"
+          },
+          {
+            "method": "get",
+            "path": "settings.getDockerDiskUsage",
+            "normalized": "settings.get-docker-disk-usage"
+          },
+          {
+            "method": "post",
+            "path": "settings.cleanSSHPrivateKey",
+            "normalized": "settings.clean-ssh-private-key"
+          },
+          {
+            "method": "post",
+            "path": "settings.saveSSHPrivateKey",
+            "normalized": "settings.save-ssh-private-key"
+          }
+        ],
+        "ssh-key": [
+          {
+            "method": "get",
+            "path": "sshKey.allForApps",
+            "normalized": "ssh-key.all-for-apps"
+          }
+        ],
+        "stripe": [
+          {
+            "method": "post",
+            "path": "stripe.updateInvoiceNotifications",
+            "normalized": "stripe.update-invoice-notifications"
+          }
+        ],
+        "swarm": [
+          {
+            "method": "get",
+            "path": "swarm.getContainerStats",
+            "normalized": "swarm.get-container-stats"
+          }
+        ],
+        "user": [
+          {
+            "method": "get",
+            "path": "user.getBookmarkedTemplates",
+            "normalized": "user.get-bookmarked-templates"
+          },
+          {
+            "method": "get",
+            "path": "user.getPermissions",
+            "normalized": "user.get-permissions"
+          },
+          {
+            "method": "get",
+            "path": "user.session",
+            "normalized": "user.session"
+          },
+          {
+            "method": "post",
+            "path": "user.createUserWithCredentials",
+            "normalized": "user.create-user-with-credentials"
+          },
+          {
+            "method": "post",
+            "path": "user.toggleTemplateBookmark",
+            "normalized": "user.toggle-template-bookmark"
+          }
+        ],
+        "ai": [
+          {
+            "method": "get",
+            "path": "ai.getEnabledProviders",
+            "normalized": "ai.get-enabled-providers"
+          },
+          {
+            "method": "post",
+            "path": "ai.analyzeLogs",
+            "normalized": "ai.analyze-logs"
+          },
+          {
+            "method": "post",
+            "path": "ai.testConnection",
+            "normalized": "ai.test-connection"
+          }
+        ],
+        "organization": [
+          {
+            "method": "post",
+            "path": "organization.inviteMember",
+            "normalized": "organization.invite-member"
+          }
+        ],
+        "whitelabeling": [
+          {
+            "method": "get",
+            "path": "whitelabeling.get",
+            "normalized": "whitelabeling.get"
+          },
+          {
+            "method": "get",
+            "path": "whitelabeling.getPublic",
+            "normalized": "whitelabeling.get-public"
+          },
+          {
+            "method": "post",
+            "path": "whitelabeling.reset",
+            "normalized": "whitelabeling.reset"
+          },
+          {
+            "method": "post",
+            "path": "whitelabeling.update",
+            "normalized": "whitelabeling.update"
+          }
+        ],
+        "custom-role": [
+          {
+            "method": "get",
+            "path": "customRole.all",
+            "normalized": "custom-role.all"
+          },
+          {
+            "method": "get",
+            "path": "customRole.getStatements",
+            "normalized": "custom-role.get-statements"
+          },
+          {
+            "method": "get",
+            "path": "customRole.membersByRole",
+            "normalized": "custom-role.members-by-role"
+          },
+          {
+            "method": "post",
+            "path": "customRole.create",
+            "normalized": "custom-role.create"
+          },
+          {
+            "method": "post",
+            "path": "customRole.remove",
+            "normalized": "custom-role.remove"
+          },
+          {
+            "method": "post",
+            "path": "customRole.update",
+            "normalized": "custom-role.update"
+          }
+        ],
+        "audit-log": [
+          {
+            "method": "get",
+            "path": "auditLog.all",
+            "normalized": "audit-log.all"
+          }
+        ],
+        "tag": [
+          {
+            "method": "get",
+            "path": "tag.all",
+            "normalized": "tag.all"
+          },
+          {
+            "method": "get",
+            "path": "tag.one",
+            "normalized": "tag.one"
+          },
+          {
+            "method": "post",
+            "path": "tag.assignToProject",
+            "normalized": "tag.assign-to-project"
+          },
+          {
+            "method": "post",
+            "path": "tag.bulkAssign",
+            "normalized": "tag.bulk-assign"
+          },
+          {
+            "method": "post",
+            "path": "tag.create",
+            "normalized": "tag.create"
+          },
+          {
+            "method": "post",
+            "path": "tag.remove",
+            "normalized": "tag.remove"
+          },
+          {
+            "method": "post",
+            "path": "tag.removeFromProject",
+            "normalized": "tag.remove-from-project"
+          },
+          {
+            "method": "post",
+            "path": "tag.update",
+            "normalized": "tag.update"
+          }
+        ]
+      }
+    },
+    "logs": {
+      "unavailable": [
+        {
+          "method": "get",
+          "path": "application.readLogs",
+          "normalized": "application.read-logs"
+        },
+        {
+          "method": "get",
+          "path": "auditLog.all",
+          "normalized": "audit-log.all"
+        },
+        {
+          "method": "get",
+          "path": "compose.readLogs",
+          "normalized": "compose.read-logs"
+        },
+        {
+          "method": "get",
+          "path": "libsql.readLogs",
+          "normalized": "libsql.read-logs"
+        },
+        {
+          "method": "get",
+          "path": "mariadb.readLogs",
+          "normalized": "mariadb.read-logs"
+        },
+        {
+          "method": "get",
+          "path": "mongo.readLogs",
+          "normalized": "mongo.read-logs"
+        },
+        {
+          "method": "get",
+          "path": "mysql.readLogs",
+          "normalized": "mysql.read-logs"
+        },
+        {
+          "method": "get",
+          "path": "postgres.readLogs",
+          "normalized": "postgres.read-logs"
+        },
+        {
+          "method": "get",
+          "path": "redis.readLogs",
+          "normalized": "redis.read-logs"
+        },
+        {
+          "method": "post",
+          "path": "ai.analyzeLogs",
+          "normalized": "ai.analyze-logs"
+        }
+      ],
+      "candidate_safe_after_redaction": [
+        {
+          "method": "get",
+          "path": "application.readLogs",
+          "normalized": "application.read-logs",
+          "status": "candidate-safe-after-redaction",
+          "risk": "secret-leakage"
+        },
+        {
+          "method": "get",
+          "path": "auditLog.all",
+          "normalized": "audit-log.all",
+          "status": "candidate-safe-after-redaction",
+          "risk": "high-privacy"
+        },
+        {
+          "method": "get",
+          "path": "compose.readLogs",
+          "normalized": "compose.read-logs",
+          "status": "candidate-safe-after-redaction",
+          "risk": "secret-leakage"
+        },
+        {
+          "method": "get",
+          "path": "libsql.readLogs",
+          "normalized": "libsql.read-logs",
+          "status": "candidate-safe-after-redaction",
+          "risk": "secret-leakage"
+        },
+        {
+          "method": "get",
+          "path": "mariadb.readLogs",
+          "normalized": "mariadb.read-logs",
+          "status": "candidate-safe-after-redaction",
+          "risk": "secret-leakage"
+        },
+        {
+          "method": "get",
+          "path": "mongo.readLogs",
+          "normalized": "mongo.read-logs",
+          "status": "candidate-safe-after-redaction",
+          "risk": "secret-leakage"
+        },
+        {
+          "method": "get",
+          "path": "mysql.readLogs",
+          "normalized": "mysql.read-logs",
+          "status": "candidate-safe-after-redaction",
+          "risk": "secret-leakage"
+        },
+        {
+          "method": "get",
+          "path": "postgres.readLogs",
+          "normalized": "postgres.read-logs",
+          "status": "candidate-safe-after-redaction",
+          "risk": "secret-leakage"
+        },
+        {
+          "method": "get",
+          "path": "redis.readLogs",
+          "normalized": "redis.read-logs",
+          "status": "candidate-safe-after-redaction",
+          "risk": "secret-leakage"
+        }
+      ],
+      "blocked": [
+        {
+          "method": "post",
+          "path": "ai.analyzeLogs",
+          "normalized": "ai.analyze-logs",
+          "status": "blocked",
+          "risk": "external-ai-data-exposure"
+        }
+      ]
+    }
+  }
+}
