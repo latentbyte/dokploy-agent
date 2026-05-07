@@ -2,6 +2,9 @@ export interface SanitizeOptions {
 	logOutput?: boolean;
 	maxLogLines?: number;
 	maxLogChars?: number;
+	logSearch?: string;
+	logContext?: number;
+	logCaseSensitive?: boolean;
 }
 
 const DEFAULT_MAX_LOG_LINES = 500;
@@ -51,6 +54,43 @@ export function redactString(input: string): string {
 	return output;
 }
 
+export function filterLogString(
+	input: string,
+	search: string | undefined,
+	context = 0,
+	caseSensitive = false,
+): string {
+	if (!search) return input;
+
+	const lines = input.split(/\r?\n/);
+	const needle = caseSensitive ? search : search.toLowerCase();
+	const matchedIndexes = new Set<number>();
+
+	for (const [index, line] of lines.entries()) {
+		const haystack = caseSensitive ? line : line.toLowerCase();
+		if (!haystack.includes(needle)) continue;
+
+		const start = Math.max(0, index - context);
+		const end = Math.min(lines.length - 1, index + context);
+		for (let i = start; i <= end; i += 1) {
+			matchedIndexes.add(i);
+		}
+	}
+
+	if (matchedIndexes.size === 0) return "[no log lines matched search query]";
+
+	const output: string[] = [];
+	let previousIndex = -1;
+	for (const index of [...matchedIndexes].sort((a, b) => a - b)) {
+		if (previousIndex !== -1 && index > previousIndex + 1) {
+			output.push("[omitted non-matching log lines]");
+		}
+		output.push(lines[index]);
+		previousIndex = index;
+	}
+	return output.join("\n");
+}
+
 export function limitLogString(
 	input: string,
 	maxLines = DEFAULT_MAX_LOG_LINES,
@@ -58,11 +98,11 @@ export function limitLogString(
 ): string {
 	let output = input;
 	const lines = output.split(/\r?\n/);
-	if (lines.length > maxLines) {
+	if (maxLines > 0 && lines.length > maxLines) {
 		const omitted = lines.length - maxLines;
 		output = `[truncated to last ${maxLines} lines, omitted ${omitted} lines]\n${lines.slice(-maxLines).join("\n")}`;
 	}
-	if (output.length > maxChars) {
+	if (maxChars > 0 && output.length > maxChars) {
 		const omitted = output.length - maxChars;
 		output = `[truncated to last ${maxChars} chars, omitted ${omitted} chars]\n${output.slice(-maxChars)}`;
 	}
@@ -87,7 +127,13 @@ function sanitizeValue(
 		if (key && SECRET_KEY_PATTERN.test(key)) return maskSecret(data);
 		const redacted = redactString(data);
 		if (options.logOutput || (key && LOG_KEY_PATTERN.test(key))) {
-			return limitLogString(redacted, options.maxLogLines, options.maxLogChars);
+			const filtered = filterLogString(
+				redacted,
+				options.logSearch,
+				options.logContext,
+				options.logCaseSensitive,
+			);
+			return limitLogString(filtered, options.maxLogLines, options.maxLogChars);
 		}
 		return redacted;
 	}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	filterLogString,
 	limitLogString,
 	maskSecret,
 	redactString,
@@ -39,6 +40,44 @@ describe("agent redaction", () => {
 		expect(output).toBe(
 			"[truncated to last 2 lines, omitted 1 lines]\ntwo\nthree",
 		);
+	});
+
+	it("filters log output locally", () => {
+		const output = filterLogString(
+			"boot\nerror one\nok\nerror two",
+			"error",
+			0,
+		);
+
+		expect(output).toBe(
+			"error one\n[omitted non-matching log lines]\nerror two",
+		);
+	});
+
+	it("filters log output with context", () => {
+		const output = filterLogString(
+			"boot\npre\nerror one\npost\nok",
+			"error",
+			1,
+		);
+
+		expect(output).toBe("pre\nerror one\npost");
+	});
+
+	it("redacts and filters log fields before limiting", () => {
+		const output = sanitizeForAgent(
+			{ logs: "one\ntwo\nPASSWORD=long-secret-value\nthree" },
+			{
+				logOutput: true,
+				logSearch: "password",
+				maxLogLines: 500,
+				maxLogChars: 1000,
+			},
+		);
+
+		expect(output).toEqual({
+			logs: "PASSWORD=long***",
+		});
 	});
 
 	it("redacts and limits log fields", () => {

@@ -17,8 +17,24 @@ interface SafetyEntry {
 
 const AGENT_SAFE_BUILD = false;
 
-function printOutput(data: unknown, jsonOutput: boolean, logOutput: boolean) {
-	const output = AGENT_SAFE_BUILD ? sanitizeForAgent(data, { logOutput }) : data;
+function extractAgentLogOptions(opts: Record<string, any>) {
+	const options = {
+		logSearch: opts.agentLogSearch,
+		logContext: opts.agentLogContext == null ? undefined : Number(opts.agentLogContext),
+		logCaseSensitive: opts.agentLogCaseSensitive === true || opts.agentLogCaseSensitive === "true",
+		maxLogLines: opts.agentLogTail == null ? undefined : Number(opts.agentLogTail),
+		maxLogChars: opts.agentLogMaxChars == null ? undefined : Number(opts.agentLogMaxChars),
+	};
+	delete opts.agentLogSearch;
+	delete opts.agentLogContext;
+	delete opts.agentLogCaseSensitive;
+	delete opts.agentLogTail;
+	delete opts.agentLogMaxChars;
+	return options;
+}
+
+function printOutput(data: unknown, jsonOutput: boolean, logOutput: boolean, agentLogOptions = {}) {
+	const output = AGENT_SAFE_BUILD ? sanitizeForAgent(data, { logOutput, ...agentLogOptions }) : data;
 	if (jsonOutput) {
 		console.log(JSON.stringify(output, null, 2));
 		return;
@@ -52,6 +68,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("admin.setupMonitoring", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -66,6 +83,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("ai.analyzeLogs", opts);
 			printOutput(data, jsonOutput, true);
@@ -82,6 +100,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["isEnabled"] != null) opts["isEnabled"] = opts["isEnabled"] === true || opts["isEnabled"] === "true";
 			const data = await apiPost("ai.create", opts);
 			printOutput(data, jsonOutput, false);
@@ -94,6 +113,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("ai.delete", opts);
 			printOutput(data, jsonOutput, false);
@@ -115,6 +135,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("ai.deploy", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -126,6 +147,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("ai.get", opts);
 			printOutput(data, jsonOutput, false);
@@ -139,6 +161,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("ai.getAll", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -150,6 +173,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("ai.getEnabledProviders", opts);
 			printOutput(data, jsonOutput, false);
@@ -164,6 +188,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("ai.getModels", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -175,6 +200,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("ai.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -190,6 +216,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("ai.suggest", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -203,6 +230,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("ai.testConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -221,6 +249,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["isEnabled"] != null) opts["isEnabled"] = opts["isEnabled"] === true || opts["isEnabled"] === "true";
 			const data = await apiPost("ai.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -235,6 +264,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.cancelDeployment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -247,6 +277,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.cleanQueues", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -258,6 +289,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("application.clearDeployments", opts);
 			printOutput(data, jsonOutput, false);
@@ -275,6 +307,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -286,6 +319,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("application.delete", opts);
 			printOutput(data, jsonOutput, false);
@@ -301,6 +335,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.deploy", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -312,6 +347,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("application.disconnectGitProvider", opts);
 			printOutput(data, jsonOutput, false);
@@ -325,6 +361,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.dropDeployment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -337,6 +374,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.killBuild", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -348,6 +386,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("application.markRunning", opts);
 			printOutput(data, jsonOutput, false);
@@ -362,6 +401,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.move", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -374,6 +414,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("application.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -385,6 +426,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("application.readAppMonitoring", opts);
 			printOutput(data, jsonOutput, false);
@@ -400,6 +442,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
 			const data = await apiGet("application.readLogs", opts);
 			printOutput(data, jsonOutput, true);
@@ -412,6 +455,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("application.readTraefikConfig", opts);
 			printOutput(data, jsonOutput, false);
@@ -427,6 +471,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.redeploy", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -438,6 +483,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("application.refreshToken", opts);
 			printOutput(data, jsonOutput, false);
@@ -451,6 +497,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("application.reload", opts);
 			printOutput(data, jsonOutput, false);
@@ -471,6 +518,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveBitbucketProvider", opts);
 			printOutput(data, jsonOutput, false);
@@ -491,6 +539,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = opts["isStaticSpa"] === true || opts["isStaticSpa"] === "true";
 			const data = await apiPost("application.saveBuildType", opts);
 			printOutput(data, jsonOutput, false);
@@ -508,6 +557,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.saveDockerProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -523,6 +573,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
 			const data = await apiPost("application.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
@@ -542,6 +593,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveGiteaProvider", opts);
 			printOutput(data, jsonOutput, false);
@@ -562,6 +614,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveGithubProvider", opts);
 			printOutput(data, jsonOutput, false);
@@ -583,6 +636,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveGitlabProvider", opts);
@@ -602,6 +656,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveGitProvider", opts);
 			printOutput(data, jsonOutput, false);
@@ -624,6 +679,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("application.search", opts);
@@ -638,6 +694,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.start", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -649,6 +706,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("application.stop", opts);
 			printOutput(data, jsonOutput, false);
@@ -758,6 +816,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["previewPort"] != null) opts["previewPort"] = Number(opts["previewPort"]);
 			if (opts["previewHttps"] != null) opts["previewHttps"] = opts["previewHttps"] === true || opts["previewHttps"] === "true";
 			if (opts["previewLimit"] != null) opts["previewLimit"] = Number(opts["previewLimit"]);
@@ -785,6 +844,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("application.updateTraefikConfig", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -805,6 +865,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("auditLog.all", opts);
@@ -835,6 +896,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			const data = await apiPost("backup.create", opts);
@@ -851,6 +913,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("backup.listBackupFiles", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -862,6 +925,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("backup.manualBackupCompose", opts);
 			printOutput(data, jsonOutput, false);
@@ -875,6 +939,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("backup.manualBackupLibsql", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -886,6 +951,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("backup.manualBackupMariadb", opts);
 			printOutput(data, jsonOutput, false);
@@ -899,6 +965,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("backup.manualBackupMongo", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -910,6 +977,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("backup.manualBackupMySql", opts);
 			printOutput(data, jsonOutput, false);
@@ -923,6 +991,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("backup.manualBackupPostgres", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -934,6 +1003,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("backup.manualBackupWebServer", opts);
 			printOutput(data, jsonOutput, false);
@@ -947,6 +1017,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("backup.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -958,6 +1029,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("backup.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -979,6 +1051,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			const data = await apiPost("backup.update", opts);
@@ -993,6 +1066,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("bitbucket.bitbucketProviders", opts);
 			printOutput(data, jsonOutput, false);
@@ -1014,6 +1088,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("bitbucket.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1028,6 +1103,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("bitbucket.getBitbucketBranches", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1040,6 +1116,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("bitbucket.getBitbucketRepositories", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1051,6 +1128,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("bitbucket.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -1068,6 +1146,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("bitbucket.testConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -1089,6 +1168,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("bitbucket.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1101,6 +1181,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("certificates.all", opts);
 			printOutput(data, jsonOutput, false);
@@ -1120,6 +1201,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["autoRenew"] != null) opts["autoRenew"] = opts["autoRenew"] === true || opts["autoRenew"] === "true";
 			const data = await apiPost("certificates.create", opts);
 			printOutput(data, jsonOutput, false);
@@ -1133,6 +1215,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("certificates.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1144,6 +1227,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("certificates.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -1160,6 +1244,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("certificates.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1173,6 +1258,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("cluster.addManager", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1185,6 +1271,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("cluster.addWorker", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1196,6 +1283,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("cluster.getNodes", opts);
 			printOutput(data, jsonOutput, false);
@@ -1210,6 +1298,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("cluster.removeWorker", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1223,6 +1312,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.cancelDeployment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1235,6 +1325,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.cleanQueues", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1246,6 +1337,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("compose.clearDeployments", opts);
 			printOutput(data, jsonOutput, false);
@@ -1265,6 +1357,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1277,6 +1370,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["deleteVolumes"] != null) opts["deleteVolumes"] = opts["deleteVolumes"] === true || opts["deleteVolumes"] === "true";
 			const data = await apiPost("compose.delete", opts);
 			printOutput(data, jsonOutput, false);
@@ -1291,6 +1385,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("compose.deploy", opts);
 			printOutput(data, jsonOutput, false);
@@ -1307,6 +1402,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.deployTemplate", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1318,6 +1414,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("compose.disconnectGitProvider", opts);
 			printOutput(data, jsonOutput, false);
@@ -1331,6 +1428,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.fetchSourceType", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1342,6 +1440,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("compose.getConvertedCompose", opts);
 			printOutput(data, jsonOutput, false);
@@ -1355,6 +1454,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("compose.getDefaultCommand", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1366,6 +1466,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("compose.getTags", opts);
 			printOutput(data, jsonOutput, false);
@@ -1380,6 +1481,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.import", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1393,6 +1495,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.isolatedDeployment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1404,6 +1507,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("compose.killBuild", opts);
 			printOutput(data, jsonOutput, false);
@@ -1418,6 +1522,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("compose.loadMountsByService", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1430,6 +1535,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("compose.loadServices", opts);
 			printOutput(data, jsonOutput, false);
@@ -1444,6 +1550,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.move", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1455,6 +1562,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("compose.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -1469,6 +1577,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.processTemplate", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1481,6 +1590,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("compose.randomizeCompose", opts);
 			printOutput(data, jsonOutput, false);
@@ -1497,6 +1607,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
 			const data = await apiGet("compose.readLogs", opts);
 			printOutput(data, jsonOutput, true);
@@ -1512,6 +1623,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.redeploy", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1523,6 +1635,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("compose.refreshToken", opts);
 			printOutput(data, jsonOutput, false);
@@ -1536,6 +1649,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("compose.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
@@ -1555,6 +1669,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("compose.search", opts);
@@ -1569,6 +1684,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.start", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1581,6 +1697,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("compose.stop", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1592,6 +1709,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("compose.templates", opts);
 			printOutput(data, jsonOutput, false);
@@ -1647,6 +1765,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["autoDeploy"] != null) opts["autoDeploy"] = opts["autoDeploy"] === true || opts["autoDeploy"] === "true";
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
@@ -1666,6 +1785,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("customRole.all", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1679,6 +1799,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("customRole.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1690,6 +1811,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("customRole.getStatements", opts);
 			printOutput(data, jsonOutput, false);
@@ -1703,6 +1825,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("customRole.membersByRole", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1714,6 +1837,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("customRole.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -1729,6 +1853,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("customRole.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1742,6 +1867,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("deployment.all", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1754,6 +1880,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("deployment.allByCompose", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1765,6 +1892,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("deployment.allByServer", opts);
 			printOutput(data, jsonOutput, false);
@@ -1779,6 +1907,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("deployment.allByType", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1790,6 +1919,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("deployment.allCentralized", opts);
 			printOutput(data, jsonOutput, false);
@@ -1803,6 +1933,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("deployment.killProcess", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1814,6 +1945,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("deployment.queueList", opts);
 			printOutput(data, jsonOutput, false);
@@ -1827,6 +1959,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("deployment.removeDeployment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1839,6 +1972,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("destination.all", opts);
 			printOutput(data, jsonOutput, false);
@@ -1860,6 +1994,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("destination.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1872,6 +2007,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("destination.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1883,6 +2019,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("destination.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -1903,6 +2040,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("destination.testConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -1925,6 +2063,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("destination.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1939,6 +2078,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("docker.getConfig", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1950,6 +2090,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("docker.getContainers", opts);
 			printOutput(data, jsonOutput, false);
@@ -1965,6 +2106,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("docker.getContainersByAppLabel", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1979,6 +2121,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("docker.getContainersByAppNameMatch", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1991,6 +2134,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("docker.getServiceContainersByAppName", opts);
 			printOutput(data, jsonOutput, false);
@@ -2005,6 +2149,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("docker.getStackContainersByAppName", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2017,6 +2162,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("docker.killContainer", opts);
 			printOutput(data, jsonOutput, false);
@@ -2031,6 +2177,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("docker.removeContainer", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2043,6 +2190,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("docker.restartContainer", opts);
 			printOutput(data, jsonOutput, false);
@@ -2057,6 +2205,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("docker.startContainer", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2070,6 +2219,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("docker.stopContainer", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2081,6 +2231,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("docker.uploadFileToContainer", opts);
 			printOutput(data, jsonOutput, false);
@@ -2095,6 +2246,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("domain.byApplicationId", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2107,6 +2259,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("domain.byComposeId", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2118,6 +2271,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("domain.canGenerateTraefikMeDomains", opts);
 			printOutput(data, jsonOutput, false);
@@ -2144,6 +2298,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
 			if (opts["stripPath"] != null) opts["stripPath"] = opts["stripPath"] === true || opts["stripPath"] === "true";
@@ -2159,6 +2314,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("domain.delete", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2172,6 +2328,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("domain.generateDomain", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2183,6 +2340,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("domain.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -2207,6 +2365,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
 			if (opts["stripPath"] != null) opts["stripPath"] = opts["stripPath"] === true || opts["stripPath"] === "true";
@@ -2223,6 +2382,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("domain.validateDomain", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2235,6 +2395,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("environment.byProjectId", opts);
 			printOutput(data, jsonOutput, false);
@@ -2250,6 +2411,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("environment.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2264,6 +2426,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("environment.duplicate", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2276,6 +2439,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("environment.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2287,6 +2451,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("environment.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -2304,6 +2469,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("environment.search", opts);
@@ -2321,6 +2487,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("environment.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -2348,6 +2515,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["expiresAt"] != null) opts["expiresAt"] = Number(opts["expiresAt"]);
 			if (opts["lastAuthenticatedAt"] != null) opts["lastAuthenticatedAt"] = Number(opts["lastAuthenticatedAt"]);
 			const data = await apiPost("gitea.create", opts);
@@ -2364,6 +2532,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("gitea.getGiteaBranches", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2375,6 +2544,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("gitea.getGiteaRepositories", opts);
 			printOutput(data, jsonOutput, false);
@@ -2388,6 +2558,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("gitea.getGiteaUrl", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2399,6 +2570,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("gitea.giteaProviders", opts);
 			printOutput(data, jsonOutput, false);
@@ -2412,6 +2584,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("gitea.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2424,6 +2597,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("gitea.testConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -2450,6 +2624,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["expiresAt"] != null) opts["expiresAt"] = Number(opts["expiresAt"]);
 			if (opts["lastAuthenticatedAt"] != null) opts["lastAuthenticatedAt"] = Number(opts["lastAuthenticatedAt"]);
 			const data = await apiPost("gitea.update", opts);
@@ -2467,6 +2642,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("github.getGithubBranches", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2478,6 +2654,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("github.getGithubRepositories", opts);
 			printOutput(data, jsonOutput, false);
@@ -2491,6 +2668,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("github.githubProviders", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2503,6 +2681,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("github.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2514,6 +2693,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("github.testConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -2529,6 +2709,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("github.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -2551,6 +2732,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("gitlab.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2565,6 +2747,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["id"] != null) opts["id"] = Number(opts["id"]);
 			const data = await apiGet("gitlab.getGitlabBranches", opts);
 			printOutput(data, jsonOutput, false);
@@ -2578,6 +2761,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("gitlab.getGitlabRepositories", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2589,6 +2773,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("gitlab.gitlabProviders", opts);
 			printOutput(data, jsonOutput, false);
@@ -2602,6 +2787,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("gitlab.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2614,6 +2800,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("gitlab.testConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -2635,6 +2822,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("gitlab.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2648,6 +2836,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("gitProvider.allForPermissions", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2659,6 +2848,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("gitProvider.getAll", opts);
 			printOutput(data, jsonOutput, false);
@@ -2672,6 +2862,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("gitProvider.remove", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2684,6 +2875,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["sharedWithOrganization"] != null) opts["sharedWithOrganization"] = opts["sharedWithOrganization"] === true || opts["sharedWithOrganization"] === "true";
 			const data = await apiPost("gitProvider.toggleShare", opts);
 			printOutput(data, jsonOutput, false);
@@ -2698,6 +2890,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("libsql.changeStatus", opts);
 			printOutput(data, jsonOutput, false);
@@ -2720,6 +2913,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enableNamespaces"] != null) opts["enableNamespaces"] = opts["enableNamespaces"] === true || opts["enableNamespaces"] === "true";
 			const data = await apiPost("libsql.create", opts);
 			printOutput(data, jsonOutput, false);
@@ -2732,6 +2926,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("libsql.deploy", opts);
 			printOutput(data, jsonOutput, false);
@@ -2746,6 +2941,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("libsql.move", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2757,6 +2953,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("libsql.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -2772,6 +2969,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
 			const data = await apiGet("libsql.readLogs", opts);
 			printOutput(data, jsonOutput, true);
@@ -2784,6 +2982,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("libsql.rebuild", opts);
 			printOutput(data, jsonOutput, false);
@@ -2798,6 +2997,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("libsql.reload", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2809,6 +3009,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("libsql.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -2822,6 +3023,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("libsql.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
@@ -2837,6 +3039,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["externalGRPCPort"] != null) opts["externalGRPCPort"] = Number(opts["externalGRPCPort"]);
 			if (opts["externalAdminPort"] != null) opts["externalAdminPort"] = Number(opts["externalAdminPort"]);
@@ -2852,6 +3055,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("libsql.start", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2863,6 +3067,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("libsql.stop", opts);
 			printOutput(data, jsonOutput, false);
@@ -2907,6 +3112,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enableNamespaces"] != null) opts["enableNamespaces"] = opts["enableNamespaces"] === true || opts["enableNamespaces"] === "true";
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["externalGRPCPort"] != null) opts["externalGRPCPort"] = Number(opts["externalGRPCPort"]);
@@ -2925,6 +3131,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("licenseKey.activate", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2936,6 +3143,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("licenseKey.deactivate", opts);
 			printOutput(data, jsonOutput, false);
@@ -2949,6 +3157,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("licenseKey.getEnterpriseSettings", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2961,6 +3170,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("licenseKey.haveValidLicenseKey", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2972,6 +3182,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enableEnterpriseFeatures"] != null) opts["enableEnterpriseFeatures"] = opts["enableEnterpriseFeatures"] === true || opts["enableEnterpriseFeatures"] === "true";
 			const data = await apiPost("licenseKey.updateEnterpriseSettings", opts);
 			printOutput(data, jsonOutput, false);
@@ -2984,6 +3195,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("licenseKey.validate", opts);
 			printOutput(data, jsonOutput, false);
@@ -3000,6 +3212,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mariadb.changePassword", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3012,6 +3225,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mariadb.changeStatus", opts);
 			printOutput(data, jsonOutput, false);
@@ -3034,6 +3248,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mariadb.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3045,6 +3260,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mariadb.deploy", opts);
 			printOutput(data, jsonOutput, false);
@@ -3059,6 +3275,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mariadb.move", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3070,6 +3287,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("mariadb.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -3085,6 +3303,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
 			const data = await apiGet("mariadb.readLogs", opts);
 			printOutput(data, jsonOutput, true);
@@ -3097,6 +3316,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mariadb.rebuild", opts);
 			printOutput(data, jsonOutput, false);
@@ -3111,6 +3331,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mariadb.reload", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3122,6 +3343,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mariadb.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -3136,6 +3358,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mariadb.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3148,6 +3371,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("mariadb.saveExternalPort", opts);
 			printOutput(data, jsonOutput, false);
@@ -3167,6 +3391,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("mariadb.search", opts);
@@ -3181,6 +3406,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mariadb.start", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3192,6 +3418,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mariadb.stop", opts);
 			printOutput(data, jsonOutput, false);
@@ -3235,6 +3462,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("mariadb.update", opts);
@@ -3251,6 +3479,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mongo.changePassword", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3263,6 +3492,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mongo.changeStatus", opts);
 			printOutput(data, jsonOutput, false);
@@ -3283,6 +3513,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["replicaSets"] != null) opts["replicaSets"] = opts["replicaSets"] === true || opts["replicaSets"] === "true";
 			const data = await apiPost("mongo.create", opts);
 			printOutput(data, jsonOutput, false);
@@ -3295,6 +3526,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mongo.deploy", opts);
 			printOutput(data, jsonOutput, false);
@@ -3309,6 +3541,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mongo.move", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3320,6 +3553,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("mongo.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -3335,6 +3569,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
 			const data = await apiGet("mongo.readLogs", opts);
 			printOutput(data, jsonOutput, true);
@@ -3347,6 +3582,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mongo.rebuild", opts);
 			printOutput(data, jsonOutput, false);
@@ -3361,6 +3597,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mongo.reload", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3372,6 +3609,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mongo.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -3386,6 +3624,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mongo.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3398,6 +3637,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("mongo.saveExternalPort", opts);
 			printOutput(data, jsonOutput, false);
@@ -3417,6 +3657,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("mongo.search", opts);
@@ -3431,6 +3672,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mongo.start", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3442,6 +3684,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mongo.stop", opts);
 			printOutput(data, jsonOutput, false);
@@ -3484,6 +3727,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			if (opts["replicaSets"] != null) opts["replicaSets"] = opts["replicaSets"] === true || opts["replicaSets"] === "true";
@@ -3499,6 +3743,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("mounts.allNamedByApplicationId", opts);
 			printOutput(data, jsonOutput, false);
@@ -3519,6 +3764,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mounts.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3532,6 +3778,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("mounts.listByServiceId", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3544,6 +3791,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("mounts.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3555,6 +3803,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mounts.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -3583,6 +3832,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mounts.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3598,6 +3848,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mysql.changePassword", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3610,6 +3861,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mysql.changeStatus", opts);
 			printOutput(data, jsonOutput, false);
@@ -3632,6 +3884,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mysql.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3643,6 +3896,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mysql.deploy", opts);
 			printOutput(data, jsonOutput, false);
@@ -3657,6 +3911,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mysql.move", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3668,6 +3923,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("mysql.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -3683,6 +3939,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
 			const data = await apiGet("mysql.readLogs", opts);
 			printOutput(data, jsonOutput, true);
@@ -3695,6 +3952,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mysql.rebuild", opts);
 			printOutput(data, jsonOutput, false);
@@ -3709,6 +3967,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mysql.reload", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3720,6 +3979,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mysql.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -3734,6 +3994,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mysql.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3746,6 +4007,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("mysql.saveExternalPort", opts);
 			printOutput(data, jsonOutput, false);
@@ -3765,6 +4027,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("mysql.search", opts);
@@ -3779,6 +4042,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("mysql.start", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3790,6 +4054,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("mysql.stop", opts);
 			printOutput(data, jsonOutput, false);
@@ -3833,6 +4098,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("mysql.update", opts);
@@ -3847,6 +4113,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("notification.all", opts);
 			printOutput(data, jsonOutput, false);
@@ -3869,6 +4136,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -3898,6 +4166,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -3932,6 +4201,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -3963,6 +4233,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -3992,6 +4263,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4022,6 +4294,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4052,6 +4325,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4084,6 +4358,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4117,6 +4392,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4146,6 +4422,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4174,6 +4451,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4204,6 +4482,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4224,6 +4503,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("notification.getEmailProviders", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4235,6 +4515,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("notification.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -4253,6 +4534,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["Value"] != null) opts["Value"] = Number(opts["Value"]);
 			if (opts["Threshold"] != null) opts["Threshold"] = Number(opts["Threshold"]);
 			const data = await apiPost("notification.receiveNotification", opts);
@@ -4267,6 +4549,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("notification.remove", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4280,6 +4563,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("notification.testCustomConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4292,6 +4576,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
 			const data = await apiPost("notification.testDiscordConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -4309,6 +4594,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["smtpPort"] != null) opts["smtpPort"] = Number(opts["smtpPort"]);
 			const data = await apiPost("notification.testEmailConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -4324,6 +4610,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
 			const data = await apiPost("notification.testGotifyConnection", opts);
@@ -4337,6 +4624,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("notification.testLarkConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -4352,6 +4640,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("notification.testMattermostConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4366,6 +4655,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			const data = await apiPost("notification.testNtfyConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -4382,6 +4672,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			if (opts["retry"] != null) opts["retry"] = Number(opts["retry"]);
 			if (opts["expire"] != null) opts["expire"] = Number(opts["expire"]);
@@ -4399,6 +4690,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("notification.testResendConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4412,6 +4704,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("notification.testSlackConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4423,6 +4716,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("notification.testTeamsConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -4437,6 +4731,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("notification.testTelegramConnection", opts);
 			printOutput(data, jsonOutput, false);
@@ -4462,6 +4757,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4494,6 +4790,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4531,6 +4828,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4565,6 +4863,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4597,6 +4896,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4630,6 +4930,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4663,6 +4964,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4698,6 +5000,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			if (opts["retry"] != null) opts["retry"] = Number(opts["retry"]);
 			if (opts["expire"] != null) opts["expire"] = Number(opts["expire"]);
@@ -4734,6 +5037,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4766,6 +5070,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4797,6 +5102,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4830,6 +5136,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
 			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
 			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
@@ -4851,6 +5158,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("organization.active", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4863,6 +5171,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("organization.all", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4874,6 +5183,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("organization.allInvitations", opts);
 			printOutput(data, jsonOutput, false);
@@ -4888,6 +5198,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("organization.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4899,6 +5210,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("organization.delete", opts);
 			printOutput(data, jsonOutput, false);
@@ -4913,6 +5225,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("organization.inviteMember", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4924,6 +5237,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("organization.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -4937,6 +5251,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("organization.removeInvitation", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4948,6 +5263,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("organization.setDefault", opts);
 			printOutput(data, jsonOutput, false);
@@ -4963,6 +5279,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("organization.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4975,6 +5292,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("organization.updateMemberRole", opts);
 			printOutput(data, jsonOutput, false);
@@ -4990,6 +5308,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("patch.byEntityId", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5001,6 +5320,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("patch.cleanPatchRepos", opts);
 			printOutput(data, jsonOutput, false);
@@ -5018,6 +5338,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("patch.create", opts);
 			printOutput(data, jsonOutput, false);
@@ -5031,6 +5352,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("patch.delete", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5043,6 +5365,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("patch.ensureRepo", opts);
 			printOutput(data, jsonOutput, false);
@@ -5058,6 +5381,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("patch.markFileForDeletion", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5069,6 +5393,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("patch.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -5084,6 +5409,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("patch.readRepoDirectories", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5097,6 +5423,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("patch.readRepoFile", opts);
 			printOutput(data, jsonOutput, false);
@@ -5114,6 +5441,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("patch.saveFileAsPatch", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5126,6 +5454,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("patch.toggleEnabled", opts);
 			printOutput(data, jsonOutput, false);
@@ -5144,6 +5473,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("patch.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -5161,6 +5491,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["publishedPort"] != null) opts["publishedPort"] = Number(opts["publishedPort"]);
 			if (opts["targetPort"] != null) opts["targetPort"] = Number(opts["targetPort"]);
 			const data = await apiPost("port.create", opts);
@@ -5175,6 +5506,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("port.delete", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5186,6 +5518,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("port.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -5202,6 +5535,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["publishedPort"] != null) opts["publishedPort"] = Number(opts["publishedPort"]);
 			if (opts["targetPort"] != null) opts["targetPort"] = Number(opts["targetPort"]);
 			const data = await apiPost("port.update", opts);
@@ -5218,6 +5552,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("postgres.changePassword", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5230,6 +5565,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("postgres.changeStatus", opts);
 			printOutput(data, jsonOutput, false);
@@ -5251,6 +5587,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("postgres.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5262,6 +5599,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("postgres.deploy", opts);
 			printOutput(data, jsonOutput, false);
@@ -5276,6 +5614,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("postgres.move", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5287,6 +5626,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("postgres.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -5302,6 +5642,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
 			const data = await apiGet("postgres.readLogs", opts);
 			printOutput(data, jsonOutput, true);
@@ -5314,6 +5655,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("postgres.rebuild", opts);
 			printOutput(data, jsonOutput, false);
@@ -5328,6 +5670,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("postgres.reload", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5339,6 +5682,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("postgres.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -5353,6 +5697,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("postgres.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5365,6 +5710,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("postgres.saveExternalPort", opts);
 			printOutput(data, jsonOutput, false);
@@ -5384,6 +5730,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("postgres.search", opts);
@@ -5398,6 +5745,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("postgres.start", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5409,6 +5757,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("postgres.stop", opts);
 			printOutput(data, jsonOutput, false);
@@ -5451,6 +5800,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("postgres.update", opts);
@@ -5466,6 +5816,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("previewDeployment.all", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5478,6 +5829,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("previewDeployment.delete", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5489,6 +5841,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("previewDeployment.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -5504,6 +5857,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("previewDeployment.redeploy", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5517,6 +5871,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("project.all", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5528,6 +5883,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("project.allForPermissions", opts);
 			printOutput(data, jsonOutput, false);
@@ -5542,6 +5898,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("project.create", opts);
 			printOutput(data, jsonOutput, false);
@@ -5559,6 +5916,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["includeServices"] != null) opts["includeServices"] = opts["includeServices"] === true || opts["includeServices"] === "true";
 			if (opts["duplicateInSameProject"] != null) opts["duplicateInSameProject"] = opts["duplicateInSameProject"] === true || opts["duplicateInSameProject"] === "true";
 			const data = await apiPost("project.duplicate", opts);
@@ -5573,6 +5931,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("project.homeStats", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5585,6 +5944,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("project.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5596,6 +5956,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("project.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -5612,6 +5973,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("project.search", opts);
@@ -5631,6 +5993,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("project.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5646,6 +6009,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["permanent"] != null) opts["permanent"] = opts["permanent"] === true || opts["permanent"] === "true";
 			const data = await apiPost("redirects.create", opts);
 			printOutput(data, jsonOutput, false);
@@ -5659,6 +6023,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("redirects.delete", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5670,6 +6035,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("redirects.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -5685,6 +6051,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["permanent"] != null) opts["permanent"] = opts["permanent"] === true || opts["permanent"] === "true";
 			const data = await apiPost("redirects.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -5700,6 +6067,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("redis.changePassword", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5712,6 +6080,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("redis.changeStatus", opts);
 			printOutput(data, jsonOutput, false);
@@ -5731,6 +6100,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("redis.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5742,6 +6112,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("redis.deploy", opts);
 			printOutput(data, jsonOutput, false);
@@ -5756,6 +6127,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("redis.move", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5767,6 +6139,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("redis.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -5782,6 +6155,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["tail"] != null) opts["tail"] = Number(opts["tail"]);
 			const data = await apiGet("redis.readLogs", opts);
 			printOutput(data, jsonOutput, true);
@@ -5794,6 +6168,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("redis.rebuild", opts);
 			printOutput(data, jsonOutput, false);
@@ -5808,6 +6183,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("redis.reload", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5819,6 +6195,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("redis.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -5833,6 +6210,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("redis.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5845,6 +6223,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			const data = await apiPost("redis.saveExternalPort", opts);
 			printOutput(data, jsonOutput, false);
@@ -5864,6 +6243,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["limit"] != null) opts["limit"] = Number(opts["limit"]);
 			if (opts["offset"] != null) opts["offset"] = Number(opts["offset"]);
 			const data = await apiGet("redis.search", opts);
@@ -5878,6 +6258,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("redis.start", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5889,6 +6270,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("redis.stop", opts);
 			printOutput(data, jsonOutput, false);
@@ -5929,6 +6311,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("redis.update", opts);
@@ -5943,6 +6326,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("registry.all", opts);
 			printOutput(data, jsonOutput, false);
@@ -5962,6 +6346,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("registry.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5974,6 +6359,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("registry.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5985,6 +6371,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("registry.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -6004,6 +6391,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("registry.testRegistry", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6016,6 +6404,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("registry.testRegistryById", opts);
 			printOutput(data, jsonOutput, false);
@@ -6038,6 +6427,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("registry.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6051,6 +6441,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("rollback.delete", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6062,6 +6453,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("rollback.rollback", opts);
 			printOutput(data, jsonOutput, false);
@@ -6090,6 +6482,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("schedule.create", opts);
 			printOutput(data, jsonOutput, false);
@@ -6102,6 +6495,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("schedule.delete", opts);
 			printOutput(data, jsonOutput, false);
@@ -6116,6 +6510,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("schedule.list", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6128,6 +6523,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("schedule.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6139,6 +6535,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("schedule.runManually", opts);
 			printOutput(data, jsonOutput, false);
@@ -6166,6 +6563,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("schedule.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -6182,6 +6580,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("security.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6194,6 +6593,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("security.delete", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6205,6 +6605,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("security.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -6220,6 +6621,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("security.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6233,6 +6635,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("server.all", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6244,6 +6647,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("server.allForPermissions", opts);
 			printOutput(data, jsonOutput, false);
@@ -6257,6 +6661,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("server.buildServers", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6268,6 +6673,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("server.count", opts);
 			printOutput(data, jsonOutput, false);
@@ -6286,6 +6692,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			const data = await apiPost("server.create", opts);
 			printOutput(data, jsonOutput, false);
@@ -6298,6 +6705,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("server.getDefaultCommand", opts);
 			printOutput(data, jsonOutput, false);
@@ -6313,6 +6721,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("server.getServerMetrics", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6324,6 +6733,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("server.getServerTime", opts);
 			printOutput(data, jsonOutput, false);
@@ -6337,6 +6747,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("server.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6348,6 +6759,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("server.publicIp", opts);
 			printOutput(data, jsonOutput, false);
@@ -6361,6 +6773,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("server.remove", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6372,6 +6785,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("server.security", opts);
 			printOutput(data, jsonOutput, false);
@@ -6385,6 +6799,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("server.setup", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6397,6 +6812,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("server.setupMonitoring", opts);
 			printOutput(data, jsonOutput, false);
@@ -6417,6 +6833,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			const data = await apiPost("server.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -6430,6 +6847,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("server.validate", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6441,6 +6859,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("server.withSSHKey", opts);
 			printOutput(data, jsonOutput, false);
@@ -6457,6 +6876,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
 			const data = await apiPost("settings.assignDomainServer", opts);
 			printOutput(data, jsonOutput, false);
@@ -6470,6 +6890,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.checkGPUStatus", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6481,6 +6902,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.checkInfrastructureHealth", opts);
 			printOutput(data, jsonOutput, false);
@@ -6494,6 +6916,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.cleanAll", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6505,6 +6928,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.cleanAllDeploymentQueue", opts);
 			printOutput(data, jsonOutput, false);
@@ -6518,6 +6942,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.cleanDockerBuilder", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6529,6 +6954,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.cleanDockerPrune", opts);
 			printOutput(data, jsonOutput, false);
@@ -6542,6 +6968,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.cleanMonitoring", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6553,6 +6980,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.cleanRedis", opts);
 			printOutput(data, jsonOutput, false);
@@ -6566,6 +6994,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.cleanSSHPrivateKey", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6577,6 +7006,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.cleanStoppedContainers", opts);
 			printOutput(data, jsonOutput, false);
@@ -6590,6 +7020,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.cleanUnusedImages", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6601,6 +7032,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.cleanUnusedVolumes", opts);
 			printOutput(data, jsonOutput, false);
@@ -6614,6 +7046,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.getDockerDiskUsage", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6625,6 +7058,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.getDokployCloudIps", opts);
 			printOutput(data, jsonOutput, false);
@@ -6638,6 +7072,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.getDokployVersion", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6649,6 +7084,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.getIp", opts);
 			printOutput(data, jsonOutput, false);
@@ -6662,6 +7098,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.getLogCleanupStatus", opts);
 			printOutput(data, jsonOutput, true);
 		});
@@ -6673,6 +7110,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.getOpenApiDocument", opts);
 			printOutput(data, jsonOutput, false);
@@ -6686,6 +7124,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.getReleaseTag", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6697,6 +7136,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.getTraefikPorts", opts);
 			printOutput(data, jsonOutput, false);
@@ -6710,6 +7150,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.getUpdateData", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6721,6 +7162,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.getWebServerSettings", opts);
 			printOutput(data, jsonOutput, false);
@@ -6734,6 +7176,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.haveActivateRequests", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6745,6 +7188,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.haveTraefikDashboardPortEnabled", opts);
 			printOutput(data, jsonOutput, false);
@@ -6758,6 +7202,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.health", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6769,6 +7214,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.isCloud", opts);
 			printOutput(data, jsonOutput, false);
@@ -6782,6 +7228,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.isUserSubscribed", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6793,6 +7240,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.readDirectories", opts);
 			printOutput(data, jsonOutput, false);
@@ -6806,6 +7254,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.readMiddlewareTraefikConfig", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6818,6 +7267,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.readTraefikConfig", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6829,6 +7279,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.readTraefikEnv", opts);
 			printOutput(data, jsonOutput, false);
@@ -6843,6 +7294,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("settings.readTraefikFile", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6854,6 +7306,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("settings.readWebServerTraefikConfig", opts);
 			printOutput(data, jsonOutput, false);
@@ -6867,6 +7320,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.reloadRedis", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6878,6 +7332,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.reloadServer", opts);
 			printOutput(data, jsonOutput, false);
@@ -6891,6 +7346,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.reloadTraefik", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6902,6 +7358,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.saveSSHPrivateKey", opts);
 			printOutput(data, jsonOutput, false);
@@ -6915,6 +7372,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.setupGPU", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6927,6 +7385,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enableDashboard"] != null) opts["enableDashboard"] = opts["enableDashboard"] === true || opts["enableDashboard"] === "true";
 			const data = await apiPost("settings.toggleDashboard", opts);
 			printOutput(data, jsonOutput, false);
@@ -6939,6 +7398,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enable"] != null) opts["enable"] = opts["enable"] === true || opts["enable"] === "true";
 			const data = await apiPost("settings.toggleRequests", opts);
 			printOutput(data, jsonOutput, false);
@@ -6952,6 +7412,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = opts["enableDockerCleanup"] === true || opts["enableDockerCleanup"] === "true";
 			const data = await apiPost("settings.updateDockerCleanup", opts);
 			printOutput(data, jsonOutput, false);
@@ -6965,6 +7426,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.updateLogCleanup", opts);
 			printOutput(data, jsonOutput, true);
 		});
@@ -6976,6 +7438,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.updateMiddlewareTraefikConfig", opts);
 			printOutput(data, jsonOutput, false);
@@ -6989,6 +7452,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.updateServer", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7001,6 +7465,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.updateServerIp", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7012,6 +7477,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.updateTraefikConfig", opts);
 			printOutput(data, jsonOutput, false);
@@ -7027,6 +7493,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.updateTraefikFile", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7040,6 +7507,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.updateTraefikPorts", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7051,6 +7519,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("settings.updateWebServerTraefikConfig", opts);
 			printOutput(data, jsonOutput, false);
@@ -7065,6 +7534,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("settings.writeTraefikEnv", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7078,6 +7548,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("sshKey.all", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7089,6 +7560,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("sshKey.allForApps", opts);
 			printOutput(data, jsonOutput, false);
@@ -7106,6 +7578,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("sshKey.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7117,6 +7590,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("sshKey.generate", opts);
 			printOutput(data, jsonOutput, false);
@@ -7130,6 +7604,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("sshKey.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7141,6 +7616,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("sshKey.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -7157,6 +7633,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("sshKey.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7170,6 +7647,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("sso.addTrustedOrigin", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7181,6 +7659,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("sso.deleteProvider", opts);
 			printOutput(data, jsonOutput, false);
@@ -7194,6 +7673,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("sso.getTrustedOrigins", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7206,6 +7686,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("sso.listProviders", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7217,6 +7698,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("sso.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -7235,6 +7717,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = opts["overrideUserInfo"] === true || opts["overrideUserInfo"] === "true";
 			const data = await apiPost("sso.register", opts);
 			printOutput(data, jsonOutput, false);
@@ -7248,6 +7731,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("sso.removeTrustedOrigin", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7259,6 +7743,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("sso.showSignInWithSSO", opts);
 			printOutput(data, jsonOutput, false);
@@ -7277,6 +7762,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = opts["overrideUserInfo"] === true || opts["overrideUserInfo"] === "true";
 			const data = await apiPost("sso.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -7291,6 +7777,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("sso.updateTrustedOrigin", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7303,6 +7790,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("stripe.canCreateMoreServers", opts);
 			printOutput(data, jsonOutput, false);
@@ -7318,6 +7806,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["serverQuantity"] != null) opts["serverQuantity"] = Number(opts["serverQuantity"]);
 			if (opts["isAnnual"] != null) opts["isAnnual"] = opts["isAnnual"] === true || opts["isAnnual"] === "true";
 			const data = await apiPost("stripe.createCheckoutSession", opts);
@@ -7332,6 +7821,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("stripe.createCustomerPortalSession", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7343,6 +7833,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("stripe.getCurrentPlan", opts);
 			printOutput(data, jsonOutput, false);
@@ -7356,6 +7847,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("stripe.getInvoices", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7368,6 +7860,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("stripe.getProducts", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7379,6 +7872,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			const data = await apiPost("stripe.updateInvoiceNotifications", opts);
 			printOutput(data, jsonOutput, false);
@@ -7393,6 +7887,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["serverQuantity"] != null) opts["serverQuantity"] = Number(opts["serverQuantity"]);
 			if (opts["isAnnual"] != null) opts["isAnnual"] = opts["isAnnual"] === true || opts["isAnnual"] === "true";
 			const data = await apiPost("stripe.upgradeSubscription", opts);
@@ -7408,6 +7903,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("swarm.getContainerStats", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7419,6 +7915,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("swarm.getNodeApps", opts);
 			printOutput(data, jsonOutput, false);
@@ -7433,6 +7930,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("swarm.getNodeInfo", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7444,6 +7942,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("swarm.getNodes", opts);
 			printOutput(data, jsonOutput, false);
@@ -7458,6 +7957,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("tag.all", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7470,6 +7970,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("tag.assignToProject", opts);
 			printOutput(data, jsonOutput, false);
@@ -7484,6 +7985,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("tag.bulkAssign", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7497,6 +7999,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("tag.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7508,6 +8011,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("tag.one", opts);
 			printOutput(data, jsonOutput, false);
@@ -7521,6 +8025,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("tag.remove", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7533,6 +8038,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("tag.removeFromProject", opts);
 			printOutput(data, jsonOutput, false);
@@ -7550,6 +8056,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("tag.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7562,6 +8069,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("user.all", opts);
 			printOutput(data, jsonOutput, false);
@@ -7590,6 +8098,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["canCreateProjects"] != null) opts["canCreateProjects"] = opts["canCreateProjects"] === true || opts["canCreateProjects"] === "true";
 			if (opts["canCreateServices"] != null) opts["canCreateServices"] = opts["canCreateServices"] === true || opts["canCreateServices"] === "true";
 			if (opts["canDeleteProjects"] != null) opts["canDeleteProjects"] = opts["canDeleteProjects"] === true || opts["canDeleteProjects"] === "true";
@@ -7613,6 +8122,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("user.checkUserOrganizations", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7633,6 +8143,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["expiresIn"] != null) opts["expiresIn"] = Number(opts["expiresIn"]);
 			if (opts["rateLimitEnabled"] != null) opts["rateLimitEnabled"] = opts["rateLimitEnabled"] === true || opts["rateLimitEnabled"] === "true";
 			if (opts["rateLimitTimeWindow"] != null) opts["rateLimitTimeWindow"] = Number(opts["rateLimitTimeWindow"]);
@@ -7654,6 +8165,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("user.createUserWithCredentials", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7665,6 +8177,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("user.deleteApiKey", opts);
 			printOutput(data, jsonOutput, false);
@@ -7678,6 +8191,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("user.generateToken", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7689,6 +8203,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("user.get", opts);
 			printOutput(data, jsonOutput, false);
@@ -7702,6 +8217,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("user.getBackups", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7713,6 +8229,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("user.getBookmarkedTemplates", opts);
 			printOutput(data, jsonOutput, false);
@@ -7729,6 +8246,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("user.getContainerMetrics", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7740,6 +8258,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("user.getInvitations", opts);
 			printOutput(data, jsonOutput, false);
@@ -7753,6 +8272,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("user.getMetricsToken", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7764,6 +8284,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("user.getPermissions", opts);
 			printOutput(data, jsonOutput, false);
@@ -7777,6 +8298,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("user.getServerMetrics", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7788,6 +8310,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("user.getUserByToken", opts);
 			printOutput(data, jsonOutput, false);
@@ -7801,6 +8324,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("user.haveRootAccess", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7813,6 +8337,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("user.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7824,6 +8349,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("user.remove", opts);
 			printOutput(data, jsonOutput, false);
@@ -7838,6 +8364,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("user.sendInvitation", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7850,6 +8377,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("user.session", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7861,6 +8389,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("user.toggleTemplateBookmark", opts);
 			printOutput(data, jsonOutput, false);
@@ -7897,6 +8426,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["isRegistered"] != null) opts["isRegistered"] = opts["isRegistered"] === true || opts["isRegistered"] === "true";
 			if (opts["twoFactorEnabled"] != null) opts["twoFactorEnabled"] = opts["twoFactorEnabled"] === true || opts["twoFactorEnabled"] === "true";
 			if (opts["emailVerified"] != null) opts["emailVerified"] = opts["emailVerified"] === true || opts["emailVerified"] === "true";
@@ -7937,6 +8467,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["turnOff"] != null) opts["turnOff"] = opts["turnOff"] === true || opts["turnOff"] === "true";
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
@@ -7952,6 +8483,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("volumeBackups.delete", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7965,6 +8497,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("volumeBackups.list", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7977,6 +8510,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("volumeBackups.one", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7988,6 +8522,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("volumeBackups.runManually", opts);
 			printOutput(data, jsonOutput, false);
@@ -8020,6 +8555,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 			if (opts["turnOff"] != null) opts["turnOff"] = opts["turnOff"] === true || opts["turnOff"] === "true";
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
@@ -8036,6 +8572,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiGet("whitelabeling.get", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8047,6 +8584,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiGet("whitelabeling.getPublic", opts);
 			printOutput(data, jsonOutput, false);
@@ -8060,6 +8598,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+
 			const data = await apiPost("whitelabeling.reset", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8071,6 +8610,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+
 
 			const data = await apiPost("whitelabeling.update", opts);
 			printOutput(data, jsonOutput, false);

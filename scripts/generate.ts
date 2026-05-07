@@ -436,7 +436,20 @@ function generateCoercion(opt: OptionInfo): string {
 
 function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 	const actionName = camelToKebab(cmd.action);
-	const optionLines = cmd.options.map(generateOptionLine).join("\n\t\t");
+	const agentLogOptionLines =
+		isAgentSafeBuild && isLogCommand(cmd)
+			? [
+					".option('--agent-log-search <value>', 'Filter returned logs locally after redaction')",
+					".option('--agent-log-context <value>', 'Include N lines around local log search matches')",
+					".option('--agent-log-case-sensitive', 'Use case-sensitive local log search')",
+					".option('--agent-log-tail <value>', 'Limit printed logs to last N lines after redaction/filtering, 0 disables line limit')",
+					".option('--agent-log-max-chars <value>', 'Limit printed logs to last N chars after redaction/filtering, 0 disables char limit')",
+				]
+			: [];
+	const optionLines = [
+		...cmd.options.map(generateOptionLine),
+		...agentLogOptionLines,
+	].join("\n\t\t");
 	const coercions = cmd.options
 		.map(generateCoercion)
 		.filter(Boolean)
@@ -450,6 +463,12 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 
 	const escapedDesc = escapeSingleQuoted(cmd.description);
 	const logFlag = isLogCommand(cmd) ? "true" : "false";
+	const logOptionsLine =
+		isAgentSafeBuild && isLogCommand(cmd)
+			? "\t\t\tconst agentLogOptions = extractAgentLogOptions(opts);"
+			: "";
+	const logOptionsArg =
+		isAgentSafeBuild && isLogCommand(cmd) ? ", agentLogOptions" : "";
 
 	return `
 	${groupVar}
@@ -459,9 +478,10 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
+${logOptionsLine}
 ${coercions}
 			const data = ${apiCall};
-			printOutput(data, jsonOutput, ${logFlag});
+			printOutput(data, jsonOutput, ${logFlag}${logOptionsArg});
 		});`;
 }
 
@@ -649,8 +669,24 @@ interface SafetyEntry {
 
 const AGENT_SAFE_BUILD = ${isAgentSafeBuild ? "true" : "false"};
 ${safetyCommands}
-function printOutput(data: unknown, jsonOutput: boolean, logOutput: boolean) {
-	const output = AGENT_SAFE_BUILD ? sanitizeForAgent(data, { logOutput }) : data;
+function extractAgentLogOptions(opts: Record<string, any>) {
+	const options = {
+		logSearch: opts.agentLogSearch,
+		logContext: opts.agentLogContext == null ? undefined : Number(opts.agentLogContext),
+		logCaseSensitive: opts.agentLogCaseSensitive === true || opts.agentLogCaseSensitive === "true",
+		maxLogLines: opts.agentLogTail == null ? undefined : Number(opts.agentLogTail),
+		maxLogChars: opts.agentLogMaxChars == null ? undefined : Number(opts.agentLogMaxChars),
+	};
+	delete opts.agentLogSearch;
+	delete opts.agentLogContext;
+	delete opts.agentLogCaseSensitive;
+	delete opts.agentLogTail;
+	delete opts.agentLogMaxChars;
+	return options;
+}
+
+function printOutput(data: unknown, jsonOutput: boolean, logOutput: boolean, agentLogOptions = {}) {
+	const output = AGENT_SAFE_BUILD ? sanitizeForAgent(data, { logOutput, ...agentLogOptions }) : data;
 	if (jsonOutput) {
 		console.log(JSON.stringify(output, null, 2));
 		return;

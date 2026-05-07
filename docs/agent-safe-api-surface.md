@@ -185,8 +185,15 @@ Keep blocked:
 Log exposure rules:
 
 - redact with same secret sanitizer as normal responses
-- limit lines and bytes before sending to agent
-- default to recent tail only
+- keep default line/byte caps to protect agent context
+- read-log API endpoints already support server-side `tail`, `since`, and `search`
+- audit logs support server-side `limit` and `offset`
+- agent-safe builds also add local output flags for log commands:
+  - `--agent-log-search <value>` filters returned logs locally after redaction
+  - `--agent-log-context <value>` includes nearby lines around local search matches
+  - `--agent-log-case-sensitive` makes local search case-sensitive
+  - `--agent-log-tail <value>` limits printed logs to last N lines, `0` disables line limit
+  - `--agent-log-max-chars <value>` limits printed logs to last N chars, `0` disables char limit
 - mark audit logs as higher risk because they can expose users, IPs, emails, and admin actions
 
 ## Response redaction policy for agent

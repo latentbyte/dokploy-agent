@@ -17,6 +17,13 @@
 - [x] Expose hidden command metadata separately for debugging
 - [x] Update docs and verify builds
 
+## Agent log filtering
+
+- [x] Keep default log bounds as context protection
+- [x] Add agent-local log search and pagination/filter flags
+- [x] Document server-side log query options and local fallback
+- [x] Verify full and agent-safe builds
+
 ## Review
 
 - Added agent-safe build tag and safety metadata commands
