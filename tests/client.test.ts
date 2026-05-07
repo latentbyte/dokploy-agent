@@ -1,3 +1,6 @@
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("readAuthConfig", () => {
@@ -7,6 +10,8 @@ describe("readAuthConfig", () => {
 		delete process.env.DOKPLOY_URL;
 		delete process.env.DOKPLOY_API_KEY;
 		delete process.env.DOKPLOY_AUTH_TOKEN;
+		delete process.env.DOKPLOY_CONFIG_PATH;
+		delete process.env.XDG_CONFIG_HOME;
 	});
 
 	afterEach(() => {
@@ -49,8 +54,42 @@ describe("readAuthConfig", () => {
 });
 
 describe("saveAuthConfig", () => {
-	it("should write config with correct structure", async () => {
-		const { saveAuthConfig } = await import("../src/client.js");
-		expect(typeof saveAuthConfig).toBe("function");
+	const originalEnv = { ...process.env };
+
+	afterEach(() => {
+		process.env = { ...originalEnv };
+	});
+
+	it("should write config under XDG config home", async () => {
+		const configHome = fs.mkdtempSync(
+			path.join(os.tmpdir(), "dokploy-config-"),
+		);
+		process.env.XDG_CONFIG_HOME = configHome;
+
+		const { getAuthConfigPath, saveAuthConfig } = await import(
+			"../src/client.js"
+		);
+		saveAuthConfig("https://test.dokploy.com", "test-token");
+
+		const configPath = getAuthConfigPath();
+		expect(configPath).toBe(path.join(configHome, "dokploy", "config.json"));
+		expect(JSON.parse(fs.readFileSync(configPath, "utf8"))).toEqual({
+			url: "https://test.dokploy.com",
+			token: "test-token",
+		});
+	});
+
+	it("should allow overriding config path", async () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-config-"));
+		const customPath = path.join(tempDir, "custom.json");
+		process.env.DOKPLOY_CONFIG_PATH = customPath;
+
+		const { getAuthConfigPath, saveAuthConfig } = await import(
+			"../src/client.js"
+		);
+		saveAuthConfig("https://test.dokploy.com", "test-token");
+
+		expect(getAuthConfigPath()).toBe(customPath);
+		expect(fs.existsSync(customPath)).toBe(true);
 	});
 });

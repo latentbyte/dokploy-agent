@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import axios, { type AxiosInstance } from "axios";
@@ -6,11 +7,30 @@ import chalk from "chalk";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const configPath = path.join(__dirname, "..", "config.json");
+const legacyConfigPath = path.join(__dirname, "..", "config.json");
+const CONFIG_DIR_NAME = "dokploy";
+const CONFIG_FILE_NAME = "config.json";
 
 export interface AuthConfig {
 	token: string;
 	url: string;
+}
+
+export function getAuthConfigPath(): string {
+	if (process.env.DOKPLOY_CONFIG_PATH) {
+		return path.resolve(process.env.DOKPLOY_CONFIG_PATH);
+	}
+
+	const configHome =
+		process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config");
+	return path.join(configHome, CONFIG_DIR_NAME, CONFIG_FILE_NAME);
+}
+
+function getReadableConfigPath(): string | undefined {
+	const configPath = getAuthConfigPath();
+	if (fs.existsSync(configPath)) return configPath;
+	if (fs.existsSync(legacyConfigPath)) return legacyConfigPath;
+	return undefined;
 }
 
 function loadEnvFile(): void {
@@ -24,7 +44,10 @@ function loadEnvFile(): void {
 		const eqIndex = trimmed.indexOf("=");
 		if (eqIndex === -1) continue;
 		const key = trimmed.slice(0, eqIndex).trim();
-		const value = trimmed.slice(eqIndex + 1).trim().replace(/^["']|["']$/g, "");
+		const value = trimmed
+			.slice(eqIndex + 1)
+			.trim()
+			.replace(/^["']|["']$/g, "");
 		if (!process.env[key]) {
 			process.env[key] = value;
 		}
@@ -42,7 +65,9 @@ export function readAuthConfig(): AuthConfig {
 		return { token: envToken, url: envUrl };
 	}
 
-	if (!fs.existsSync(configPath)) {
+	const readableConfigPath = getReadableConfigPath();
+
+	if (!readableConfigPath) {
 		console.error(
 			chalk.red(
 				"No configuration found. Please run 'dokploy auth' first or set DOKPLOY_URL and DOKPLOY_AUTH_TOKEN environment variables.",
@@ -51,7 +76,7 @@ export function readAuthConfig(): AuthConfig {
 		process.exit(1);
 	}
 
-	const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+	const config = JSON.parse(fs.readFileSync(readableConfigPath, "utf8"));
 	const { token, url } = config;
 
 	if (!url || !token) {
@@ -67,6 +92,8 @@ export function readAuthConfig(): AuthConfig {
 }
 
 export function saveAuthConfig(url: string, token: string): void {
+	const configPath = getAuthConfigPath();
+	fs.mkdirSync(path.dirname(configPath), { recursive: true });
 	fs.writeFileSync(configPath, JSON.stringify({ url, token }, null, 2));
 }
 
