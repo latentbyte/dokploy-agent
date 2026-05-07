@@ -14,19 +14,40 @@ Source of truth: `docs/agent-command-blacklist.json`.
 - they remain visible through `dokploy agent-safety hidden`
 - full CLI builds ignore this blacklist
 
-## Starting blacklist
+## Current blacklist
 
-Current entries focus on noisy account, billing, branding, and huge-schema endpoints:
+Total hidden commands: 166
 
-- `settings.getOpenApiDocument`
-- `stripe.canCreateMoreServers`
-- `stripe.getCurrentPlan`
-- `stripe.getInvoices`
-- `stripe.getProducts`
-- `licenseKey.getEnterpriseSettings`
-- `licenseKey.haveValidLicenseKey`
-- `whitelabeling.get`
-- `whitelabeling.getPublic`
+Hidden groups by count:
+- `admin`: 1
+- `ai`: 12
+- `bitbucket`: 3
+- `cluster`: 3
+- `customRole`: 6
+- `gitProvider`: 2
+- `gitea`: 3
+- `github`: 2
+- `gitlab`: 3
+- `licenseKey`: 6
+- `notification`: 41
+- `organization`: 11
+- `settings`: 16
+- `sshKey`: 4
+- `sso`: 10
+- `stripe`: 8
+- `tag`: 8
+- `user`: 23
+- `whitelabeling`: 4
+
+Major categories:
+
+- billing/account: `stripe.*`, `licenseKey.*`
+- branding: `whitelabeling.*`
+- UI taxonomy: `tag.*`
+- admin/identity: `customRole.*`, `sso.*`, `organization.*`, `user.*`
+- provider config noise: notification providers and git provider config mutators/tests
+- infra/admin noise: cluster/admin setup, selected settings cleanup/toggle helpers, ssh key mutators
+- huge redundant output: `settings.getOpenApiDocument`
 
 ## When to add commands
 

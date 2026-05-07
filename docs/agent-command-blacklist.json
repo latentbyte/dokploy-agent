@@ -3,40 +3,668 @@
   "description": "Commands hidden from the agent-safe CLI because they add noise, are rarely useful for agent tasks, or can waste tokens. This is separate from safety policy.",
   "commands": [
     {
+      "endpoint": "admin.setupMonitoring",
+      "reason": "infrastructure admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "ai.analyzeLogs",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.create",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.delete",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.deploy",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.get",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.getAll",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.getEnabledProviders",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.getModels",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.one",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.suggest",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.testConnection",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "ai.update",
+      "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+    },
+    {
+      "endpoint": "bitbucket.create",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "bitbucket.testConnection",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "bitbucket.update",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "cluster.addManager",
+      "reason": "infrastructure admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "cluster.addWorker",
+      "reason": "infrastructure admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "cluster.removeWorker",
+      "reason": "infrastructure admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "customRole.all",
+      "reason": "permission admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "customRole.create",
+      "reason": "permission admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "customRole.getStatements",
+      "reason": "permission admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "customRole.membersByRole",
+      "reason": "permission admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "customRole.remove",
+      "reason": "permission admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "customRole.update",
+      "reason": "permission admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "gitProvider.remove",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "gitProvider.toggleShare",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "gitea.create",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "gitea.testConnection",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "gitea.update",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "github.testConnection",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "github.update",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "gitlab.create",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "gitlab.testConnection",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "gitlab.update",
+      "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "licenseKey.activate",
+      "reason": "license/account surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "licenseKey.deactivate",
+      "reason": "license/account surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "licenseKey.getEnterpriseSettings",
+      "reason": "license/account surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "licenseKey.haveValidLicenseKey",
+      "reason": "license/account surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "licenseKey.updateEnterpriseSettings",
+      "reason": "license/account surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "licenseKey.validate",
+      "reason": "license/account surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.all",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createCustom",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createDiscord",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createEmail",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createGotify",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createLark",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createMattermost",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createNtfy",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createPushover",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createResend",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createSlack",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createTeams",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.createTelegram",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.getEmailProviders",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.one",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.receiveNotification",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.remove",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testCustomConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testDiscordConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testEmailConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testGotifyConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testLarkConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testMattermostConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testNtfyConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testPushoverConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testResendConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testSlackConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testTeamsConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.testTelegramConnection",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateCustom",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateDiscord",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateEmail",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateGotify",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateLark",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateMattermost",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateNtfy",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updatePushover",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateResend",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateSlack",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateTeams",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "notification.updateTelegram",
+      "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.active",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.all",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.allInvitations",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.create",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.delete",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.inviteMember",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.one",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.removeInvitation",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.setDefault",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.update",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "organization.updateMemberRole",
+      "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanAll",
+      "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanAllDeploymentQueue",
+      "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanDockerBuilder",
+      "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanDockerPrune",
+      "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanMonitoring",
+      "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanRedis",
+      "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanSSHPrivateKey",
+      "reason": "settings admin helper, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanStoppedContainers",
+      "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanUnusedImages",
+      "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.cleanUnusedVolumes",
+      "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work"
+    },
+    {
       "endpoint": "settings.getOpenApiDocument",
       "reason": "huge schema output, redundant with local openapi.json and safety metadata"
     },
     {
+      "endpoint": "settings.getUpdateData",
+      "reason": "settings admin helper, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.saveSSHPrivateKey",
+      "reason": "settings admin helper, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.setupGPU",
+      "reason": "settings admin helper, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.toggleDashboard",
+      "reason": "settings admin helper, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "settings.toggleRequests",
+      "reason": "settings admin helper, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sshKey.create",
+      "reason": "ssh key mutation surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sshKey.generate",
+      "reason": "ssh key mutation surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sshKey.remove",
+      "reason": "ssh key mutation surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sshKey.update",
+      "reason": "ssh key mutation surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.addTrustedOrigin",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.deleteProvider",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.getTrustedOrigins",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.listProviders",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.one",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.register",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.removeTrustedOrigin",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.showSignInWithSSO",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.update",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "sso.updateTrustedOrigin",
+      "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+    },
+    {
       "endpoint": "stripe.canCreateMoreServers",
-      "reason": "billing/account state, not useful for normal deploy/debug agent work"
+      "reason": "billing/account surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "stripe.createCheckoutSession",
+      "reason": "billing/account surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "stripe.createCustomerPortalSession",
+      "reason": "billing/account surface, not useful for normal deploy/debug agent work"
     },
     {
       "endpoint": "stripe.getCurrentPlan",
-      "reason": "billing/account state, not useful for normal deploy/debug agent work"
+      "reason": "billing/account surface, not useful for normal deploy/debug agent work"
     },
     {
       "endpoint": "stripe.getInvoices",
-      "reason": "billing/account data, not useful for normal deploy/debug agent work"
+      "reason": "billing/account surface, not useful for normal deploy/debug agent work"
     },
     {
       "endpoint": "stripe.getProducts",
-      "reason": "billing catalog data, not useful for normal deploy/debug agent work"
+      "reason": "billing/account surface, not useful for normal deploy/debug agent work"
     },
     {
-      "endpoint": "licenseKey.getEnterpriseSettings",
-      "reason": "license/account settings, not useful for normal deploy/debug agent work"
+      "endpoint": "stripe.updateInvoiceNotifications",
+      "reason": "billing/account surface, not useful for normal deploy/debug agent work"
     },
     {
-      "endpoint": "licenseKey.haveValidLicenseKey",
-      "reason": "license/account state, not useful for normal deploy/debug agent work"
+      "endpoint": "stripe.upgradeSubscription",
+      "reason": "billing/account surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "tag.all",
+      "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "tag.assignToProject",
+      "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "tag.bulkAssign",
+      "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "tag.create",
+      "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "tag.one",
+      "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "tag.remove",
+      "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "tag.removeFromProject",
+      "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "tag.update",
+      "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.all",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.assignPermissions",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.checkUserOrganizations",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.createApiKey",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.createUserWithCredentials",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.deleteApiKey",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.generateToken",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.get",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.getBackups",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.getBookmarkedTemplates",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.getContainerMetrics",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.getInvitations",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.getMetricsToken",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.getPermissions",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.getServerMetrics",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.getUserByToken",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.haveRootAccess",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.one",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.remove",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.sendInvitation",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.session",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.toggleTemplateBookmark",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "user.update",
+      "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
     },
     {
       "endpoint": "whitelabeling.get",
-      "reason": "branding settings, not useful for normal deploy/debug agent work"
+      "reason": "branding surface, not useful for normal deploy/debug agent work"
     },
     {
       "endpoint": "whitelabeling.getPublic",
-      "reason": "branding settings, not useful for normal deploy/debug agent work"
+      "reason": "branding surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "whitelabeling.reset",
+      "reason": "branding surface, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "whitelabeling.update",
+      "reason": "branding surface, not useful for normal deploy/debug agent work"
     }
   ]
 }

@@ -10,9 +10,8 @@ Generated from `src/generated/commands.ts` (auto-generated from `openapi.json`).
 
 ## Read-only safe set
 
-All commands below are `apiGet` based and considered safe-by-default in agent-safe builds after redaction.
+All commands below are `apiGet` based and considered safe-by-default in agent-safe builds after redaction and after the token-saving blacklist is applied.
 
-- `ai`: get, get-all, get-enabled-providers, get-models, one
 - `application`: one, read-app-monitoring, read-logs, read-traefik-config, search
 - `audit-log`: all
 - `backup`: list-backup-files, one
@@ -20,7 +19,6 @@ All commands below are `apiGet` based and considered safe-by-default in agent-sa
 - `certificates`: all, one
 - `cluster`: get-nodes
 - `compose`: get-converted-compose, get-default-command, get-tags, load-mounts-by-service, load-services, one, read-logs, search, templates
-- `custom-role`: all, get-statements, members-by-role
 - `deployment`: all, all-by-compose, all-by-server, all-by-type, all-centralized, queue-list
 - `destination`: all, one
 - `docker`: get-config, get-containers, get-containers-by-app-label, get-containers-by-app-name-match, get-service-containers-by-app-name, get-stack-containers-by-app-name
@@ -31,13 +29,10 @@ All commands below are `apiGet` based and considered safe-by-default in agent-sa
 - `github`: get-github-branches, get-github-repositories, github-providers, one
 - `gitlab`: get-gitlab-branches, get-gitlab-repositories, gitlab-providers, one
 - `libsql`: one, read-logs
-- `license-key`: get-enterprise-settings, have-valid-license-key
 - `mariadb`: one, read-logs, search
 - `mongo`: one, read-logs, search
 - `mounts`: all-named-by-application-id, list-by-service-id, one
 - `mysql`: one, read-logs, search
-- `notification`: all, get-email-providers, one
-- `organization`: active, all, all-invitations, one
 - `patch`: by-entity-id, one, read-repo-directories, read-repo-file
 - `port`: one
 - `postgres`: one, read-logs, search
@@ -49,15 +44,10 @@ All commands below are `apiGet` based and considered safe-by-default in agent-sa
 - `schedule`: list, one
 - `security`: one
 - `server`: all, all-for-permissions, build-servers, count, get-default-command, get-server-metrics, get-server-time, one, public-ip, security, validate, with-sshkey
-- `settings`: check-gpustatus, check-infrastructure-health, get-docker-disk-usage, get-dokploy-cloud-ips, get-dokploy-version, get-ip, get-log-cleanup-status, get-open-api-document, get-release-tag, get-traefik-ports, get-web-server-settings, have-activate-requests, have-traefik-dashboard-port-enabled, health, is-cloud, is-user-subscribed, read-directories, read-middleware-traefik-config, read-traefik-config, read-traefik-env, read-traefik-file, read-web-server-traefik-config
+- `settings`: check-gpustatus, check-infrastructure-health, get-docker-disk-usage, get-dokploy-cloud-ips, get-dokploy-version, get-ip, get-log-cleanup-status, get-release-tag, get-traefik-ports, get-web-server-settings, have-activate-requests, have-traefik-dashboard-port-enabled, health, is-cloud, is-user-subscribed, read-directories, read-middleware-traefik-config, read-traefik-config, read-traefik-env, read-traefik-file, read-web-server-traefik-config
 - `ssh-key`: all, all-for-apps, one
-- `sso`: get-trusted-origins, list-providers, one, show-sign-in-with-sso
-- `stripe`: can-create-more-servers, get-current-plan, get-invoices, get-products
 - `swarm`: get-container-stats, get-node-apps, get-node-info, get-nodes
-- `tag`: all, one
-- `user`: all, check-user-organizations, get, get-backups, get-bookmarked-templates, get-container-metrics, get-invitations, get-metrics-token, get-permissions, get-server-metrics, get-user-by-token, have-root-access, one, session
 - `volume-backups`: list, one
-- `whitelabeling`: get, get-public
 
 Note: `cluster add-manager` and `cluster add-worker` are exposed as `apiGet` in the generator, but names imply mutation and they are treated as side-effect and blocked.
 
@@ -100,8 +90,9 @@ Disallowed means command exists in the generated CLI surface but policy blocks i
 Unavailable means command exists in `openapi.json` but is not generated into `src/generated/commands.ts`, so the current CLI cannot expose it without generator/client work.
 
 - generated total: 524
-- safe total: 190
-- disallowed total: 334
+- safe total: 146
+- disallowed total: 212
+- hidden total: 166
 - not available total (in `openapi.json` but not generated): 0
 
 Full machine-readable list is in `docs/agent-safe-api-surface.json`.
@@ -110,32 +101,20 @@ Full machine-readable list is in `docs/agent-safe-api-surface.json`.
 
 - use `generated.disallowed.by_group` in the JSON file for a full per-group list
 - notable disallowed groups by count:
-  - admin: 1
-  - ai: 7
   - application: 24
   - backup: 10
-  - bitbucket: 3
   - certificates: 3
-  - cluster: 3
   - compose: 18
-  - custom-role: 3
   - deployment: 2
   - destination: 4
   - docker: 6
   - domain: 5
   - environment: 4
-  - git-provider: 2
-  - gitea: 3
-  - github: 2
-  - gitlab: 3
   - libsql: 12
-  - license-key: 4
   - mariadb: 13
   - mongo: 13
   - mounts: 3
   - mysql: 13
-  - notification: 38
-  - organization: 7
   - patch: 8
   - port: 3
   - postgres: 13
@@ -148,14 +127,32 @@ Full machine-readable list is in `docs/agent-safe-api-surface.json`.
   - schedule: 4
   - security: 3
   - server: 5
-  - settings: 29
-  - ssh-key: 4
-  - sso: 6
-  - stripe: 4
-  - tag: 6
-  - user: 9
+  - settings: 14
   - volume-backups: 4
-  - whitelabeling: 2
+
+### Hidden (generated but omitted for token savings)
+
+- use `generated.hidden.by_group` in the JSON file for a full per-group list
+- hidden groups by count:
+  - admin: 1
+  - ai: 12
+  - bitbucket: 3
+  - cluster: 3
+  - custom-role: 6
+  - git-provider: 2
+  - gitea: 3
+  - github: 2
+  - gitlab: 3
+  - license-key: 6
+  - notification: 41
+  - organization: 11
+  - settings: 16
+  - ssh-key: 4
+  - sso: 10
+  - stripe: 8
+  - tag: 8
+  - user: 23
+  - whitelabeling: 4
 
 ### Not available (API has it, generated CLI does not)
 

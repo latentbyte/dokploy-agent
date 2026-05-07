@@ -1,47 +1,10 @@
 {
   "generated": {
     "total": 524,
-    "safe_count": 181,
-    "disallowed_count": 334,
-    "hidden_count": 9,
+    "safe_count": 146,
+    "disallowed_count": 212,
+    "hidden_count": 166,
     "safe": {
-      "ai": [
-        {
-          "endpoint": "ai.get",
-          "group": "ai",
-          "action": "get",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "ai.getAll",
-          "group": "ai",
-          "action": "get-all",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "ai.getEnabledProviders",
-          "group": "ai",
-          "action": "get-enabled-providers",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "ai.getModels",
-          "group": "ai",
-          "action": "get-models",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "ai.one",
-          "group": "ai",
-          "action": "one",
-          "method": "get",
-          "reason": "read-only endpoint"
-        }
-      ],
       "application": [
         {
           "endpoint": "application.deploy",
@@ -263,29 +226,6 @@
           "endpoint": "compose.templates",
           "group": "compose",
           "action": "templates",
-          "method": "get",
-          "reason": "read-only endpoint"
-        }
-      ],
-      "custom-role": [
-        {
-          "endpoint": "customRole.all",
-          "group": "custom-role",
-          "action": "all",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "customRole.getStatements",
-          "group": "custom-role",
-          "action": "get-statements",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "customRole.membersByRole",
-          "group": "custom-role",
-          "action": "members-by-role",
           "method": "get",
           "reason": "read-only endpoint"
         }
@@ -668,59 +608,6 @@
           "endpoint": "mysql.search",
           "group": "mysql",
           "action": "search",
-          "method": "get",
-          "reason": "read-only endpoint"
-        }
-      ],
-      "notification": [
-        {
-          "endpoint": "notification.all",
-          "group": "notification",
-          "action": "all",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "notification.getEmailProviders",
-          "group": "notification",
-          "action": "get-email-providers",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "notification.one",
-          "group": "notification",
-          "action": "one",
-          "method": "get",
-          "reason": "read-only endpoint"
-        }
-      ],
-      "organization": [
-        {
-          "endpoint": "organization.active",
-          "group": "organization",
-          "action": "active",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "organization.all",
-          "group": "organization",
-          "action": "all",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "organization.allInvitations",
-          "group": "organization",
-          "action": "all-invitations",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "organization.one",
-          "group": "organization",
-          "action": "one",
           "method": "get",
           "reason": "read-only endpoint"
         }
@@ -1182,36 +1069,6 @@
           "reason": "read-only endpoint"
         }
       ],
-      "sso": [
-        {
-          "endpoint": "sso.getTrustedOrigins",
-          "group": "sso",
-          "action": "get-trusted-origins",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "sso.listProviders",
-          "group": "sso",
-          "action": "list-providers",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "sso.one",
-          "group": "sso",
-          "action": "one",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "sso.showSignInWithSSO",
-          "group": "sso",
-          "action": "show-sign-in-with-sso",
-          "method": "get",
-          "reason": "read-only endpoint"
-        }
-      ],
       "swarm": [
         {
           "endpoint": "swarm.getContainerStats",
@@ -1242,122 +1099,6 @@
           "reason": "read-only endpoint"
         }
       ],
-      "tag": [
-        {
-          "endpoint": "tag.all",
-          "group": "tag",
-          "action": "all",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "tag.one",
-          "group": "tag",
-          "action": "one",
-          "method": "get",
-          "reason": "read-only endpoint"
-        }
-      ],
-      "user": [
-        {
-          "endpoint": "user.all",
-          "group": "user",
-          "action": "all",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.checkUserOrganizations",
-          "group": "user",
-          "action": "check-user-organizations",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.get",
-          "group": "user",
-          "action": "get",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.getBackups",
-          "group": "user",
-          "action": "get-backups",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.getBookmarkedTemplates",
-          "group": "user",
-          "action": "get-bookmarked-templates",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.getContainerMetrics",
-          "group": "user",
-          "action": "get-container-metrics",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.getInvitations",
-          "group": "user",
-          "action": "get-invitations",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.getMetricsToken",
-          "group": "user",
-          "action": "get-metrics-token",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.getPermissions",
-          "group": "user",
-          "action": "get-permissions",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.getServerMetrics",
-          "group": "user",
-          "action": "get-server-metrics",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.getUserByToken",
-          "group": "user",
-          "action": "get-user-by-token",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.haveRootAccess",
-          "group": "user",
-          "action": "have-root-access",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.one",
-          "group": "user",
-          "action": "one",
-          "method": "get",
-          "reason": "read-only endpoint"
-        },
-        {
-          "endpoint": "user.session",
-          "group": "user",
-          "action": "session",
-          "method": "get",
-          "reason": "read-only endpoint"
-        }
-      ],
       "volume-backups": [
         {
           "endpoint": "volumeBackups.list",
@@ -1376,76 +1117,8 @@
       ]
     },
     "disallowed": {
-      "total": 334,
+      "total": 212,
       "by_group": {
-        "admin": [
-          {
-            "endpoint": "admin.setupMonitoring",
-            "group": "admin",
-            "action": "setup-monitoring",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "ai": [
-          {
-            "endpoint": "ai.analyzeLogs",
-            "group": "ai",
-            "action": "analyze-logs",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "external-ai-data-exposure"
-          },
-          {
-            "endpoint": "ai.create",
-            "group": "ai",
-            "action": "create",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "ai.delete",
-            "group": "ai",
-            "action": "delete",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "ai.deploy",
-            "group": "ai",
-            "action": "deploy",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "ai.suggest",
-            "group": "ai",
-            "action": "suggest",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "ai.testConnection",
-            "group": "ai",
-            "action": "test-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "ai.update",
-            "group": "ai",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
         "application": [
           {
             "endpoint": "application.cancelDeployment",
@@ -1722,32 +1395,6 @@
             "risk": "side-effect"
           }
         ],
-        "bitbucket": [
-          {
-            "endpoint": "bitbucket.create",
-            "group": "bitbucket",
-            "action": "create",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "bitbucket.testConnection",
-            "group": "bitbucket",
-            "action": "test-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "bitbucket.update",
-            "group": "bitbucket",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
         "certificates": [
           {
             "endpoint": "certificates.create",
@@ -1769,30 +1416,6 @@
             "endpoint": "certificates.update",
             "group": "certificates",
             "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "cluster": [
-          {
-            "endpoint": "cluster.addManager",
-            "group": "cluster",
-            "action": "add-manager",
-            "method": "get",
-            "reason": "get endpoint appears to mutate server state"
-          },
-          {
-            "endpoint": "cluster.addWorker",
-            "group": "cluster",
-            "action": "add-worker",
-            "method": "get",
-            "reason": "get endpoint appears to mutate server state"
-          },
-          {
-            "endpoint": "cluster.removeWorker",
-            "group": "cluster",
-            "action": "remove-worker",
             "method": "post",
             "reason": "side-effect endpoint not allowlisted",
             "risk": "side-effect"
@@ -1938,32 +1561,6 @@
           {
             "endpoint": "compose.update",
             "group": "compose",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "custom-role": [
-          {
-            "endpoint": "customRole.create",
-            "group": "custom-role",
-            "action": "create",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "customRole.remove",
-            "group": "custom-role",
-            "action": "remove",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "customRole.update",
-            "group": "custom-role",
             "action": "update",
             "method": "post",
             "reason": "side-effect endpoint not allowlisted",
@@ -2148,94 +1745,6 @@
             "risk": "side-effect"
           }
         ],
-        "git-provider": [
-          {
-            "endpoint": "gitProvider.remove",
-            "group": "git-provider",
-            "action": "remove",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "gitProvider.toggleShare",
-            "group": "git-provider",
-            "action": "toggle-share",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "gitea": [
-          {
-            "endpoint": "gitea.create",
-            "group": "gitea",
-            "action": "create",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "gitea.testConnection",
-            "group": "gitea",
-            "action": "test-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "gitea.update",
-            "group": "gitea",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "github": [
-          {
-            "endpoint": "github.testConnection",
-            "group": "github",
-            "action": "test-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "github.update",
-            "group": "github",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "gitlab": [
-          {
-            "endpoint": "gitlab.create",
-            "group": "gitlab",
-            "action": "create",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "gitlab.testConnection",
-            "group": "gitlab",
-            "action": "test-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "gitlab.update",
-            "group": "gitlab",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
         "libsql": [
           {
             "endpoint": "libsql.changeStatus",
@@ -2329,40 +1838,6 @@
             "endpoint": "libsql.update",
             "group": "libsql",
             "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "license-key": [
-          {
-            "endpoint": "licenseKey.activate",
-            "group": "license-key",
-            "action": "activate",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "licenseKey.deactivate",
-            "group": "license-key",
-            "action": "deactivate",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "licenseKey.updateEnterpriseSettings",
-            "group": "license-key",
-            "action": "update-enterprise-settings",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "licenseKey.validate",
-            "group": "license-key",
-            "action": "validate",
             "method": "post",
             "reason": "side-effect endpoint not allowlisted",
             "risk": "side-effect"
@@ -2707,370 +2182,6 @@
             "endpoint": "mysql.update",
             "group": "mysql",
             "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "notification": [
-          {
-            "endpoint": "notification.createCustom",
-            "group": "notification",
-            "action": "create-custom",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createDiscord",
-            "group": "notification",
-            "action": "create-discord",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createEmail",
-            "group": "notification",
-            "action": "create-email",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createGotify",
-            "group": "notification",
-            "action": "create-gotify",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createLark",
-            "group": "notification",
-            "action": "create-lark",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createMattermost",
-            "group": "notification",
-            "action": "create-mattermost",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createNtfy",
-            "group": "notification",
-            "action": "create-ntfy",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createPushover",
-            "group": "notification",
-            "action": "create-pushover",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createResend",
-            "group": "notification",
-            "action": "create-resend",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createSlack",
-            "group": "notification",
-            "action": "create-slack",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createTeams",
-            "group": "notification",
-            "action": "create-teams",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.createTelegram",
-            "group": "notification",
-            "action": "create-telegram",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.receiveNotification",
-            "group": "notification",
-            "action": "receive-notification",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.remove",
-            "group": "notification",
-            "action": "remove",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testCustomConnection",
-            "group": "notification",
-            "action": "test-custom-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testDiscordConnection",
-            "group": "notification",
-            "action": "test-discord-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testEmailConnection",
-            "group": "notification",
-            "action": "test-email-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testGotifyConnection",
-            "group": "notification",
-            "action": "test-gotify-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testLarkConnection",
-            "group": "notification",
-            "action": "test-lark-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testMattermostConnection",
-            "group": "notification",
-            "action": "test-mattermost-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testNtfyConnection",
-            "group": "notification",
-            "action": "test-ntfy-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testPushoverConnection",
-            "group": "notification",
-            "action": "test-pushover-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testResendConnection",
-            "group": "notification",
-            "action": "test-resend-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testSlackConnection",
-            "group": "notification",
-            "action": "test-slack-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testTeamsConnection",
-            "group": "notification",
-            "action": "test-teams-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.testTelegramConnection",
-            "group": "notification",
-            "action": "test-telegram-connection",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateCustom",
-            "group": "notification",
-            "action": "update-custom",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateDiscord",
-            "group": "notification",
-            "action": "update-discord",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateEmail",
-            "group": "notification",
-            "action": "update-email",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateGotify",
-            "group": "notification",
-            "action": "update-gotify",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateLark",
-            "group": "notification",
-            "action": "update-lark",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateMattermost",
-            "group": "notification",
-            "action": "update-mattermost",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateNtfy",
-            "group": "notification",
-            "action": "update-ntfy",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updatePushover",
-            "group": "notification",
-            "action": "update-pushover",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateResend",
-            "group": "notification",
-            "action": "update-resend",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateSlack",
-            "group": "notification",
-            "action": "update-slack",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateTeams",
-            "group": "notification",
-            "action": "update-teams",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "notification.updateTelegram",
-            "group": "notification",
-            "action": "update-telegram",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "organization": [
-          {
-            "endpoint": "organization.create",
-            "group": "organization",
-            "action": "create",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "organization.delete",
-            "group": "organization",
-            "action": "delete",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "organization.inviteMember",
-            "group": "organization",
-            "action": "invite-member",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "organization.removeInvitation",
-            "group": "organization",
-            "action": "remove-invitation",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "organization.setDefault",
-            "group": "organization",
-            "action": "set-default",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "organization.update",
-            "group": "organization",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "organization.updateMemberRole",
-            "group": "organization",
-            "action": "update-member-role",
             "method": "post",
             "reason": "side-effect endpoint not allowlisted",
             "risk": "side-effect"
@@ -3622,94 +2733,6 @@
             "risk": "side-effect"
           },
           {
-            "endpoint": "settings.cleanAll",
-            "group": "settings",
-            "action": "clean-all",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.cleanAllDeploymentQueue",
-            "group": "settings",
-            "action": "clean-all-deployment-queue",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.cleanDockerBuilder",
-            "group": "settings",
-            "action": "clean-docker-builder",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.cleanDockerPrune",
-            "group": "settings",
-            "action": "clean-docker-prune",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.cleanMonitoring",
-            "group": "settings",
-            "action": "clean-monitoring",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.cleanRedis",
-            "group": "settings",
-            "action": "clean-redis",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.cleanSSHPrivateKey",
-            "group": "settings",
-            "action": "clean-sshprivate-key",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.cleanStoppedContainers",
-            "group": "settings",
-            "action": "clean-stopped-containers",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.cleanUnusedImages",
-            "group": "settings",
-            "action": "clean-unused-images",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.cleanUnusedVolumes",
-            "group": "settings",
-            "action": "clean-unused-volumes",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.getUpdateData",
-            "group": "settings",
-            "action": "get-update-data",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
             "endpoint": "settings.reloadRedis",
             "group": "settings",
             "action": "reload-redis",
@@ -3729,38 +2752,6 @@
             "endpoint": "settings.reloadTraefik",
             "group": "settings",
             "action": "reload-traefik",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.saveSSHPrivateKey",
-            "group": "settings",
-            "action": "save-sshprivate-key",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.setupGPU",
-            "group": "settings",
-            "action": "setup-gpu",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.toggleDashboard",
-            "group": "settings",
-            "action": "toggle-dashboard",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "settings.toggleRequests",
-            "group": "settings",
-            "action": "toggle-requests",
             "method": "post",
             "reason": "side-effect endpoint not allowlisted",
             "risk": "side-effect"
@@ -3846,248 +2837,6 @@
             "risk": "side-effect"
           }
         ],
-        "ssh-key": [
-          {
-            "endpoint": "sshKey.create",
-            "group": "ssh-key",
-            "action": "create",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "sshKey.generate",
-            "group": "ssh-key",
-            "action": "generate",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "sshKey.remove",
-            "group": "ssh-key",
-            "action": "remove",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "sshKey.update",
-            "group": "ssh-key",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "sso": [
-          {
-            "endpoint": "sso.addTrustedOrigin",
-            "group": "sso",
-            "action": "add-trusted-origin",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "sso.deleteProvider",
-            "group": "sso",
-            "action": "delete-provider",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "sso.register",
-            "group": "sso",
-            "action": "register",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "sso.removeTrustedOrigin",
-            "group": "sso",
-            "action": "remove-trusted-origin",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "sso.update",
-            "group": "sso",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "sso.updateTrustedOrigin",
-            "group": "sso",
-            "action": "update-trusted-origin",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "stripe": [
-          {
-            "endpoint": "stripe.createCheckoutSession",
-            "group": "stripe",
-            "action": "create-checkout-session",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "stripe.createCustomerPortalSession",
-            "group": "stripe",
-            "action": "create-customer-portal-session",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "stripe.updateInvoiceNotifications",
-            "group": "stripe",
-            "action": "update-invoice-notifications",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "stripe.upgradeSubscription",
-            "group": "stripe",
-            "action": "upgrade-subscription",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "tag": [
-          {
-            "endpoint": "tag.assignToProject",
-            "group": "tag",
-            "action": "assign-to-project",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "tag.bulkAssign",
-            "group": "tag",
-            "action": "bulk-assign",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "tag.create",
-            "group": "tag",
-            "action": "create",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "tag.remove",
-            "group": "tag",
-            "action": "remove",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "tag.removeFromProject",
-            "group": "tag",
-            "action": "remove-from-project",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "tag.update",
-            "group": "tag",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
-        "user": [
-          {
-            "endpoint": "user.assignPermissions",
-            "group": "user",
-            "action": "assign-permissions",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "user.createApiKey",
-            "group": "user",
-            "action": "create-api-key",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "user.createUserWithCredentials",
-            "group": "user",
-            "action": "create-user-with-credentials",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "user.deleteApiKey",
-            "group": "user",
-            "action": "delete-api-key",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "user.generateToken",
-            "group": "user",
-            "action": "generate-token",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "user.remove",
-            "group": "user",
-            "action": "remove",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "user.sendInvitation",
-            "group": "user",
-            "action": "send-invitation",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "user.toggleTemplateBookmark",
-            "group": "user",
-            "action": "toggle-template-bookmark",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "user.update",
-            "group": "user",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
-        ],
         "volume-backups": [
           {
             "endpoint": "volumeBackups.create",
@@ -4121,53 +2870,1000 @@
             "reason": "side-effect endpoint not allowlisted",
             "risk": "side-effect"
           }
-        ],
-        "whitelabeling": [
-          {
-            "endpoint": "whitelabeling.reset",
-            "group": "whitelabeling",
-            "action": "reset",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          },
-          {
-            "endpoint": "whitelabeling.update",
-            "group": "whitelabeling",
-            "action": "update",
-            "method": "post",
-            "reason": "side-effect endpoint not allowlisted",
-            "risk": "side-effect"
-          }
         ]
       }
     },
     "hidden": {
-      "total": 9,
+      "total": 166,
       "by_group": {
+        "admin": [
+          {
+            "endpoint": "admin.setupMonitoring",
+            "group": "admin",
+            "action": "setup-monitoring",
+            "method": "post",
+            "reason": "infrastructure admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "ai": [
+          {
+            "endpoint": "ai.analyzeLogs",
+            "group": "ai",
+            "action": "analyze-logs",
+            "method": "post",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow",
+            "risk": "external-ai-data-exposure"
+          },
+          {
+            "endpoint": "ai.create",
+            "group": "ai",
+            "action": "create",
+            "method": "post",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "ai.delete",
+            "group": "ai",
+            "action": "delete",
+            "method": "post",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "ai.deploy",
+            "group": "ai",
+            "action": "deploy",
+            "method": "post",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "ai.get",
+            "group": "ai",
+            "action": "get",
+            "method": "get",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+          },
+          {
+            "endpoint": "ai.getAll",
+            "group": "ai",
+            "action": "get-all",
+            "method": "get",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+          },
+          {
+            "endpoint": "ai.getEnabledProviders",
+            "group": "ai",
+            "action": "get-enabled-providers",
+            "method": "get",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+          },
+          {
+            "endpoint": "ai.getModels",
+            "group": "ai",
+            "action": "get-models",
+            "method": "get",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+          },
+          {
+            "endpoint": "ai.one",
+            "group": "ai",
+            "action": "one",
+            "method": "get",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow"
+          },
+          {
+            "endpoint": "ai.suggest",
+            "group": "ai",
+            "action": "suggest",
+            "method": "post",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "ai.testConnection",
+            "group": "ai",
+            "action": "test-connection",
+            "method": "post",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "ai.update",
+            "group": "ai",
+            "action": "update",
+            "method": "post",
+            "reason": "Dokploy AI provider config surface, not useful for this agent workflow",
+            "risk": "side-effect"
+          }
+        ],
+        "bitbucket": [
+          {
+            "endpoint": "bitbucket.create",
+            "group": "bitbucket",
+            "action": "create",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "bitbucket.testConnection",
+            "group": "bitbucket",
+            "action": "test-connection",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "bitbucket.update",
+            "group": "bitbucket",
+            "action": "update",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "cluster": [
+          {
+            "endpoint": "cluster.addManager",
+            "group": "cluster",
+            "action": "add-manager",
+            "method": "get",
+            "reason": "infrastructure admin surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "cluster.addWorker",
+            "group": "cluster",
+            "action": "add-worker",
+            "method": "get",
+            "reason": "infrastructure admin surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "cluster.removeWorker",
+            "group": "cluster",
+            "action": "remove-worker",
+            "method": "post",
+            "reason": "infrastructure admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "custom-role": [
+          {
+            "endpoint": "customRole.all",
+            "group": "custom-role",
+            "action": "all",
+            "method": "get",
+            "reason": "permission admin surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "customRole.create",
+            "group": "custom-role",
+            "action": "create",
+            "method": "post",
+            "reason": "permission admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "customRole.getStatements",
+            "group": "custom-role",
+            "action": "get-statements",
+            "method": "get",
+            "reason": "permission admin surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "customRole.membersByRole",
+            "group": "custom-role",
+            "action": "members-by-role",
+            "method": "get",
+            "reason": "permission admin surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "customRole.remove",
+            "group": "custom-role",
+            "action": "remove",
+            "method": "post",
+            "reason": "permission admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "customRole.update",
+            "group": "custom-role",
+            "action": "update",
+            "method": "post",
+            "reason": "permission admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "git-provider": [
+          {
+            "endpoint": "gitProvider.remove",
+            "group": "git-provider",
+            "action": "remove",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "gitProvider.toggleShare",
+            "group": "git-provider",
+            "action": "toggle-share",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "gitea": [
+          {
+            "endpoint": "gitea.create",
+            "group": "gitea",
+            "action": "create",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "gitea.testConnection",
+            "group": "gitea",
+            "action": "test-connection",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "gitea.update",
+            "group": "gitea",
+            "action": "update",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "github": [
+          {
+            "endpoint": "github.testConnection",
+            "group": "github",
+            "action": "test-connection",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "github.update",
+            "group": "github",
+            "action": "update",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "gitlab": [
+          {
+            "endpoint": "gitlab.create",
+            "group": "gitlab",
+            "action": "create",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "gitlab.testConnection",
+            "group": "gitlab",
+            "action": "test-connection",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "gitlab.update",
+            "group": "gitlab",
+            "action": "update",
+            "method": "post",
+            "reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
         "license-key": [
+          {
+            "endpoint": "licenseKey.activate",
+            "group": "license-key",
+            "action": "activate",
+            "method": "post",
+            "reason": "license/account surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "licenseKey.deactivate",
+            "group": "license-key",
+            "action": "deactivate",
+            "method": "post",
+            "reason": "license/account surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
           {
             "endpoint": "licenseKey.getEnterpriseSettings",
             "group": "license-key",
             "action": "get-enterprise-settings",
             "method": "get",
-            "reason": "license/account settings, not useful for normal deploy/debug agent work"
+            "reason": "license/account surface, not useful for normal deploy/debug agent work"
           },
           {
             "endpoint": "licenseKey.haveValidLicenseKey",
             "group": "license-key",
             "action": "have-valid-license-key",
             "method": "get",
-            "reason": "license/account state, not useful for normal deploy/debug agent work"
+            "reason": "license/account surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "licenseKey.updateEnterpriseSettings",
+            "group": "license-key",
+            "action": "update-enterprise-settings",
+            "method": "post",
+            "reason": "license/account surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "licenseKey.validate",
+            "group": "license-key",
+            "action": "validate",
+            "method": "post",
+            "reason": "license/account surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "notification": [
+          {
+            "endpoint": "notification.all",
+            "group": "notification",
+            "action": "all",
+            "method": "get",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "notification.createCustom",
+            "group": "notification",
+            "action": "create-custom",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createDiscord",
+            "group": "notification",
+            "action": "create-discord",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createEmail",
+            "group": "notification",
+            "action": "create-email",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createGotify",
+            "group": "notification",
+            "action": "create-gotify",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createLark",
+            "group": "notification",
+            "action": "create-lark",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createMattermost",
+            "group": "notification",
+            "action": "create-mattermost",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createNtfy",
+            "group": "notification",
+            "action": "create-ntfy",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createPushover",
+            "group": "notification",
+            "action": "create-pushover",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createResend",
+            "group": "notification",
+            "action": "create-resend",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createSlack",
+            "group": "notification",
+            "action": "create-slack",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createTeams",
+            "group": "notification",
+            "action": "create-teams",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.createTelegram",
+            "group": "notification",
+            "action": "create-telegram",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.getEmailProviders",
+            "group": "notification",
+            "action": "get-email-providers",
+            "method": "get",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "notification.one",
+            "group": "notification",
+            "action": "one",
+            "method": "get",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "notification.receiveNotification",
+            "group": "notification",
+            "action": "receive-notification",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.remove",
+            "group": "notification",
+            "action": "remove",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testCustomConnection",
+            "group": "notification",
+            "action": "test-custom-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testDiscordConnection",
+            "group": "notification",
+            "action": "test-discord-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testEmailConnection",
+            "group": "notification",
+            "action": "test-email-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testGotifyConnection",
+            "group": "notification",
+            "action": "test-gotify-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testLarkConnection",
+            "group": "notification",
+            "action": "test-lark-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testMattermostConnection",
+            "group": "notification",
+            "action": "test-mattermost-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testNtfyConnection",
+            "group": "notification",
+            "action": "test-ntfy-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testPushoverConnection",
+            "group": "notification",
+            "action": "test-pushover-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testResendConnection",
+            "group": "notification",
+            "action": "test-resend-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testSlackConnection",
+            "group": "notification",
+            "action": "test-slack-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testTeamsConnection",
+            "group": "notification",
+            "action": "test-teams-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.testTelegramConnection",
+            "group": "notification",
+            "action": "test-telegram-connection",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateCustom",
+            "group": "notification",
+            "action": "update-custom",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateDiscord",
+            "group": "notification",
+            "action": "update-discord",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateEmail",
+            "group": "notification",
+            "action": "update-email",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateGotify",
+            "group": "notification",
+            "action": "update-gotify",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateLark",
+            "group": "notification",
+            "action": "update-lark",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateMattermost",
+            "group": "notification",
+            "action": "update-mattermost",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateNtfy",
+            "group": "notification",
+            "action": "update-ntfy",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updatePushover",
+            "group": "notification",
+            "action": "update-pushover",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateResend",
+            "group": "notification",
+            "action": "update-resend",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateSlack",
+            "group": "notification",
+            "action": "update-slack",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateTeams",
+            "group": "notification",
+            "action": "update-teams",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "notification.updateTelegram",
+            "group": "notification",
+            "action": "update-telegram",
+            "method": "post",
+            "reason": "notification provider config/test surface, noisy for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "organization": [
+          {
+            "endpoint": "organization.active",
+            "group": "organization",
+            "action": "active",
+            "method": "get",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "organization.all",
+            "group": "organization",
+            "action": "all",
+            "method": "get",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "organization.allInvitations",
+            "group": "organization",
+            "action": "all-invitations",
+            "method": "get",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "organization.create",
+            "group": "organization",
+            "action": "create",
+            "method": "post",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "organization.delete",
+            "group": "organization",
+            "action": "delete",
+            "method": "post",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "organization.inviteMember",
+            "group": "organization",
+            "action": "invite-member",
+            "method": "post",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "organization.one",
+            "group": "organization",
+            "action": "one",
+            "method": "get",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "organization.removeInvitation",
+            "group": "organization",
+            "action": "remove-invitation",
+            "method": "post",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "organization.setDefault",
+            "group": "organization",
+            "action": "set-default",
+            "method": "post",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "organization.update",
+            "group": "organization",
+            "action": "update",
+            "method": "post",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "organization.updateMemberRole",
+            "group": "organization",
+            "action": "update-member-role",
+            "method": "post",
+            "reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
           }
         ],
         "settings": [
+          {
+            "endpoint": "settings.cleanAll",
+            "group": "settings",
+            "action": "clean-all",
+            "method": "post",
+            "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.cleanAllDeploymentQueue",
+            "group": "settings",
+            "action": "clean-all-deployment-queue",
+            "method": "post",
+            "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.cleanDockerBuilder",
+            "group": "settings",
+            "action": "clean-docker-builder",
+            "method": "post",
+            "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.cleanDockerPrune",
+            "group": "settings",
+            "action": "clean-docker-prune",
+            "method": "post",
+            "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.cleanMonitoring",
+            "group": "settings",
+            "action": "clean-monitoring",
+            "method": "post",
+            "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.cleanRedis",
+            "group": "settings",
+            "action": "clean-redis",
+            "method": "post",
+            "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.cleanSSHPrivateKey",
+            "group": "settings",
+            "action": "clean-sshprivate-key",
+            "method": "post",
+            "reason": "settings admin helper, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.cleanStoppedContainers",
+            "group": "settings",
+            "action": "clean-stopped-containers",
+            "method": "post",
+            "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.cleanUnusedImages",
+            "group": "settings",
+            "action": "clean-unused-images",
+            "method": "post",
+            "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.cleanUnusedVolumes",
+            "group": "settings",
+            "action": "clean-unused-volumes",
+            "method": "post",
+            "reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
           {
             "endpoint": "settings.getOpenApiDocument",
             "group": "settings",
             "action": "get-open-api-document",
             "method": "get",
             "reason": "huge schema output, redundant with local openapi.json and safety metadata"
+          },
+          {
+            "endpoint": "settings.getUpdateData",
+            "group": "settings",
+            "action": "get-update-data",
+            "method": "post",
+            "reason": "settings admin helper, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.saveSSHPrivateKey",
+            "group": "settings",
+            "action": "save-sshprivate-key",
+            "method": "post",
+            "reason": "settings admin helper, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.setupGPU",
+            "group": "settings",
+            "action": "setup-gpu",
+            "method": "post",
+            "reason": "settings admin helper, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.toggleDashboard",
+            "group": "settings",
+            "action": "toggle-dashboard",
+            "method": "post",
+            "reason": "settings admin helper, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "settings.toggleRequests",
+            "group": "settings",
+            "action": "toggle-requests",
+            "method": "post",
+            "reason": "settings admin helper, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "ssh-key": [
+          {
+            "endpoint": "sshKey.create",
+            "group": "ssh-key",
+            "action": "create",
+            "method": "post",
+            "reason": "ssh key mutation surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "sshKey.generate",
+            "group": "ssh-key",
+            "action": "generate",
+            "method": "post",
+            "reason": "ssh key mutation surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "sshKey.remove",
+            "group": "ssh-key",
+            "action": "remove",
+            "method": "post",
+            "reason": "ssh key mutation surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "sshKey.update",
+            "group": "ssh-key",
+            "action": "update",
+            "method": "post",
+            "reason": "ssh key mutation surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "sso": [
+          {
+            "endpoint": "sso.addTrustedOrigin",
+            "group": "sso",
+            "action": "add-trusted-origin",
+            "method": "post",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "sso.deleteProvider",
+            "group": "sso",
+            "action": "delete-provider",
+            "method": "post",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "sso.getTrustedOrigins",
+            "group": "sso",
+            "action": "get-trusted-origins",
+            "method": "get",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "sso.listProviders",
+            "group": "sso",
+            "action": "list-providers",
+            "method": "get",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "sso.one",
+            "group": "sso",
+            "action": "one",
+            "method": "get",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "sso.register",
+            "group": "sso",
+            "action": "register",
+            "method": "post",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "sso.removeTrustedOrigin",
+            "group": "sso",
+            "action": "remove-trusted-origin",
+            "method": "post",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "sso.showSignInWithSSO",
+            "group": "sso",
+            "action": "show-sign-in-with-sso",
+            "method": "get",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "sso.update",
+            "group": "sso",
+            "action": "update",
+            "method": "post",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "sso.updateTrustedOrigin",
+            "group": "sso",
+            "action": "update-trusted-origin",
+            "method": "post",
+            "reason": "identity admin surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
           }
         ],
         "stripe": [
@@ -4176,28 +3872,296 @@
             "group": "stripe",
             "action": "can-create-more-servers",
             "method": "get",
-            "reason": "billing/account state, not useful for normal deploy/debug agent work"
+            "reason": "billing/account surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "stripe.createCheckoutSession",
+            "group": "stripe",
+            "action": "create-checkout-session",
+            "method": "post",
+            "reason": "billing/account surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "stripe.createCustomerPortalSession",
+            "group": "stripe",
+            "action": "create-customer-portal-session",
+            "method": "post",
+            "reason": "billing/account surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
           },
           {
             "endpoint": "stripe.getCurrentPlan",
             "group": "stripe",
             "action": "get-current-plan",
             "method": "get",
-            "reason": "billing/account state, not useful for normal deploy/debug agent work"
+            "reason": "billing/account surface, not useful for normal deploy/debug agent work"
           },
           {
             "endpoint": "stripe.getInvoices",
             "group": "stripe",
             "action": "get-invoices",
             "method": "get",
-            "reason": "billing/account data, not useful for normal deploy/debug agent work"
+            "reason": "billing/account surface, not useful for normal deploy/debug agent work"
           },
           {
             "endpoint": "stripe.getProducts",
             "group": "stripe",
             "action": "get-products",
             "method": "get",
-            "reason": "billing catalog data, not useful for normal deploy/debug agent work"
+            "reason": "billing/account surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "stripe.updateInvoiceNotifications",
+            "group": "stripe",
+            "action": "update-invoice-notifications",
+            "method": "post",
+            "reason": "billing/account surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "stripe.upgradeSubscription",
+            "group": "stripe",
+            "action": "upgrade-subscription",
+            "method": "post",
+            "reason": "billing/account surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "tag": [
+          {
+            "endpoint": "tag.all",
+            "group": "tag",
+            "action": "all",
+            "method": "get",
+            "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "tag.assignToProject",
+            "group": "tag",
+            "action": "assign-to-project",
+            "method": "post",
+            "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "tag.bulkAssign",
+            "group": "tag",
+            "action": "bulk-assign",
+            "method": "post",
+            "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "tag.create",
+            "group": "tag",
+            "action": "create",
+            "method": "post",
+            "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "tag.one",
+            "group": "tag",
+            "action": "one",
+            "method": "get",
+            "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "tag.remove",
+            "group": "tag",
+            "action": "remove",
+            "method": "post",
+            "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "tag.removeFromProject",
+            "group": "tag",
+            "action": "remove-from-project",
+            "method": "post",
+            "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "tag.update",
+            "group": "tag",
+            "action": "update",
+            "method": "post",
+            "reason": "UI taxonomy surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          }
+        ],
+        "user": [
+          {
+            "endpoint": "user.all",
+            "group": "user",
+            "action": "all",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.assignPermissions",
+            "group": "user",
+            "action": "assign-permissions",
+            "method": "post",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "user.checkUserOrganizations",
+            "group": "user",
+            "action": "check-user-organizations",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.createApiKey",
+            "group": "user",
+            "action": "create-api-key",
+            "method": "post",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "user.createUserWithCredentials",
+            "group": "user",
+            "action": "create-user-with-credentials",
+            "method": "post",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "user.deleteApiKey",
+            "group": "user",
+            "action": "delete-api-key",
+            "method": "post",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "user.generateToken",
+            "group": "user",
+            "action": "generate-token",
+            "method": "post",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "user.get",
+            "group": "user",
+            "action": "get",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.getBackups",
+            "group": "user",
+            "action": "get-backups",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.getBookmarkedTemplates",
+            "group": "user",
+            "action": "get-bookmarked-templates",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.getContainerMetrics",
+            "group": "user",
+            "action": "get-container-metrics",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.getInvitations",
+            "group": "user",
+            "action": "get-invitations",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.getMetricsToken",
+            "group": "user",
+            "action": "get-metrics-token",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.getPermissions",
+            "group": "user",
+            "action": "get-permissions",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.getServerMetrics",
+            "group": "user",
+            "action": "get-server-metrics",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.getUserByToken",
+            "group": "user",
+            "action": "get-user-by-token",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.haveRootAccess",
+            "group": "user",
+            "action": "have-root-access",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.one",
+            "group": "user",
+            "action": "one",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.remove",
+            "group": "user",
+            "action": "remove",
+            "method": "post",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "user.sendInvitation",
+            "group": "user",
+            "action": "send-invitation",
+            "method": "post",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "user.session",
+            "group": "user",
+            "action": "session",
+            "method": "get",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "user.toggleTemplateBookmark",
+            "group": "user",
+            "action": "toggle-template-bookmark",
+            "method": "post",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "user.update",
+            "group": "user",
+            "action": "update",
+            "method": "post",
+            "reason": "user/admin/token/session surface, noisy and sensitive for normal deploy/debug agent work",
+            "risk": "side-effect"
           }
         ],
         "whitelabeling": [
@@ -4206,14 +4170,30 @@
             "group": "whitelabeling",
             "action": "get",
             "method": "get",
-            "reason": "branding settings, not useful for normal deploy/debug agent work"
+            "reason": "branding surface, not useful for normal deploy/debug agent work"
           },
           {
             "endpoint": "whitelabeling.getPublic",
             "group": "whitelabeling",
             "action": "get-public",
             "method": "get",
-            "reason": "branding settings, not useful for normal deploy/debug agent work"
+            "reason": "branding surface, not useful for normal deploy/debug agent work"
+          },
+          {
+            "endpoint": "whitelabeling.reset",
+            "group": "whitelabeling",
+            "action": "reset",
+            "method": "post",
+            "reason": "branding surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
+          },
+          {
+            "endpoint": "whitelabeling.update",
+            "group": "whitelabeling",
+            "action": "update",
+            "method": "post",
+            "reason": "branding surface, not useful for normal deploy/debug agent work",
+            "risk": "side-effect"
           }
         ]
       }
@@ -4303,14 +4283,6 @@
       ],
       "disallowed": [
         {
-          "endpoint": "ai.analyzeLogs",
-          "group": "ai",
-          "action": "analyze-logs",
-          "method": "post",
-          "reason": "side-effect endpoint not allowlisted",
-          "risk": "external-ai-data-exposure"
-        },
-        {
           "endpoint": "settings.updateLogCleanup",
           "group": "settings",
           "action": "update-log-cleanup",
@@ -4319,7 +4291,16 @@
           "risk": "secret-leakage"
         }
       ],
-      "hidden": []
+      "hidden": [
+        {
+          "endpoint": "ai.analyzeLogs",
+          "group": "ai",
+          "action": "analyze-logs",
+          "method": "post",
+          "reason": "Dokploy AI provider config surface, not useful for this agent workflow",
+          "risk": "external-ai-data-exposure"
+        }
+      ]
     }
   },
   "openapi": {

@@ -12,10 +12,10 @@
 
 ## Token-saving command blacklist
 
-- [ ] Add separate blacklist config for useless/noisy commands
-- [ ] Teach agent-safe generator to hide blacklisted commands from command groups and safety lists
-- [ ] Expose hidden command metadata separately for debugging
-- [ ] Update docs and verify builds
+- [x] Add separate blacklist config for useless/noisy commands
+- [x] Teach agent-safe generator to hide blacklisted commands from command groups and safety lists
+- [x] Expose hidden command metadata separately for debugging
+- [x] Update docs and verify builds
 
 ## Review
 
