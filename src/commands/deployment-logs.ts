@@ -9,6 +9,8 @@ import { filterLogString, limitLogString, redactString } from "../redact.js";
 interface DeploymentRecord {
 	deploymentId?: string;
 	logPath?: string;
+	serverId?: string;
+	buildServerId?: string;
 	createdAt?: string;
 	startedAt?: string;
 	finishedAt?: string;
@@ -36,6 +38,7 @@ interface DeploymentLogOptions {
 interface ResolvedDeploymentLog {
 	logPath: string;
 	deploymentId?: string;
+	serverId?: string;
 	deployment?: DeploymentRecord;
 }
 
@@ -68,6 +71,78 @@ function deploymentTimeValue(deployment: DeploymentRecord): number {
 	if (!raw) return 0;
 	const time = Date.parse(raw);
 	return Number.isFinite(time) ? time : 0;
+}
+
+function objectValue(value: unknown): Record<string, unknown> | undefined {
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		return undefined;
+	}
+	return value as Record<string, unknown>;
+}
+
+function stringValue(value: unknown): string | undefined {
+	return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function nestedServerId(value: unknown): string | undefined {
+	const obj = objectValue(value);
+	if (!obj) return undefined;
+	const server = objectValue(obj.server);
+	const buildServer = objectValue(obj.buildServer);
+	return stringValue(buildServer?.serverId) ?? stringValue(server?.serverId);
+}
+
+function deploymentServerId(
+	deployment: DeploymentRecord,
+	fallbackServerId?: string,
+): string | undefined {
+	return (
+		stringValue(deployment.buildServerId) ??
+		stringValue(deployment.serverId) ??
+		nestedServerId(deployment.application) ??
+		nestedServerId(deployment.compose) ??
+		fallbackServerId
+	);
+}
+
+function entityServerId(entity: unknown): string | undefined {
+	const obj = objectValue(entity);
+	if (!obj) return undefined;
+	return (
+		stringValue(obj.buildServerId) ??
+		stringValue(obj.serverId) ??
+		nestedServerId(obj)
+	);
+}
+
+async function resolveSourceServerId(
+	opts: DeploymentLogOptions,
+): Promise<string | undefined> {
+	if (opts.serverId) return opts.serverId;
+
+	if (opts.applicationId) {
+		return entityServerId(
+			await apiGet("application.one", { applicationId: opts.applicationId }),
+		);
+	}
+
+	if (opts.composeId) {
+		return entityServerId(
+			await apiGet("compose.one", { composeId: opts.composeId }),
+		);
+	}
+
+	if (opts.id && opts.type === "application") {
+		return entityServerId(
+			await apiGet("application.one", { applicationId: opts.id }),
+		);
+	}
+
+	if (opts.id && opts.type === "compose") {
+		return entityServerId(await apiGet("compose.one", { composeId: opts.id }));
+	}
+
+	return undefined;
 }
 
 async function fetchDeployments(
@@ -111,11 +186,13 @@ async function resolveDeploymentLogCandidates(
 			{
 				logPath: opts.logPath,
 				deploymentId: opts.deploymentId,
+				serverId: opts.serverId,
 			},
 		];
 	}
 
 	const deployments = await fetchDeployments(opts);
+	const sourceServerId = await resolveSourceServerId(opts);
 	const candidates = opts.deploymentId
 		? deployments.filter(
 				(deployment) => deployment.deploymentId === opts.deploymentId,
@@ -133,6 +210,7 @@ async function resolveDeploymentLogCandidates(
 		.map((deployment) => ({
 			logPath: deployment.logPath as string,
 			deploymentId: deployment.deploymentId,
+			serverId: deploymentServerId(deployment, sourceServerId),
 			deployment,
 		}));
 
@@ -219,6 +297,7 @@ function consumeFrames(
 
 async function readDeploymentLogWebSocket(
 	logPath: string,
+	serverId: string | undefined,
 	options: WebSocketReadOptions,
 ): Promise<string> {
 	const auth = readAuthConfig();
@@ -227,7 +306,10 @@ async function readDeploymentLogWebSocket(
 	const port = baseUrl.port ? Number(baseUrl.port) : secure ? 443 : 80;
 	const url = new URL(auth.url);
 	url.pathname = "/listen-deployment";
-	url.search = `?logPath=${encodeURIComponent(logPath)}`;
+	url.searchParams.set("logPath", logPath);
+	if (serverId) {
+		url.searchParams.set("serverId", serverId);
+	}
 
 	return new Promise((resolve, reject) => {
 		let settled = false;
@@ -375,11 +457,17 @@ export function registerDeploymentLogsCommand(program: Command): void {
 				for (const candidate of candidates) {
 					resolved = candidate;
 					triedLogs += 1;
-					logs = await readDeploymentLogWebSocket(candidate.logPath, {
-						timeoutMs: asNumber(opts.timeout, DEFAULT_TIMEOUT_MS / 1000) * 1000,
-						idleTimeoutMs:
-							asNumber(opts.idleTimeout, DEFAULT_IDLE_TIMEOUT_MS / 1000) * 1000,
-					});
+					logs = await readDeploymentLogWebSocket(
+						candidate.logPath,
+						candidate.serverId,
+						{
+							timeoutMs:
+								asNumber(opts.timeout, DEFAULT_TIMEOUT_MS / 1000) * 1000,
+							idleTimeoutMs:
+								asNumber(opts.idleTimeout, DEFAULT_IDLE_TIMEOUT_MS / 1000) *
+								1000,
+						},
+					);
 
 					if (exactLog || !isMissingDeploymentLog(logs)) break;
 					skippedMissingLogs += 1;
@@ -420,6 +508,7 @@ export function registerDeploymentLogsCommand(program: Command): void {
 export const deploymentLogsInternals = {
 	buildWebSocketRequest,
 	consumeFrames,
+	deploymentServerId,
 	formatDeploymentLogOutput,
 	isMissingDeploymentLog,
 };

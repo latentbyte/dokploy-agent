@@ -36,6 +36,38 @@ describe("deployment log helpers", () => {
 		expect(frames).toEqual(["deploy ok"]);
 	});
 
+	it("should resolve deployment log server ids from deployment metadata", () => {
+		expect(
+			deploymentLogsInternals.deploymentServerId({
+				buildServerId: "build-server",
+				serverId: "runtime-server",
+			}),
+		).toBe("build-server");
+
+		expect(
+			deploymentLogsInternals.deploymentServerId({
+				application: {
+					buildServer: { serverId: "nested-build-server" },
+					server: { serverId: "nested-runtime-server" },
+				},
+			}),
+		).toBe("nested-build-server");
+
+		expect(deploymentLogsInternals.deploymentServerId({}, "fallback")).toBe(
+			"fallback",
+		);
+
+		expect(
+			deploymentLogsInternals.deploymentServerId(
+				{
+					buildServerId: "",
+					serverId: "",
+				},
+				"compose-parent-server",
+			),
+		).toBe("compose-parent-server");
+	});
+
 	it("should detect missing deployment log responses", () => {
 		expect(
 			deploymentLogsInternals.isMissingDeploymentLog(

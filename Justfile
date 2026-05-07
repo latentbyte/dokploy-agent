@@ -33,6 +33,10 @@ fix: fmt
 test:
 	pnpm test
 
+# validate deployment log websocket behavior against live Dokploy
+live-deployment-logs:
+	bun --conditions=development scripts/live-deployment-logs.ts
+
 # build full cli
 build:
 	pnpm run build

@@ -179,6 +179,7 @@ Custom non-OpenAPI deployment log support:
 - `deployment.read-logs` is a CLI overlay, not generated from `openapi.json`
 - it reads Dokploy deployment logs through the server WebSocket endpoint using a `logPath` from deployment metadata or a deployment source selector
 - prefer `--applicationId`, `--composeId`, `--serverId`, or `--deploymentId` over raw `--logPath`
+- application and compose selectors resolve the parent service first when deployment rows do not include the remote `serverId`
 - selector mode skips missing/pruned log files and tries older deployment records
 - if all candidate log files are missing, the command exits with a clear error instead of returning `tail` noise
 - always use `--tail`, `--search`, and output limits for agent use
@@ -206,6 +207,7 @@ Log exposure rules:
 - redact with same secret sanitizer as normal responses
 - keep default line/byte caps to protect agent context
 - read-log API endpoints already support server-side `tail`, `since`, and `search`
+- prefer agent-safe local search flags over server-side `search` when a no-match result should be non-error output
 - audit logs support server-side `limit` and `offset`
 - agent-safe builds also add local output flags for log commands:
   - `--local-search <value>` filters returned logs locally after redaction

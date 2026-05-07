@@ -98,3 +98,12 @@
 - Workflow prefers agent-safe CLI, search-first discovery, bounded logs, and exact-id deploys.
 - Skill explicitly avoids assuming work projects use Dokploy.
 
+## Validate deployment log CLI against Dokploy docs
+
+- [x] Compare official API docs, upstream server behavior, and browser HARs for logs
+- [x] Reproduce deployment WebSocket server-id failure without printing secrets
+- [x] Patch CLI and tests for verified deployment log behavior
+- [x] Add Bun live validation target for deployment log WebSocket behavior
+- [x] Verify runtime app log and container discovery paths from HAR2
+- [x] Regenerate/build/check/test and install agent CLI
+- [x] Update Dokploy skill docs if command guidance was wrong
