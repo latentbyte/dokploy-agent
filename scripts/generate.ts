@@ -17,6 +17,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const SPEC_PATH = path.join(ROOT, "openapi.json");
 const OUT_PATH = path.join(ROOT, "src", "generated", "commands.ts");
+const AGENT_BLACKLIST_PATH = path.join(
+	ROOT,
+	"docs",
+	"agent-command-blacklist.json",
+);
 
 const AGENT_SAFE_ARG = "--agent-safe";
 const AGENT_SAFE_TAG = "agent-safe";
@@ -115,12 +120,25 @@ interface SafetyReport {
 	mode: "full" | "agent-safe";
 	allowed: SafetyEntry[];
 	disallowed: SafetyEntry[];
+	hidden: SafetyEntry[];
 	unavailable: SafetyEntry[];
 	logs: {
 		allowed: SafetyEntry[];
 		disallowed: SafetyEntry[];
+		hidden: SafetyEntry[];
 		unavailable: SafetyEntry[];
 	};
+}
+
+interface BlacklistCommand {
+	endpoint: string;
+	reason: string;
+}
+
+interface AgentCommandBlacklist {
+	version: number;
+	description?: string;
+	commands: BlacklistCommand[];
 }
 
 const MUTATING_GET_ENDPOINTS = new Set([
@@ -250,6 +268,17 @@ function unavailableToSafetyEntry(item: UnavailableInfo): SafetyEntry {
 	return entry;
 }
 
+function loadAgentCommandBlacklist(): Map<string, string> {
+	if (!fs.existsSync(AGENT_BLACKLIST_PATH)) return new Map();
+
+	const parsed = JSON.parse(
+		fs.readFileSync(AGENT_BLACKLIST_PATH, "utf8"),
+	) as AgentCommandBlacklist;
+	return new Map(
+		parsed.commands.map((command) => [command.endpoint, command.reason]),
+	);
+}
+
 function classifyCommand(cmd: CommandInfo): {
 	allowed: boolean;
 	reason: string;
@@ -282,12 +311,20 @@ function classifyCommand(cmd: CommandInfo): {
 function buildSafetyReport(
 	commands: CommandInfo[],
 	unavailable: UnavailableInfo[],
+	blacklist: Map<string, string>,
 ): SafetyReport {
 	const allowed: SafetyEntry[] = [];
 	const disallowed: SafetyEntry[] = [];
+	const hidden: SafetyEntry[] = [];
 	const unavailableEntries = unavailable.map(unavailableToSafetyEntry);
 
 	for (const cmd of commands) {
+		const hiddenReason = blacklist.get(cmd.endpoint);
+		if (isAgentSafeBuild && hiddenReason) {
+			hidden.push(toSafetyEntry(cmd, hiddenReason));
+			continue;
+		}
+
 		const decision = classifyCommand(cmd);
 		if (decision.allowed) {
 			allowed.push(toSafetyEntry(cmd, decision.reason));
@@ -300,6 +337,7 @@ function buildSafetyReport(
 		mode: isAgentSafeBuild ? "agent-safe" : "full",
 		allowed: allowed.sort((a, b) => a.endpoint.localeCompare(b.endpoint)),
 		disallowed: disallowed.sort((a, b) => a.endpoint.localeCompare(b.endpoint)),
+		hidden: hidden.sort((a, b) => a.endpoint.localeCompare(b.endpoint)),
 		unavailable: unavailableEntries.sort((a, b) =>
 			a.endpoint.localeCompare(b.endpoint),
 		),
@@ -308,6 +346,9 @@ function buildSafetyReport(
 				entry.endpoint.toLowerCase().includes("log"),
 			),
 			disallowed: disallowed.filter((entry) =>
+				entry.endpoint.toLowerCase().includes("log"),
+			),
+			hidden: hidden.filter((entry) =>
 				entry.endpoint.toLowerCase().includes("log"),
 			),
 			unavailable: unavailableEntries.filter((entry) =>
@@ -477,9 +518,11 @@ function registerAgentSafetyCommands(program: Command) {
 				mode: AGENT_SAFETY_REPORT.mode,
 				allowed: AGENT_SAFETY_REPORT.allowed.length,
 				disallowed: AGENT_SAFETY_REPORT.disallowed.length,
+				hidden: AGENT_SAFETY_REPORT.hidden.length,
 				unavailable: AGENT_SAFETY_REPORT.unavailable.length,
 				logsAllowed: AGENT_SAFETY_REPORT.logs.allowed.length,
 				logsDisallowed: AGENT_SAFETY_REPORT.logs.disallowed.length,
+				logsHidden: AGENT_SAFETY_REPORT.logs.hidden.length,
 				logsUnavailable: AGENT_SAFETY_REPORT.logs.unavailable.length,
 			};
 			if (opts.json) {
@@ -502,6 +545,12 @@ function registerAgentSafetyCommands(program: Command) {
 		.action((opts: Record<string, any>) => printSafetyEntries(AGENT_SAFETY_REPORT.disallowed, opts.json));
 
 	safety
+		.command('hidden')
+		.description('show commands hidden from agents for token savings')
+		.option('--json', 'Output raw JSON')
+		.action((opts: Record<string, any>) => printSafetyEntries(AGENT_SAFETY_REPORT.hidden, opts.json));
+
+	safety
 		.command('unavailable')
 		.description('show commands unavailable to agents')
 		.option('--json', 'Output raw JSON')
@@ -520,6 +569,8 @@ function registerAgentSafetyCommands(program: Command) {
 			printSafetyEntries(AGENT_SAFETY_REPORT.logs.allowed, false);
 			console.log('disallowed');
 			printSafetyEntries(AGENT_SAFETY_REPORT.logs.disallowed, false);
+			console.log('hidden');
+			printSafetyEntries(AGENT_SAFETY_REPORT.logs.hidden, false);
 			console.log('unavailable');
 			printSafetyEntries(AGENT_SAFETY_REPORT.logs.unavailable, false);
 		});
@@ -527,12 +578,19 @@ function registerAgentSafetyCommands(program: Command) {
 `;
 }
 
-function generateFile(commands: CommandInfo[], report: SafetyReport): string {
-	const safeCommands = isAgentSafeBuild
-		? commands.filter((cmd) => classifyCommand(cmd).allowed)
+function generateFile(
+	commands: CommandInfo[],
+	report: SafetyReport,
+	blacklist: Map<string, string>,
+): string {
+	const visibleCommands = isAgentSafeBuild
+		? commands.filter((cmd) => !blacklist.has(cmd.endpoint))
 		: commands;
+	const safeCommands = isAgentSafeBuild
+		? visibleCommands.filter((cmd) => classifyCommand(cmd).allowed)
+		: visibleCommands;
 	const blockedCommands = isAgentSafeBuild
-		? commands.filter((cmd) => !classifyCommand(cmd).allowed)
+		? visibleCommands.filter((cmd) => !classifyCommand(cmd).allowed)
 		: [];
 
 	const groups = new Map<string, CommandInfo[]>();
@@ -627,10 +685,15 @@ ${isAgentSafeBuild ? "\tregisterAgentSafetyCommands(program);\n" : ""}${groupBlo
 
 const spec: OpenAPISpec = JSON.parse(fs.readFileSync(SPEC_PATH, "utf8"));
 const parsed = parseSpec(spec);
-const report = buildSafetyReport(parsed.commands, parsed.unavailable);
+const blacklist = loadAgentCommandBlacklist();
+const report = buildSafetyReport(
+	parsed.commands,
+	parsed.unavailable,
+	blacklist,
+);
 
 fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
-fs.writeFileSync(OUT_PATH, generateFile(parsed.commands, report));
+fs.writeFileSync(OUT_PATH, generateFile(parsed.commands, report, blacklist));
 
 const target = isAgentSafeBuild ? "agent-safe" : "full";
 const generatedCount = isAgentSafeBuild

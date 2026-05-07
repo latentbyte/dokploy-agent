@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "description": "Commands hidden from the agent-safe CLI because they add noise, are rarely useful for agent tasks, or can waste tokens. This is separate from safety policy.",
+  "commands": [
+    {
+      "endpoint": "settings.getOpenApiDocument",
+      "reason": "huge schema output, redundant with local openapi.json and safety metadata"
+    },
+    {
+      "endpoint": "stripe.canCreateMoreServers",
+      "reason": "billing/account state, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "stripe.getCurrentPlan",
+      "reason": "billing/account state, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "stripe.getInvoices",
+      "reason": "billing/account data, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "stripe.getProducts",
+      "reason": "billing catalog data, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "licenseKey.getEnterpriseSettings",
+      "reason": "license/account settings, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "licenseKey.haveValidLicenseKey",
+      "reason": "license/account state, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "whitelabeling.get",
+      "reason": "branding settings, not useful for normal deploy/debug agent work"
+    },
+    {
+      "endpoint": "whitelabeling.getPublic",
+      "reason": "branding settings, not useful for normal deploy/debug agent work"
+    }
+  ]
+}

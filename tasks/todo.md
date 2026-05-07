@@ -10,6 +10,13 @@
 - [x] Add tests for build mode, safety metadata, and redaction
 - [x] Run checks and commit in meaningful units
 
+## Token-saving command blacklist
+
+- [ ] Add separate blacklist config for useless/noisy commands
+- [ ] Teach agent-safe generator to hide blacklisted commands from command groups and safety lists
+- [ ] Expose hidden command metadata separately for debugging
+- [ ] Update docs and verify builds
+
 ## Review
 
 - Added agent-safe build tag and safety metadata commands
