@@ -41,9 +41,9 @@ build:
 build-agent-safe:
 	pnpm run build:agent-safe
 
-# install cli in ~/.local/bin
-install: build
+# install agent-safe cli in ~/.local/bin
+install: build-agent-safe
 	mkdir -p "$HOME/.local/bin"
 	chmod +x dist/index.js
-	ln -sf "$(pwd)/dist/index.js" "$HOME/.local/bin/dokploy"
-	@echo "installed $HOME/.local/bin/dokploy"
+	ln -sf "$(pwd)/dist/index.js" "$HOME/.local/bin/dokploy-agent"
+	@echo "installed $HOME/.local/bin/dokploy-agent"
