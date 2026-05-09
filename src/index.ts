@@ -4,10 +4,12 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import chalk from "chalk";
-import { program } from "commander";
+import { CommanderError, program } from "commander";
 import { formatCliError } from "./client.js";
 import { registerAuthCommand } from "./commands/auth.js";
+import { registerComposeToolCommands } from "./commands/compose-tools.js";
 import { registerDeploymentLogsCommand } from "./commands/deployment-logs.js";
+import { registerServiceInventoryCommands } from "./commands/service-inventory.js";
 import { registerGeneratedCommands } from "./generated/commands.js";
 
 interface BuildInfo {
@@ -51,15 +53,50 @@ program
 registerAuthCommand(program);
 registerGeneratedCommands(program);
 registerDeploymentLogsCommand(program);
+registerServiceInventoryCommands(program);
+registerComposeToolCommands(program);
 
 const argv = process.argv.filter((arg) => arg !== "--");
+
+if (argv.includes("--json")) {
+	program.configureOutput({
+		writeErr: () => {},
+		outputError: () => {},
+	});
+}
 
 if (argv.length <= 2) {
 	program.outputHelp();
 	process.exit(0);
 }
 
+program.exitOverride();
+
 program.parseAsync(argv).catch((err) => {
-	console.error(chalk.red(formatCliError(err)));
+	if (
+		err instanceof CommanderError &&
+		(err.code === "commander.helpDisplayed" || err.code === "commander.version")
+	) {
+		process.exit(0);
+	}
+
+	if (argv.includes("--json")) {
+		const code = err instanceof CommanderError ? err.code : "CLI_ERROR";
+		console.error(
+			JSON.stringify(
+				{
+					ok: false,
+					error: {
+						code,
+						message: formatCliError(err),
+					},
+				},
+				null,
+				2,
+			),
+		);
+	} else {
+		console.error(chalk.red(formatCliError(err)));
+	}
 	process.exit(1);
 });

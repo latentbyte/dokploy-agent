@@ -34,7 +34,7 @@ function extractAgentLogOptions(opts: Record<string, any>) {
 }
 
 function printOutput(data: unknown, jsonOutput: boolean, logOutput: boolean, agentLogOptions = {}) {
-	const output = AGENT_SAFE_BUILD ? sanitizeForAgent(data, { logOutput, ...agentLogOptions }) : data;
+	const output = sanitizeForAgent(data, { logOutput, ...agentLogOptions });
 	if (jsonOutput) {
 		console.log(JSON.stringify(output, null, 2));
 		return;

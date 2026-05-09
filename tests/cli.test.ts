@@ -82,6 +82,22 @@ describe("CLI", () => {
 		expect(output).toContain("--tail");
 	});
 
+	it("should show inventory aliases clearly", () => {
+		const output = run("--help");
+		expect(output).toContain("service");
+		expect(output).toContain("alias for service list");
+
+		const applicationOutput = run("application", "--help");
+		expect(applicationOutput).toContain(
+			"alias: flattened application inventory",
+		);
+
+		const composeOutput = run("compose", "--help");
+		expect(composeOutput).toContain("alias: flattened compose inventory");
+		expect(composeOutput).toContain("effective");
+		expect(composeOutput).toContain("summary");
+	});
+
 	it("should show auth command options", () => {
 		const output = run("auth", "--help");
 		expect(output).toContain("--url");
