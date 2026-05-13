@@ -67,6 +67,7 @@ Runtime policy:
 - omitted `serverId` on create defaults to the first configured server
 - updates, deploys, and domain writes first resolve the target service and require it to belong to one configured project/environment
 - domain hosts must end with one of the suffixes in `agentDeployPolicy.domainSuffixes`
+- when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value
 
 Example config shape:
 
@@ -90,7 +91,8 @@ Example config shape:
         "hint": "srv1.example.net"
       }
     ],
-    "domainSuffixes": [".apps.example.net"]
+    "domainSuffixes": [".apps.example.net"],
+    "domainNameSuffix": "-agent"
   }
 }
 ```

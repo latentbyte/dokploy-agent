@@ -30,6 +30,7 @@ export interface AgentDeployPolicyConfig {
 	projects: AgentDeployProjectConfig[];
 	servers: AgentDeployServerConfig[];
 	domainSuffixes: string[];
+	domainNameSuffix?: string;
 }
 
 export interface AuthConfig {
@@ -177,6 +178,12 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 		);
 	}
 
+	const domainNameSuffix =
+		typeof policy.domainNameSuffix === "string" &&
+		policy.domainNameSuffix.trim()
+			? policy.domainNameSuffix.trim()
+			: undefined;
+
 	const rawProjects = Array.isArray(policy.projects)
 		? policy.projects
 		: [
@@ -212,6 +219,7 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 		projects,
 		servers,
 		domainSuffixes,
+		domainNameSuffix,
 	};
 }
 

@@ -723,8 +723,16 @@ async function assertAgentServiceInDeployProject(policy: ReturnType<typeof readA
 
 function assertAgentDomainHost(policy: ReturnType<typeof readAgentDeployPolicyConfig>, host: string | undefined) {
 	if (!host) return;
-	if (policy.domainSuffixes.some((suffix) => host.endsWith(suffix))) return;
-	throw new Error('agent-safe deploy policy allows domains ending with: ' + policy.domainSuffixes.join(', '));
+	const domainSuffix = policy.domainSuffixes
+		.filter((suffix) => host.endsWith(suffix))
+		.sort((a, b) => b.length - a.length)[0];
+	if (!domainSuffix) {
+		throw new Error('agent-safe deploy policy allows domains ending with: ' + policy.domainSuffixes.join(', '));
+	}
+	if (!policy.domainNameSuffix) return;
+	const domainName = host.slice(0, -domainSuffix.length);
+	if (domainName.endsWith(policy.domainNameSuffix)) return;
+	throw new Error('agent-safe deploy policy requires domain names ending with: ' + policy.domainNameSuffix);
 }
 
 async function assertAgentDomainInDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
@@ -780,7 +788,7 @@ function agentDeployPolicy() {
 		examples: [
 			'dokploy-agent compose create --name demo --composeType docker-compose --composeFile <compose.yaml>',
 			'dokploy-agent application create --name demo --serverId ' + policy.servers[0]?.serverId,
-			'dokploy-agent domain create --composeId <id> --host demo' + policy.domainSuffixes[0] + ' --https --certificateType letsencrypt --domainType compose',
+			'dokploy-agent domain create --composeId <id> --host demo' + (policy.domainNameSuffix ?? '') + policy.domainSuffixes[0] + ' --https --certificateType letsencrypt --domainType compose',
 		],
 	};
 }
@@ -797,6 +805,7 @@ function printAgentDeployPolicy(jsonOutput: boolean) {
 	console.log('servers:');
 	for (const server of policy.servers) console.log('- ' + agentDeployServerLabel(server) + (server.hint ? ' ' + server.hint : ''));
 	console.log('domain suffixes: ' + policy.domainSuffixes.join(', '));
+	console.log('domain name suffix: ' + (policy.domainNameSuffix ?? '(none)'));
 	console.log('examples:');
 	for (const example of policy.examples) console.log(example);
 }
