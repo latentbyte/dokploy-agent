@@ -140,6 +140,14 @@ describe("generator", () => {
 
 			const generatedContent = fs.readFileSync(outPath, "utf8");
 			expect(generatedContent).toContain("const AGENT_SAFE_BUILD = true");
+			expect(generatedContent).toContain('apiPost("application.create"');
+			expect(generatedContent).toContain('apiPost("compose.create"');
+			expect(generatedContent).toContain('apiPost("domain.create"');
+			expect(generatedContent).toContain("guardAgentSafePost");
+			expect(generatedContent).toContain("command('deploy-policy')");
+			expect(generatedContent).toContain("envP0000000000000000p");
+			expect(generatedContent).toContain("srvA0000000000000000a");
+			expect(generatedContent).toContain("srvB0000000000000000b");
 			expect(fs.readFileSync(generatedPath, "utf8")).toBe(before);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
