@@ -57,16 +57,20 @@ function stripYamlSection(input: string, sectionNames: string[]): string {
 		.trim();
 }
 
-function stripComposeNoise(data: unknown): unknown {
-	if (typeof data === "string")
-		return stripYamlSection(data, ["labels", "networks"]);
-	if (Array.isArray(data)) return data.map(stripComposeNoise);
+function stripComposeNoise(
+	data: unknown,
+	sectionNames: string[] = ["labels", "networks"],
+): unknown {
+	if (typeof data === "string") return stripYamlSection(data, sectionNames);
+	if (Array.isArray(data))
+		return data.map((item) => stripComposeNoise(item, sectionNames));
 	const obj = asObject(data);
 	if (!obj) return data;
+	const sections = new Set(sectionNames);
 	const output: JsonObject = {};
 	for (const [key, value] of Object.entries(obj)) {
-		if (key === "labels" || key === "networks") continue;
-		output[key] = stripComposeNoise(value);
+		if (sections.has(key)) continue;
+		output[key] = stripComposeNoise(value, sectionNames);
 	}
 	return output;
 }
@@ -145,9 +149,13 @@ export function registerComposeToolCommands(program: Command): void {
 			const data = await apiGet("compose.getConvertedCompose", {
 				composeId: opts.composeId,
 			});
-			const shouldStrip =
-				opts.dokployLabels === false || opts.dokployNetworks === false;
-			print(shouldStrip ? stripComposeNoise(data) : data, opts.json === true);
+			const sectionNames: string[] = [];
+			if (opts.dokployLabels === false) sectionNames.push("labels");
+			if (opts.dokployNetworks === false) sectionNames.push("networks");
+			print(
+				sectionNames.length > 0 ? stripComposeNoise(data, sectionNames) : data,
+				opts.json === true,
+			);
 		});
 
 	compose
@@ -180,3 +188,9 @@ export function registerComposeToolCommands(program: Command): void {
 			);
 		});
 }
+
+export const composeToolsInternals = {
+	stripComposeNoise,
+	stripYamlSection,
+	summarizeComposeData,
+};
