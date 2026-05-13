@@ -28,7 +28,7 @@ describe("readAuthConfig", () => {
 	});
 
 	it("should read from DOKPLOY_API_KEY env var", async () => {
-		process.env.DOKPLOY_URL = "https://test.dokploy.com";
+		process.env.DOKPLOY_URL = "https://test.dokploy.com/";
 		process.env.DOKPLOY_API_KEY = "test-key-123";
 
 		const { readAuthConfig } = await import("../src/client.js");
@@ -231,7 +231,7 @@ describe("saveAuthConfig", () => {
 		const { getAuthConfigPath, saveAuthConfig } = await import(
 			"../src/client.js"
 		);
-		saveAuthConfig("https://test.dokploy.com", "test-token");
+		saveAuthConfig("https://test.dokploy.com/", "test-token");
 
 		const configPath = getAuthConfigPath();
 		expect(configPath).toBe(path.join(configHome, "dokploy", "config.json"));

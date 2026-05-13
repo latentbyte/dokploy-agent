@@ -56,6 +56,10 @@ function getReadableConfigPath(): string | undefined {
 	return undefined;
 }
 
+function normalizeUrl(url: string): string {
+	return url.replace(/\/+$/, "");
+}
+
 function parseEnvValue(raw: string): string {
 	const trimmed = raw.trim();
 	const quote = trimmed[0];
@@ -95,7 +99,7 @@ export function readAuthConfig(): AuthConfig {
 	const envUrl = process.env.DOKPLOY_URL;
 
 	if (envToken && envUrl) {
-		return { token: envToken, url: envUrl };
+		return { token: envToken, url: normalizeUrl(envUrl) };
 	}
 
 	const readableConfigPath = getReadableConfigPath();
@@ -121,7 +125,7 @@ export function readAuthConfig(): AuthConfig {
 		process.exit(1);
 	}
 
-	return { token, url };
+	return { token, url: normalizeUrl(url) };
 }
 
 export function saveAuthConfig(url: string, token: string): void {
@@ -132,7 +136,7 @@ export function saveAuthConfig(url: string, token: string): void {
 	fs.mkdirSync(path.dirname(configPath), { recursive: true });
 	fs.writeFileSync(
 		configPath,
-		JSON.stringify({ ...existing, url, token }, null, 2),
+		JSON.stringify({ ...existing, url: normalizeUrl(url), token }, null, 2),
 		{ mode: 0o600 },
 	);
 	fs.chmodSync(configPath, 0o600);
