@@ -2,7 +2,7 @@
 
 This file tracks commands that are safe to expose to the agent.
 
-Current policy: expose read-only endpoints by default. Side-effect endpoints are denied except for a minimal deploy set.
+Current policy: expose read-only endpoints by default. Side-effect endpoints are denied except for a deploy set constrained to one project.
 
 ## Source
 
@@ -51,13 +51,51 @@ All commands below are `apiGet` based and considered safe-by-default in agent-sa
 
 Note: `cluster add-manager` and `cluster add-worker` are exposed as `apiGet` in the generator, but names imply mutation and they are treated as side-effect and blocked.
 
-## Side-effect limited allowlist (phase 1)
+## Side-effect limited allowlist
 
-These are not exposed by default; keep in separate, explicit allowlist.
+These commands are exposed only in agent-safe builds and are guarded at runtime:
 
-- `application`: deploy, redeploy
-- `compose`: deploy, isolated-deployment, deploy-template
-- `preview-deployment`: redeploy
+- `application`: create, deploy, redeploy, update
+- `compose`: create, deploy, isolated-deployment, update
+- `domain`: create, update
+
+Runtime policy:
+
+- creation is forced into an allowed `agentDeployPolicy.projects[].environmentId` from the Dokploy config file
+- if create omits `environmentId`, the first configured project is used
+- allowed deploy servers come from `agentDeployPolicy.servers`
+- omitted `serverId` on create defaults to the first configured server
+- updates, deploys, and domain writes first resolve the target service and require it to belong to one configured project/environment
+- domain hosts must end with one of the suffixes in `agentDeployPolicy.domainSuffixes`
+- when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value
+
+Example config shape:
+
+```json
+{
+  "url": "https://dokploy.example.com",
+  "token": "...",
+  "agentDeployPolicy": {
+    "projects": [
+      {
+        "projectName": "agent_sandbox",
+        "projectId": "prjA0000000000000000a",
+        "environmentName": "production",
+        "environmentId": "envA0000000000000000a"
+      }
+    ],
+    "servers": [
+      {
+        "name": "server-a",
+        "serverId": "srvA0000000000000000a",
+        "hint": "srv1.example.net"
+      }
+    ],
+    "domainSuffixes": [".apps.example.net"],
+    "domainNameSuffix": "-agent"
+  }
+}
+```
 
 No other `apiPost` commands are safe for now.
 
@@ -77,9 +115,9 @@ Agent-safe build tag:
 
 Agent-safe build behavior:
 
-- generates a CLI surface with safe GET endpoints and explicit deploy allowlist
+- generates a CLI surface with safe GET endpoints and an explicit guarded deploy allowlist
 - registers blocked command stubs for disallowed endpoints so the agent sees why it cannot use them
-- adds `dokploy-agent logs`, `dokploy-agent state`, and `dokploy-agent agent-safety summary|allowed|disallowed|unavailable|logs`
+- adds `dokploy-agent logs`, `dokploy-agent state`, and `dokploy-agent agent-safety summary|allowed|disallowed|unavailable|logs|deploy-policy`
 - redacts responses before printing them
 - limits log output before sending it to the agent
 
@@ -90,49 +128,37 @@ Disallowed means command exists in the generated CLI surface but policy blocks i
 Unavailable means command exists in `openapi.json` but is not generated into `src/generated/commands.ts`, so the current CLI cannot expose it without generator/client work.
 
 - generated total: 524
-- safe total: 145
-- disallowed total: 212
-- hidden total: 167
+- safe total: 138
+- disallowed total: 141
+- hidden total: 245
 - not available total (in `openapi.json` but not generated): 0
 
 Full machine-readable list is in `docs/agent-safe-api-surface.json`.
 
 ### Disallowed (generated but blocked)
 
-- use `generated.disallowed.by_group` in the JSON file for a full per-group list
+- use `generated.disallowed` in the JSON file for a full per-group list
 - notable disallowed groups by count:
-  - application: 24
-  - backup: 10
-  - certificates: 3
-  - compose: 18
+  - application: 14
+  - backup: 3
+  - compose: 8
   - deployment: 2
-  - destination: 4
-  - docker: 6
-  - domain: 5
+  - domain: 2
   - environment: 4
   - libsql: 12
   - mariadb: 13
   - mongo: 13
-  - mounts: 3
   - mysql: 13
-  - patch: 8
-  - port: 3
   - postgres: 13
-  - preview-deployment: 1
-  - project: 4
-  - redirects: 3
+  - preview-deployment: 2
   - redis: 13
-  - registry: 5
   - rollback: 2
   - schedule: 4
-  - security: 3
-  - server: 5
-  - settings: 14
-  - volume-backups: 4
+  - settings: 4
 
 ### Hidden (generated but omitted for token savings)
 
-- use `generated.hidden.by_group` in the JSON file for a full per-group list
+- use `generated.hidden` in the JSON file for a full per-group list
 - hidden groups by count:
   - admin: 1
   - ai: 12
@@ -143,9 +169,14 @@ Full machine-readable list is in `docs/agent-safe-api-surface.json`.
   - gitea: 3
   - github: 2
   - gitlab: 3
+  - libsql: 14
   - license-key: 6
+  - mariadb: 16
+  - mongo: 16
+  - mysql: 16
   - notification: 41
   - organization: 11
+  - redis: 16
   - settings: 17
   - ssh-key: 4
   - sso: 10

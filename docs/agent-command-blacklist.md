@@ -8,7 +8,8 @@ Built-in source: `docs/agent-command-blacklist.json`.
 
 Optional user sources, merged after the built-in list:
 
-- `~/.config/dokploy-agent/command-blacklist.json`
+- `~/.config/dokploy/agent-command-blacklist.json`
+- legacy `~/.config/dokploy-agent/command-blacklist.json`
 - path from `DOKPLOY_AGENT_BLACKLIST_PATH`
 
 ## Rules

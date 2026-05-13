@@ -13,9 +13,30 @@ const CONFIG_DIR_NAME = "dokploy";
 const CONFIG_FILE_NAME = "config.json";
 const MAX_ERROR_BODY_CHARS = 4000;
 
+export interface AgentDeployServerConfig {
+	serverId: string;
+	name?: string;
+	hint?: string;
+}
+
+export interface AgentDeployProjectConfig {
+	projectName: string;
+	projectId?: string;
+	environmentName: string;
+	environmentId: string;
+}
+
+export interface AgentDeployPolicyConfig {
+	projects: AgentDeployProjectConfig[];
+	servers: AgentDeployServerConfig[];
+	domainSuffixes: string[];
+	domainNameSuffix?: string;
+}
+
 export interface AuthConfig {
 	token: string;
 	url: string;
+	agentDeployPolicy?: AgentDeployPolicyConfig;
 }
 
 export function getAuthConfigPath(): string {
@@ -95,8 +116,111 @@ export function readAuthConfig(): AuthConfig {
 
 export function saveAuthConfig(url: string, token: string): void {
 	const configPath = getAuthConfigPath();
+	const existing = fs.existsSync(configPath)
+		? JSON.parse(fs.readFileSync(configPath, "utf8"))
+		: {};
 	fs.mkdirSync(path.dirname(configPath), { recursive: true });
-	fs.writeFileSync(configPath, JSON.stringify({ url, token }, null, 2));
+	fs.writeFileSync(
+		configPath,
+		JSON.stringify({ ...existing, url, token }, null, 2),
+	);
+}
+
+function assertString(value: unknown, name: string): string {
+	if (typeof value === "string" && value.trim()) return value;
+	throw new Error(`Missing ${name} in agentDeployPolicy config.`);
+}
+
+export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
+	loadEnvFile();
+	const readableConfigPath = getReadableConfigPath();
+	if (!readableConfigPath) {
+		throw new Error(
+			"No Dokploy config file found. Configure agentDeployPolicy in the Dokploy config file.",
+		);
+	}
+
+	const config = JSON.parse(fs.readFileSync(readableConfigPath, "utf8"));
+	const policy = config.agentDeployPolicy;
+	if (!policy || typeof policy !== "object") {
+		throw new Error(
+			`Missing agentDeployPolicy in ${readableConfigPath}. Run dokploy-agent agent-safety deploy-policy --help for expected fields.`,
+		);
+	}
+
+	const servers = Array.isArray(policy.servers)
+		? policy.servers.map((server: Record<string, unknown>) => ({
+				serverId: assertString(server.serverId, "servers[].serverId"),
+				name:
+					typeof server.name === "string" && server.name.trim()
+						? server.name
+						: undefined,
+				hint:
+					typeof server.hint === "string" && server.hint.trim()
+						? server.hint
+						: undefined,
+			}))
+		: [];
+	if (servers.length === 0) {
+		throw new Error(
+			"agentDeployPolicy.servers must include at least one server.",
+		);
+	}
+
+	const domainSuffixes = Array.isArray(policy.domainSuffixes)
+		? policy.domainSuffixes.map((suffix: unknown) =>
+				assertString(suffix, "domainSuffixes[]"),
+			)
+		: [];
+	if (domainSuffixes.length === 0) {
+		throw new Error(
+			"agentDeployPolicy.domainSuffixes must include at least one suffix.",
+		);
+	}
+
+	const domainNameSuffix =
+		typeof policy.domainNameSuffix === "string" &&
+		policy.domainNameSuffix.trim()
+			? policy.domainNameSuffix.trim()
+			: undefined;
+
+	const rawProjects = Array.isArray(policy.projects)
+		? policy.projects
+		: [
+				{
+					projectName: policy.projectName,
+					projectId: policy.projectId,
+					environmentName: policy.environmentName,
+					environmentId: policy.environmentId,
+				},
+			];
+	const projects = rawProjects.map((project: Record<string, unknown>) => ({
+		projectName: assertString(project.projectName, "projects[].projectName"),
+		projectId:
+			typeof project.projectId === "string" && project.projectId.trim()
+				? project.projectId
+				: undefined,
+		environmentName: assertString(
+			project.environmentName,
+			"projects[].environmentName",
+		),
+		environmentId: assertString(
+			project.environmentId,
+			"projects[].environmentId",
+		),
+	}));
+	if (projects.length === 0) {
+		throw new Error(
+			"agentDeployPolicy.projects must include at least one project.",
+		);
+	}
+
+	return {
+		projects,
+		servers,
+		domainSuffixes,
+		domainNameSuffix,
+	};
 }
 
 export function createClient(): AxiosInstance {
