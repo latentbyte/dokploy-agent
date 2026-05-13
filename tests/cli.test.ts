@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -7,35 +7,36 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const CLI = path.join(ROOT, "dist", "index.js");
 
-function run(...args: string[]): string {
-	return execFileSync("node", [CLI, ...args], {
-		encoding: "utf8",
-		env: { ...process.env, NO_COLOR: "1" },
-	});
-}
-
-interface FailedCommand {
+interface CommandResult {
 	stdout: string;
 	stderr: string;
 	status: number;
 }
 
-function runFail(...args: string[]): FailedCommand {
-	try {
-		run(...args);
-	} catch (err) {
-		const error = err as {
-			stdout?: string;
-			stderr?: string;
-			status?: number;
-		};
-		return {
-			stdout: error.stdout ?? "",
-			stderr: error.stderr ?? "",
-			status: error.status ?? 1,
-		};
+function runCommand(...args: string[]): CommandResult {
+	const result = spawnSync("node", [CLI, ...args], {
+		encoding: "utf8",
+		env: { ...process.env, NO_COLOR: "1" },
+	});
+	return {
+		stdout: result.stdout,
+		stderr: result.stderr,
+		status: result.status ?? 1,
+	};
+}
+
+function run(...args: string[]): string {
+	const result = runCommand(...args);
+	if (result.status !== 0) {
+		throw new Error(result.stderr || `command failed with ${result.status}`);
 	}
-	throw new Error("command succeeded unexpectedly");
+	return result.stdout;
+}
+
+function runFail(...args: string[]): CommandResult {
+	const result = runCommand(...args);
+	if (result.status === 0) throw new Error("command succeeded unexpectedly");
+	return result;
 }
 
 describe("CLI", () => {
