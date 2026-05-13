@@ -116,6 +116,55 @@ describe("generator", () => {
 		}
 	});
 
+	it("agent-safe builds should read blacklist from dokploy config dir", () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-cli-test-"));
+		const configHome = path.join(tempDir, "config-home");
+		const blacklistPath = path.join(
+			configHome,
+			"dokploy",
+			"agent-command-blacklist.json",
+		);
+		const outPath = path.join(tempDir, "commands.ts");
+		fs.mkdirSync(path.dirname(blacklistPath), { recursive: true });
+		fs.writeFileSync(
+			blacklistPath,
+			JSON.stringify({
+				version: 1,
+				commands: [
+					{
+						endpoint: "domain.validateDomain",
+						reason: "not needed in tests",
+					},
+				],
+			}),
+		);
+
+		try {
+			execFileSync(
+				"pnpm",
+				[
+					"exec",
+					"tsx",
+					"scripts/generate.ts",
+					"--agent-safe",
+					"--out",
+					outPath,
+				],
+				{
+					cwd: ROOT,
+					env: {
+						...process.env,
+						XDG_CONFIG_HOME: configHome,
+					},
+				},
+			);
+			const content = fs.readFileSync(outPath, "utf8");
+			expect(content).not.toContain('apiPost("domain.validateDomain"');
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
 	it("agent-safe --out should not rewrite tracked generated commands", () => {
 		const before = fs.readFileSync(generatedPath, "utf8");
 		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-cli-test-"));

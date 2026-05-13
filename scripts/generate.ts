@@ -24,9 +24,15 @@ const AGENT_BLACKLIST_PATH = path.join(
 	"docs",
 	"agent-command-blacklist.json",
 );
+const USER_CONFIG_HOME =
+	process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config");
 const USER_AGENT_BLACKLIST_PATH = path.join(
-	os.homedir(),
-	".config",
+	USER_CONFIG_HOME,
+	"dokploy",
+	"agent-command-blacklist.json",
+);
+const LEGACY_USER_AGENT_BLACKLIST_PATH = path.join(
+	USER_CONFIG_HOME,
 	"dokploy-agent",
 	"command-blacklist.json",
 );
@@ -358,6 +364,7 @@ function loadAgentCommandBlacklist(): Map<string, string> {
 	const paths = [
 		AGENT_BLACKLIST_PATH,
 		USER_AGENT_BLACKLIST_PATH,
+		LEGACY_USER_AGENT_BLACKLIST_PATH,
 		...(customPath ? [customPath] : []),
 	];
 	const blacklist = new Map<string, string>();
