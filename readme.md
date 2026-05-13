@@ -1,6 +1,6 @@
 # Dokploy CLI
 
-Dokploy CLI is a command-line tool to manage your Dokploy server remotely. It provides **449 commands** auto-generated from the Dokploy OpenAPI spec, covering every API endpoint.
+Dokploy CLI is a command-line tool to manage your Dokploy server remotely. It provides **524 commands** auto-generated from the Dokploy OpenAPI spec, covering every API endpoint.
 
 ## Installation
 
@@ -85,28 +85,30 @@ dokploy application deploy --help
 
 | Group | Commands | Group | Commands |
 |---|---|---|---|
-| `admin` | 1 | `notification` | 38 |
-| `ai` | 9 | `organization` | 10 |
-| `application` | 29 | `patch` | 12 |
-| `backup` | 11 | `port` | 4 |
-| `bitbucket` | 7 | `postgres` | 14 |
-| `certificates` | 4 | `preview-deployment` | 4 |
-| `cluster` | 4 | `project` | 8 |
-| `compose` | 28 | `redirects` | 4 |
-| `deployment` | 8 | `redis` | 14 |
-| `destination` | 6 | `registry` | 7 |
-| `docker` | 7 | `rollback` | 2 |
-| `domain` | 9 | `schedule` | 6 |
-| `environment` | 7 | `security` | 4 |
-| `gitea` | 8 | `server` | 16 |
-| `github` | 6 | `settings` | 49 |
-| `gitlab` | 7 | `ssh-key` | 6 |
-| `git-provider` | 2 | `sso` | 10 |
-| `license-key` | 6 | `stripe` | 7 |
-| `mariadb` | 14 | `swarm` | 3 |
-| `mongo` | 14 | `user` | 18 |
-| `mounts` | 6 | `volume-backups` | 6 |
-| `mysql` | 14 | | |
+| `admin` | 1 | `mysql` | 16 |
+| `ai` | 12 | `notification` | 41 |
+| `application` | 31 | `organization` | 11 |
+| `audit-log` | 1 | `patch` | 12 |
+| `backup` | 12 | `port` | 4 |
+| `bitbucket` | 7 | `postgres` | 16 |
+| `certificates` | 5 | `preview-deployment` | 4 |
+| `cluster` | 4 | `project` | 9 |
+| `compose` | 30 | `redirects` | 4 |
+| `custom-role` | 6 | `redis` | 16 |
+| `deployment` | 8 | `registry` | 7 |
+| `destination` | 6 | `rollback` | 2 |
+| `docker` | 12 | `schedule` | 6 |
+| `domain` | 9 | `security` | 4 |
+| `environment` | 7 | `server` | 17 |
+| `gitea` | 8 | `settings` | 51 |
+| `github` | 6 | `ssh-key` | 7 |
+| `gitlab` | 7 | `sso` | 10 |
+| `git-provider` | 4 | `stripe` | 8 |
+| `libsql` | 14 | `swarm` | 4 |
+| `license-key` | 6 | `tag` | 8 |
+| `mariadb` | 16 | `user` | 23 |
+| `mongo` | 16 | `volume-backups` | 6 |
+| `mounts` | 6 | `whitelabeling` | 4 |
 
 ## Development
 
