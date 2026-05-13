@@ -93,7 +93,7 @@ export function readAuthConfig(): AuthConfig {
 	if (!readableConfigPath) {
 		console.error(
 			chalk.red(
-				"No configuration found. Please run 'dokploy auth' first or set DOKPLOY_URL and DOKPLOY_AUTH_TOKEN environment variables.",
+				"No configuration found. Please run 'dokploy auth' first or set DOKPLOY_URL and DOKPLOY_API_KEY (or DOKPLOY_AUTH_TOKEN) environment variables.",
 			),
 		);
 		process.exit(1);

@@ -57,6 +57,22 @@ describe("readAuthConfig", () => {
 
 		expect(config.token).toBe("api-key");
 	});
+
+	it("should describe supported env vars when config is missing", async () => {
+		process.env.XDG_CONFIG_HOME = fs.mkdtempSync(
+			path.join(os.tmpdir(), "dokploy-config-"),
+		);
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.spyOn(process, "exit").mockImplementation(((code) => {
+			throw new Error(`exit ${code}`);
+		}) as typeof process.exit);
+
+		const { readAuthConfig } = await import("../src/client.js");
+
+		expect(() => readAuthConfig()).toThrow("exit 1");
+		expect(errorSpy.mock.calls.join("\n")).toContain("DOKPLOY_API_KEY");
+		expect(errorSpy.mock.calls.join("\n")).toContain("DOKPLOY_AUTH_TOKEN");
+	});
 });
 
 describe("apiGet", () => {
