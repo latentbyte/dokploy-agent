@@ -57,7 +57,11 @@ function collectDomains(value: unknown): string[] {
 			if (text) domains.add(text);
 		}
 	};
-	for (const item of asArray(value)) visit(item);
+	if (Array.isArray(value)) {
+		for (const item of value) visit(item);
+	} else {
+		visit(value);
+	}
 	return [...domains].sort();
 }
 
@@ -211,3 +215,9 @@ export function registerServiceInventoryCommands(program: Command): void {
 		.option("--json", "Output JSON")
 		.action((opts: Record<string, unknown>) => listServices(opts, "compose"));
 }
+
+export const serviceInventoryInternals = {
+	collectDomains,
+	flattenProjectAll,
+	selectFields,
+};
