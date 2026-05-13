@@ -137,6 +137,9 @@ describe("CLI", () => {
 		const result = runFail("not-a-command");
 		expect(result.status).not.toBe(0);
 		expect(result.stderr).toContain("unknown command 'not-a-command'");
+		expect(
+			result.stderr.match(/unknown command 'not-a-command'/g),
+		).toHaveLength(1);
 		expect(result.stderr).not.toContain("too many arguments");
 	});
 });

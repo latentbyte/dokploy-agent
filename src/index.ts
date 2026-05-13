@@ -95,7 +95,7 @@ program.parseAsync(argv).catch((err) => {
 				2,
 			),
 		);
-	} else {
+	} else if (!(err instanceof CommanderError)) {
 		console.error(chalk.red(formatCliError(err)));
 	}
 	process.exit(1);
