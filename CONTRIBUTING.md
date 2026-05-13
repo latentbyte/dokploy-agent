@@ -31,8 +31,11 @@ pnpm run generate
 # Build
 pnpm run build
 
-# Lint & format
-pnpm run lint
+# Check lint and types
+pnpm run check
+
+# Format source files
+pnpm run fmt
 ```
 
 ### Updating commands
