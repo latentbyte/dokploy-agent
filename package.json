@@ -50,7 +50,11 @@
     "generate:agent-safe": "tsx scripts/generate.ts --agent-safe",
     "prebuild": "pnpm run generate",
     "dev": "tsx src/index.ts",
-    "lint": "biome check --write .",
+    "check": "biome check scripts src/client.ts src/commands src/index.ts src/redact.ts tests && tsc -b --pretty false",
+    "lint": "pnpm run check",
+    "fmt": "biome check --write scripts src/client.ts src/commands src/index.ts src/redact.ts tests",
+    "format": "pnpm run fmt",
+    "fix": "pnpm run fmt",
     "pretest": "pnpm run build",
     "test": "vitest run"
   },
