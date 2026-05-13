@@ -56,6 +56,16 @@ function getReadableConfigPath(): string | undefined {
 	return undefined;
 }
 
+function parseEnvValue(raw: string): string {
+	const trimmed = raw.trim();
+	const quote = trimmed[0];
+	if (quote === '"' || quote === "'") {
+		const end = trimmed.lastIndexOf(quote);
+		return trimmed.slice(1, end > 0 ? end : undefined);
+	}
+	return trimmed.replace(/\s+#.*$/, "").trim();
+}
+
 function loadEnvFile(): void {
 	const envPath = path.resolve(process.cwd(), ".env");
 	if (!fs.existsSync(envPath)) return;
@@ -70,10 +80,7 @@ function loadEnvFile(): void {
 		const eqIndex = entry.indexOf("=");
 		if (eqIndex === -1) continue;
 		const key = entry.slice(0, eqIndex).trim();
-		const value = entry
-			.slice(eqIndex + 1)
-			.trim()
-			.replace(/^["']|["']$/g, "");
+		const value = parseEnvValue(entry.slice(eqIndex + 1));
 		if (!process.env[key]) {
 			process.env[key] = value;
 		}

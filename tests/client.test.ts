@@ -67,8 +67,8 @@ describe("readAuthConfig", () => {
 		fs.writeFileSync(
 			path.join(tempDir, ".env"),
 			[
-				'export DOKPLOY_URL="https://env-file.dokploy.com"',
-				"export DOKPLOY_API_KEY='env-file-key'",
+				'export DOKPLOY_URL="https://env-file.dokploy.com" # panel url',
+				"export DOKPLOY_API_KEY='env-file-key#kept' # token comment",
 			].join("\n"),
 		);
 
@@ -77,7 +77,7 @@ describe("readAuthConfig", () => {
 
 		expect(config).toEqual({
 			url: "https://env-file.dokploy.com",
-			token: "env-file-key",
+			token: "env-file-key#kept",
 		});
 	});
 
