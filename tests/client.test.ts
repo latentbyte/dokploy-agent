@@ -11,6 +11,7 @@ function decodeInput(query: string): unknown {
 
 describe("readAuthConfig", () => {
 	const originalEnv = { ...process.env };
+	const originalCwd = process.cwd();
 
 	beforeEach(() => {
 		delete process.env.DOKPLOY_URL;
@@ -22,6 +23,7 @@ describe("readAuthConfig", () => {
 
 	afterEach(() => {
 		process.env = { ...originalEnv };
+		process.chdir(originalCwd);
 		vi.restoreAllMocks();
 	});
 
@@ -56,6 +58,49 @@ describe("readAuthConfig", () => {
 		const config = readAuthConfig();
 
 		expect(config.token).toBe("api-key");
+	});
+
+	it("should read exported values from .env", async () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-env-"));
+		process.chdir(tempDir);
+		process.env.XDG_CONFIG_HOME = path.join(tempDir, "config");
+		fs.writeFileSync(
+			path.join(tempDir, ".env"),
+			[
+				'export DOKPLOY_URL="https://env-file.dokploy.com"',
+				"export DOKPLOY_API_KEY='env-file-key'",
+			].join("\n"),
+		);
+
+		const { readAuthConfig } = await import("../src/client.js");
+		const config = readAuthConfig();
+
+		expect(config).toEqual({
+			url: "https://env-file.dokploy.com",
+			token: "env-file-key",
+		});
+	});
+
+	it("should prefer shell env vars over .env values", async () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-env-"));
+		process.chdir(tempDir);
+		process.env.DOKPLOY_URL = "https://shell.dokploy.com";
+		process.env.DOKPLOY_API_KEY = "shell-key";
+		fs.writeFileSync(
+			path.join(tempDir, ".env"),
+			[
+				"DOKPLOY_URL=https://env-file.dokploy.com",
+				"DOKPLOY_API_KEY=env-file-key",
+			].join("\n"),
+		);
+
+		const { readAuthConfig } = await import("../src/client.js");
+		const config = readAuthConfig();
+
+		expect(config).toEqual({
+			url: "https://shell.dokploy.com",
+			token: "shell-key",
+		});
 	});
 
 	it("should describe supported env vars when config is missing", async () => {

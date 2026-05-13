@@ -64,10 +64,13 @@ function loadEnvFile(): void {
 	for (const line of content.split("\n")) {
 		const trimmed = line.trim();
 		if (!trimmed || trimmed.startsWith("#")) continue;
-		const eqIndex = trimmed.indexOf("=");
+		const entry = trimmed.startsWith("export ")
+			? trimmed.slice("export ".length).trim()
+			: trimmed;
+		const eqIndex = entry.indexOf("=");
 		if (eqIndex === -1) continue;
-		const key = trimmed.slice(0, eqIndex).trim();
-		const value = trimmed
+		const key = entry.slice(0, eqIndex).trim();
+		const value = entry
 			.slice(eqIndex + 1)
 			.trim()
 			.replace(/^["']|["']$/g, "");
