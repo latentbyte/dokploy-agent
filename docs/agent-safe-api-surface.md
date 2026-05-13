@@ -55,9 +55,9 @@ Note: `cluster add-manager` and `cluster add-worker` are exposed as `apiGet` in 
 
 These commands are exposed only in agent-safe builds and are guarded at runtime:
 
-- `application`: create, deploy, redeploy, save-docker-provider, save-git-provider, update
+- `application`: create, deploy, redeploy, update
 - `compose`: create, deploy, isolated-deployment, update
-- `domain`: create, delete, update
+- `domain`: create, update
 
 Runtime policy:
 

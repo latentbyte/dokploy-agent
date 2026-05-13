@@ -182,15 +182,12 @@ const SAFE_POST_ENDPOINTS = new Set([
 	"application.create",
 	"application.deploy",
 	"application.redeploy",
-	"application.saveDockerProvider",
-	"application.saveGitProvider",
 	"application.update",
 	"compose.create",
 	"compose.deploy",
 	"compose.isolatedDeployment",
 	"compose.update",
 	"domain.create",
-	"domain.delete",
 	"domain.update",
 ]);
 
@@ -653,14 +650,12 @@ const AGENT_STATE_ENDPOINTS = new Set(${stateEndpointJson});
 const AGENT_DEPLOY_SERVICE_MUTATIONS = new Set([
 	'application.deploy',
 	'application.redeploy',
-	'application.saveDockerProvider',
-	'application.saveGitProvider',
 	'application.update',
 	'compose.deploy',
 	'compose.isolatedDeployment',
 	'compose.update',
 ]);
-const AGENT_DEPLOY_DOMAIN_MUTATIONS = new Set(['domain.create', 'domain.delete', 'domain.update']);
+const AGENT_DEPLOY_DOMAIN_MUTATIONS = new Set(['domain.create', 'domain.update']);
 
 function stringValue(value: unknown): string | undefined {
 	return typeof value === 'string' && value.trim() ? value : undefined;

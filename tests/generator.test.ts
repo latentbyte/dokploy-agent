@@ -192,6 +192,13 @@ describe("generator", () => {
 			expect(generatedContent).toContain('apiPost("application.create"');
 			expect(generatedContent).toContain('apiPost("compose.create"');
 			expect(generatedContent).toContain('apiPost("domain.create"');
+			expect(generatedContent).not.toContain(
+				'apiPost("application.saveDockerProvider"',
+			);
+			expect(generatedContent).not.toContain(
+				'apiPost("application.saveGitProvider"',
+			);
+			expect(generatedContent).not.toContain('apiPost("domain.delete"');
 			expect(generatedContent).toContain("guardAgentSafePost");
 			expect(generatedContent).toContain("command('deploy-policy')");
 			expect(generatedContent).toContain("readAgentDeployPolicyConfig");
