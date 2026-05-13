@@ -142,4 +142,17 @@ describe("CLI", () => {
 		).toHaveLength(1);
 		expect(result.stderr).not.toContain("too many arguments");
 	});
+
+	it("should report parser errors as JSON when requested", () => {
+		const result = runFail("not-a-command", "--json");
+		expect(result.status).not.toBe(0);
+		expect(result.stdout).toBe("");
+		expect(JSON.parse(result.stderr)).toEqual({
+			ok: false,
+			error: {
+				code: "commander.unknownCommand",
+				message: "error: unknown command 'not-a-command'",
+			},
+		});
+	});
 });
