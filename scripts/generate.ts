@@ -668,7 +668,7 @@ function agentDeployServerLabel(server: { serverId: string; name?: string }) {
 function ensureAgentDeployServer(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
 	if (!opts.serverId) return;
 	if (policy.servers.some((server) => server.serverId === opts.serverId)) return;
-	throw new Error('agent-safe deploy policy allows only servers: ' + policy.servers.map(agentDeployServerLabel).join(', '));
+	throw new Error('agent-safe deploy policy rejects serverId ' + opts.serverId + '; allowed servers: ' + policy.servers.map(agentDeployServerLabel).join(', '));
 }
 
 function agentDeployProjectLabel(project: { projectName: string; environmentName: string; environmentId: string }) {
@@ -683,7 +683,7 @@ function allowedAgentDeployProject(policy: ReturnType<typeof readAgentDeployPoli
 function ensureAgentDeployEnvironment(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
 	const project = allowedAgentDeployProject(policy, opts.environmentId);
 	if (project) return project;
-	throw new Error('agent-safe deploy policy allows writes only in projects: ' + policy.projects.map(agentDeployProjectLabel).join(', '));
+	throw new Error('agent-safe deploy policy rejects environmentId ' + opts.environmentId + '; allowed projects: ' + policy.projects.map(agentDeployProjectLabel).join(', '));
 }
 
 function normalizeAgentDeployCreate(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
@@ -710,7 +710,9 @@ async function assertAgentServiceInDeployProject(policy: ReturnType<typeof readA
 	const key = kind === 'application' ? 'applicationId' : 'composeId';
 	const service = await apiGet(endpoint, { [key]: id });
 	if (!policy.projects.some((project) => serviceMatchesAgentDeployProject(project, service))) {
-		throw new Error('agent-safe deploy policy allows writes only inside projects: ' + policy.projects.map((project) => project.projectName).join(', '));
+		const serviceProject = service?.environment?.project?.name ?? service?.project?.name ?? 'unknown';
+		const serviceEnvironment = service?.environment?.name ?? service?.environmentId ?? 'unknown';
+		throw new Error('agent-safe deploy policy rejects ' + kind + ' ' + id + ' in ' + serviceProject + '/' + serviceEnvironment + '; allowed projects: ' + policy.projects.map(agentDeployProjectLabel).join(', '));
 	}
 	if (service?.serverId) ensureAgentDeployServer(policy, { serverId: service.serverId });
 	return service;
@@ -722,12 +724,12 @@ function assertAgentDomainHost(policy: ReturnType<typeof readAgentDeployPolicyCo
 		.filter((suffix) => host.endsWith(suffix))
 		.sort((a, b) => b.length - a.length)[0];
 	if (!domainSuffix) {
-		throw new Error('agent-safe deploy policy allows domains ending with: ' + policy.domainSuffixes.join(', '));
+		throw new Error('agent-safe deploy policy rejects host ' + host + '; allowed domain suffixes: ' + policy.domainSuffixes.join(', '));
 	}
 	if (!policy.domainNameSuffix) return;
 	const domainName = host.slice(0, -domainSuffix.length);
 	if (domainName.endsWith(policy.domainNameSuffix)) return;
-	throw new Error('agent-safe deploy policy requires domain names ending with: ' + policy.domainNameSuffix);
+	throw new Error('agent-safe deploy policy rejects host ' + host + '; domain name before ' + domainSuffix + ' must end with: ' + policy.domainNameSuffix);
 }
 
 async function assertAgentDomainInDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {

@@ -206,7 +206,7 @@ describe("generator", () => {
 			expect(generatedContent).toContain("policy.servers");
 			expect(generatedContent).toContain("policy.domainSuffixes");
 			expect(generatedContent).toContain("policy.domainNameSuffix");
-			expect(generatedContent).toContain("requires domain names ending with");
+			expect(generatedContent).toContain("must end with");
 			expect(fs.readFileSync(generatedPath, "utf8")).toBe(before);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
