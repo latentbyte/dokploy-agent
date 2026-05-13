@@ -22,6 +22,7 @@ const SECRET_KEY_PARTS = new Set([
 	"passworkd",
 	"passwd",
 	"pass",
+	"pwd",
 	"credential",
 	"credentials",
 	"private",
@@ -32,7 +33,7 @@ const SECRET_KEY_PARTS = new Set([
 ]);
 const LOG_KEY_PATTERN = /(?:log|logs|stdout|stderr|message|output)/i;
 const ENV_KEY_PATTERN =
-	/(?:api|key|id|token|secret|password|passworkd|passwd|pass|credential|private|authorization|webhook|dsn|url|uri)/i;
+	/(?:api|key|id|token|secret|password|passworkd|passwd|pass|pwd|credential|private|authorization|webhook|dsn|url|uri)/i;
 const ENV_ASSIGNMENT_PATTERN =
 	/(^|[\s([{,;'-])(["']?)([A-Za-z_][A-Za-z0-9_.-]*)(\2\s*[:=]\s*["']?)([^\s"',}\]]+)/gm;
 

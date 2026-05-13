@@ -31,6 +31,7 @@ describe("agent redaction", () => {
 		expect(isSensitiveKey("apiUrl")).toBe(true);
 		expect(isSensitiveKey("databaseUrl")).toBe(true);
 		expect(isSensitiveKey("serverId")).toBe(true);
+		expect(isSensitiveKey("dbPwd")).toBe(true);
 		expect(isSensitiveKey("valid")).toBe(false);
 		expect(isSensitiveEnvKey("POSTGRESPASSWORD")).toBe(true);
 		expect(isSensitiveEnvKey("ORGANIZATIONID")).toBe(true);
@@ -44,6 +45,7 @@ describe("agent redaction", () => {
 				"API_URL=https://example.com/token",
 				"ORGANIZATIONID: org-123456",
 				"SERVER_ID: srv-123456",
+				"DB_PWD=pwd-secret",
 				"SAFE_HOST=example.com",
 			].join("\n"),
 		);
@@ -53,9 +55,11 @@ describe("agent redaction", () => {
 		expect(output).toContain("API_URL=http***");
 		expect(output).toContain("ORGANIZATIONID: org-***");
 		expect(output).toContain("SERVER_ID: srv-***");
+		expect(output).toContain("DB_PWD=pwd-***");
 		expect(output).toContain("SAFE_HOST=example.com");
 		expect(output).not.toContain("postgres-secret");
 		expect(output).not.toContain("srv-123456");
+		expect(output).not.toContain("pwd-secret");
 	});
 
 	it("redacts secret-like log text", () => {
