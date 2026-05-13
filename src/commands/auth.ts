@@ -1,7 +1,7 @@
 import axios from "axios";
 import chalk from "chalk";
 import type { Command } from "commander";
-import { saveAuthConfig } from "../client.js";
+import { formatCliError, saveAuthConfig } from "../client.js";
 
 export function registerAuthCommand(program: Command) {
 	program
@@ -30,8 +30,10 @@ export function registerAuthCommand(program: Command) {
 
 				saveAuthConfig(url, opts.token);
 				console.log(chalk.green("Authenticated successfully."));
-			} catch (error: any) {
-				console.error(chalk.red(`Authentication failed: ${error.message}`));
+			} catch (error: unknown) {
+				console.error(
+					chalk.red(`Authentication failed: ${formatCliError(error)}`),
+				);
 				process.exit(1);
 			}
 		});
