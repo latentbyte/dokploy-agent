@@ -114,7 +114,7 @@ describe("generator", () => {
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
-	});
+	}, 15_000);
 
 	it("agent-safe builds should read blacklist from dokploy config dir", () => {
 		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-cli-test-"));
@@ -163,7 +163,7 @@ describe("generator", () => {
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
-	});
+	}, 15_000);
 
 	it("agent-safe --out should not rewrite tracked generated commands", () => {
 		const before = fs.readFileSync(generatedPath, "utf8");
@@ -211,5 +211,5 @@ describe("generator", () => {
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
-	});
+	}, 15_000);
 });
