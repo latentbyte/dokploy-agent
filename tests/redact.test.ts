@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
 	filterLogString,
+	isSensitiveEnvKey,
+	isSensitiveKey,
 	limitLogString,
 	maskSecret,
 	redactString,
@@ -22,6 +24,38 @@ describe("agent redaction", () => {
 
 	it("keeps very short secret values unchanged", () => {
 		expect(maskSecret("abc")).toBe("abc");
+	});
+
+	it("detects sensitive env key parts", () => {
+		expect(isSensitiveKey("POSTGRES_PASSWORD")).toBe(true);
+		expect(isSensitiveKey("apiUrl")).toBe(true);
+		expect(isSensitiveKey("databaseUrl")).toBe(true);
+		expect(isSensitiveKey("serverId")).toBe(true);
+		expect(isSensitiveKey("valid")).toBe(false);
+		expect(isSensitiveEnvKey("POSTGRESPASSWORD")).toBe(true);
+		expect(isSensitiveEnvKey("ORGANIZATIONID")).toBe(true);
+	});
+
+	it("redacts env-like assignments by sensitive key", () => {
+		const output = redactString(
+			[
+				"POSTGRES_PASSWORD=postgres-secret",
+				"POSTGRESPASSWORD=postgres-secret-two",
+				"API_URL=https://example.com/token",
+				"ORGANIZATIONID: org-123456",
+				"SERVER_ID: srv-123456",
+				"SAFE_HOST=example.com",
+			].join("\n"),
+		);
+
+		expect(output).toContain("POSTGRES_PASSWORD=post***");
+		expect(output).toContain("POSTGRESPASSWORD=post***");
+		expect(output).toContain("API_URL=http***");
+		expect(output).toContain("ORGANIZATIONID: org-***");
+		expect(output).toContain("SERVER_ID: srv-***");
+		expect(output).toContain("SAFE_HOST=example.com");
+		expect(output).not.toContain("postgres-secret");
+		expect(output).not.toContain("srv-123456");
 	});
 
 	it("redacts secret-like log text", () => {

@@ -10,20 +10,54 @@ export interface SanitizeOptions {
 const DEFAULT_MAX_LOG_LINES = 500;
 const DEFAULT_MAX_LOG_CHARS = 50_000;
 
-const SECRET_KEY_PATTERN =
-	/(?:api.?key|token|secret|password|passwd|pass|credential|private|privatekey|authorization|webhook|dsn|database.?url)/i;
+const SECRET_KEY_PARTS = new Set([
+	"api",
+	"key",
+	"id",
+	"url",
+	"uri",
+	"token",
+	"secret",
+	"password",
+	"passworkd",
+	"passwd",
+	"pass",
+	"credential",
+	"credentials",
+	"private",
+	"privatekey",
+	"authorization",
+	"webhook",
+	"dsn",
+]);
 const LOG_KEY_PATTERN = /(?:log|logs|stdout|stderr|message|output)/i;
+const ENV_KEY_PATTERN =
+	/(?:api|key|id|token|secret|password|passworkd|passwd|pass|credential|private|authorization|webhook|dsn|url|uri)/i;
+const ENV_ASSIGNMENT_PATTERN =
+	/(^|[\s([{,;'-])(["']?)([A-Za-z_][A-Za-z0-9_.-]*)(\2\s*[:=]\s*["']?)([^\s"',}\]]+)/gm;
 
 const STRING_SECRET_PATTERNS: Array<
 	[RegExp, (match: string, ...groups: string[]) => string]
 > = [
 	[
-		/(\b[A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD|PASS|PRIVATE_KEY|CREDENTIAL|DATABASE_URL|DSN)[A-Z0-9_]*\s*=\s*["']?)([^\s"']+)/gi,
-		(_match, prefix: string, value: string) => `${prefix}${maskSecret(value)}`,
-	],
-	[
-		/(\b(?:x-api-key|api-key|token|secret|password)\b\s*[:=]\s*["']?)([^\s"',}]+)/gi,
-		(_match, prefix: string, value: string) => `${prefix}${maskSecret(value)}`,
+		ENV_ASSIGNMENT_PATTERN,
+		(
+			match: string,
+			prefix: string,
+			quote: string,
+			key: string,
+			separator: string,
+			value: string,
+		) => {
+			if (!isSensitiveEnvKey(key)) return match;
+			if (
+				key.toLowerCase() === "authorization" &&
+				/^(bearer|basic)$/i.test(value)
+			) {
+				return match;
+			}
+			return `${prefix}${quote}${key}${separator}${maskSecret(value)}`;
+		},
 	],
 	[
 		/(\b(?:bearer|basic)\s+)([a-z0-9._~+/-]+=*)/gi,
@@ -44,6 +78,20 @@ export function maskSecret(value: unknown): string {
 	const text = String(value);
 	if (text.length <= 4) return text;
 	return `${text.slice(0, 4)}***`;
+}
+
+export function isSensitiveKey(key: string): boolean {
+	const parts = key
+		.replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+		.toLowerCase()
+		.split(/[^a-z0-9]+/)
+		.filter(Boolean);
+
+	return parts.some((part) => SECRET_KEY_PARTS.has(part));
+}
+
+export function isSensitiveEnvKey(key: string): boolean {
+	return ENV_KEY_PATTERN.test(key);
 }
 
 export function redactString(input: string): string {
@@ -124,7 +172,7 @@ function sanitizeValue(
 	if (data === null || data === undefined) return data;
 
 	if (typeof data === "string") {
-		if (key && SECRET_KEY_PATTERN.test(key)) return maskSecret(data);
+		if (key && isSensitiveKey(key)) return maskSecret(data);
 		const redacted = redactString(data);
 		if (options.logOutput || (key && LOG_KEY_PATTERN.test(key))) {
 			const filtered = filterLogString(
