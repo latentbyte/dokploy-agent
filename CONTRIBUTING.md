@@ -31,6 +31,9 @@ pnpm run generate
 # Build
 pnpm run build
 
+# Test
+pnpm test
+
 # Check lint and types
 pnpm run check
 
