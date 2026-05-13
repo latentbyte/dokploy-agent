@@ -35,6 +35,7 @@ describe("agent redaction", () => {
 		expect(isSensitiveKey("valid")).toBe(false);
 		expect(isSensitiveEnvKey("POSTGRESPASSWORD")).toBe(true);
 		expect(isSensitiveEnvKey("ORGANIZATIONID")).toBe(true);
+		expect(isSensitiveEnvKey("VALID")).toBe(false);
 	});
 
 	it("redacts env-like assignments by sensitive key", () => {
@@ -46,6 +47,7 @@ describe("agent redaction", () => {
 				"ORGANIZATIONID: org-123456",
 				"SERVER_ID: srv-123456",
 				"DB_PWD=pwd-secret",
+				"VALID=true",
 				"SAFE_HOST=example.com",
 			].join("\n"),
 		);
@@ -56,6 +58,7 @@ describe("agent redaction", () => {
 		expect(output).toContain("ORGANIZATIONID: org-***");
 		expect(output).toContain("SERVER_ID: srv-***");
 		expect(output).toContain("DB_PWD=pwd-***");
+		expect(output).toContain("VALID=true");
 		expect(output).toContain("SAFE_HOST=example.com");
 		expect(output).not.toContain("postgres-secret");
 		expect(output).not.toContain("srv-123456");

@@ -33,7 +33,7 @@ const SECRET_KEY_PARTS = new Set([
 ]);
 const LOG_KEY_PATTERN = /(?:log|logs|stdout|stderr|message|output)/i;
 const ENV_KEY_PATTERN =
-	/(?:api|key|id|token|secret|password|passworkd|passwd|pass|pwd|credential|private|authorization|webhook|dsn|url|uri)/i;
+	/(?:api|key|token|secret|password|passworkd|passwd|pass|pwd|credential|private|authorization|webhook|dsn|url|uri)/i;
 const ENV_ASSIGNMENT_PATTERN =
 	/(^|[\s([{,;'-])(["']?)([A-Za-z_][A-Za-z0-9_.-]*)(\2\s*[:=]\s*["']?)([^\s"',}\]]+)/gm;
 
@@ -92,7 +92,13 @@ export function isSensitiveKey(key: string): boolean {
 }
 
 export function isSensitiveEnvKey(key: string): boolean {
-	return ENV_KEY_PATTERN.test(key);
+	if (isSensitiveKey(key)) return true;
+	const normalized = key.toLowerCase().replace(/[^a-z0-9]+/g, "");
+	return (
+		ENV_KEY_PATTERN.test(key) ||
+		normalized === "id" ||
+		(normalized.endsWith("id") && normalized !== "valid")
+	);
 }
 
 export function redactString(input: string): string {
