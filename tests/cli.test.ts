@@ -18,6 +18,7 @@ function runCommand(...args: string[]): CommandResult {
 		encoding: "utf8",
 		env: { ...process.env, NO_COLOR: "1" },
 	});
+	if (result.error) throw result.error;
 	return {
 		stdout: result.stdout,
 		stderr: result.stderr,

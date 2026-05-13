@@ -55,7 +55,7 @@
     "fmt": "biome check --write scripts src/client.ts src/commands src/index.ts src/redact.ts tests",
     "format": "pnpm run fmt",
     "fix": "pnpm run fmt",
-    "pretest": "tsc -b && tsx scripts/write-build-info.ts",
+    "pretest": "tsc -b --force && tsx scripts/write-build-info.ts",
     "test": "vitest run"
   },
   "types": "dist/index.d.ts",
