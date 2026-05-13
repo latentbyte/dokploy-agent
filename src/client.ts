@@ -133,7 +133,9 @@ export function saveAuthConfig(url: string, token: string): void {
 	fs.writeFileSync(
 		configPath,
 		JSON.stringify({ ...existing, url, token }, null, 2),
+		{ mode: 0o600 },
 	);
+	fs.chmodSync(configPath, 0o600);
 }
 
 function assertString(value: unknown, name: string): string {

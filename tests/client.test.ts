@@ -239,6 +239,7 @@ describe("saveAuthConfig", () => {
 			url: "https://test.dokploy.com",
 			token: "test-token",
 		});
+		expect(fs.statSync(configPath).mode & 0o777).toBe(0o600);
 	});
 
 	it("should preserve agent deploy policy when saving auth", async () => {
