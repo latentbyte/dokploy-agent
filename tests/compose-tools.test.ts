@@ -74,4 +74,10 @@ describe("compose tool helpers", () => {
 			],
 		});
 	});
+
+	it("summarizes missing compose data as an empty service list", () => {
+		expect(composeToolsInternals.summarizeComposeData(undefined)).toEqual({
+			services: [],
+		});
+	});
 });

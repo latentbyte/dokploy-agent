@@ -16,7 +16,7 @@ function asArray(value: unknown): unknown[] {
 
 function asText(value: unknown): string {
 	if (typeof value === "string") return value;
-	return JSON.stringify(value, null, 2);
+	return JSON.stringify(value, null, 2) ?? "";
 }
 
 function print(data: unknown, jsonOutput: boolean): void {
