@@ -125,6 +125,47 @@ describe("saveAuthConfig", () => {
 		});
 	});
 
+	it("should preserve agent deploy policy when saving auth", async () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-config-"));
+		const customPath = path.join(tempDir, "custom.json");
+		process.env.DOKPLOY_CONFIG_PATH = customPath;
+		fs.writeFileSync(
+			customPath,
+			JSON.stringify({
+				agentDeployPolicy: {
+					projects: [
+						{
+							projectName: "agent_sandbox",
+							environmentName: "production",
+							environmentId: "env-1",
+						},
+					],
+					servers: [{ serverId: "server-1" }],
+					domainSuffixes: [".apps.example.com"],
+				},
+			}),
+		);
+
+		const { getAuthConfigPath, saveAuthConfig } = await import(
+			"../src/client.js"
+		);
+		saveAuthConfig("https://test.dokploy.com", "test-token");
+
+		expect(getAuthConfigPath()).toBe(customPath);
+		expect(JSON.parse(fs.readFileSync(customPath, "utf8"))).toMatchObject({
+			url: "https://test.dokploy.com",
+			token: "test-token",
+			agentDeployPolicy: {
+				projects: [
+					{
+						projectName: "agent_sandbox",
+						environmentId: "env-1",
+					},
+				],
+			},
+		});
+	});
+
 	it("should allow overriding config path", async () => {
 		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-config-"));
 		const customPath = path.join(tempDir, "custom.json");

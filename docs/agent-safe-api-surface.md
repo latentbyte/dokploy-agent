@@ -61,11 +61,39 @@ These commands are exposed only in agent-safe builds and are guarded at runtime:
 
 Runtime policy:
 
-- creation is forced into project `other`, environment `production` (`envP0000000000000000p`)
-- allowed deploy servers are `server-a` (`srvA0000000000000000a`) and `server-b` (`srvB0000000000000000b`)
-- omitted `serverId` on create defaults to `server-a`
-- updates, deploys, and domain writes first resolve the target service and require it to belong to the allowed project
-- domain hosts must end with one of the suffixes shown by `dokploy-agent agent-safety deploy-policy`
+- creation is forced into an allowed `agentDeployPolicy.projects[].environmentId` from the Dokploy config file
+- if create omits `environmentId`, the first configured project is used
+- allowed deploy servers come from `agentDeployPolicy.servers`
+- omitted `serverId` on create defaults to the first configured server
+- updates, deploys, and domain writes first resolve the target service and require it to belong to one configured project/environment
+- domain hosts must end with one of the suffixes in `agentDeployPolicy.domainSuffixes`
+
+Example config shape:
+
+```json
+{
+  "url": "https://dokploy.example.com",
+  "token": "...",
+  "agentDeployPolicy": {
+    "projects": [
+      {
+        "projectName": "agent_sandbox",
+        "projectId": "prjA0000000000000000a",
+        "environmentName": "production",
+        "environmentId": "envA0000000000000000a"
+      }
+    ],
+    "servers": [
+      {
+        "name": "server-a",
+        "serverId": "srvA0000000000000000a",
+        "hint": "srv1.example.net"
+      }
+    ],
+    "domainSuffixes": [".apps.example.net"]
+  }
+}
+```
 
 No other `apiPost` commands are safe for now.
 

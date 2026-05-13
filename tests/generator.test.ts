@@ -145,9 +145,10 @@ describe("generator", () => {
 			expect(generatedContent).toContain('apiPost("domain.create"');
 			expect(generatedContent).toContain("guardAgentSafePost");
 			expect(generatedContent).toContain("command('deploy-policy')");
-			expect(generatedContent).toContain("envP0000000000000000p");
-			expect(generatedContent).toContain("srvA0000000000000000a");
-			expect(generatedContent).toContain("srvB0000000000000000b");
+			expect(generatedContent).toContain("readAgentDeployPolicyConfig");
+			expect(generatedContent).toContain("policy.projects");
+			expect(generatedContent).toContain("policy.servers");
+			expect(generatedContent).toContain("policy.domainSuffixes");
 			expect(fs.readFileSync(generatedPath, "utf8")).toBe(before);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });

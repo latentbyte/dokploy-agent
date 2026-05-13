@@ -188,35 +188,6 @@ const SAFE_POST_ENDPOINTS = new Set([
 	"domain.update",
 ]);
 
-const AGENT_DEPLOY_PROJECT = {
-	name: "other",
-	environmentName: "production",
-	environmentId: "envP0000000000000000p",
-} as const;
-
-const AGENT_DEPLOY_SERVERS = [
-	{
-		name: "server-a",
-		serverId: "srvA0000000000000000a",
-		hint: "srv1.example.net",
-	},
-	{
-		name: "server-b",
-		serverId: "srvB0000000000000000b",
-		hint: "second deploy server",
-	},
-] as const;
-
-const AGENT_DEPLOY_DOMAIN_SUFFIXES = [
-	".apps.example.net",
-	".s1.example.net",
-	".s2.example.net",
-	".s3.example.net",
-	".s4.example.net",
-	".srv3.example.net",
-	".apps.srv2.example.net",
-] as const;
-
 const AGENT_HELP_GROUPS = new Set([
 	"application",
 	"compose",
@@ -560,7 +531,7 @@ function generateOptionLine(cmd: CommandInfo, opt: OptionInfo): string {
 		(cmd.endpoint === "application.create" ||
 			cmd.endpoint === "compose.create") &&
 		opt.name === "environmentId"
-			? `${opt.description}; optional in agent-safe builds, forced to ${AGENT_DEPLOY_PROJECT.name}/${AGENT_DEPLOY_PROJECT.environmentName}`
+			? `${opt.description}; optional in agent-safe builds, forced to configured agentDeployPolicy project`
 			: opt.description;
 	const escaped = escapeSingleQuoted(policyDesc);
 	const required =
@@ -669,20 +640,9 @@ function generateBlockedCommandCode(
 function generateSafetyCommandCode(report: SafetyReport): string {
 	const reportJson = JSON.stringify(report, null, "\t");
 	const stateEndpointJson = JSON.stringify(AGENT_STATE_ENDPOINTS, null, "\t");
-	const deployProjectJson = JSON.stringify(AGENT_DEPLOY_PROJECT, null, "\t");
-	const deployServersJson = JSON.stringify(AGENT_DEPLOY_SERVERS, null, "\t");
-	const deployDomainSuffixesJson = JSON.stringify(
-		AGENT_DEPLOY_DOMAIN_SUFFIXES,
-		null,
-		"\t",
-	);
 	return `
 const AGENT_SAFETY_REPORT = ${reportJson} as const;
 const AGENT_STATE_ENDPOINTS = new Set(${stateEndpointJson});
-const AGENT_DEPLOY_PROJECT = ${deployProjectJson} as const;
-const AGENT_DEPLOY_SERVERS = ${deployServersJson} as const;
-const AGENT_DEPLOY_DOMAIN_SUFFIXES = ${deployDomainSuffixesJson} as const;
-const AGENT_DEPLOY_SERVER_IDS = new Set(AGENT_DEPLOY_SERVERS.map((server) => server.serverId));
 const AGENT_DEPLOY_SERVICE_MUTATIONS = new Set([
 	'application.deploy',
 	'application.redeploy',
@@ -699,100 +659,121 @@ function stringValue(value: unknown): string | undefined {
 	return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
-function ensureAgentDeployServer(opts: Record<string, any>) {
+function agentDeployServerLabel(server: { serverId: string; name?: string }) {
+	return (server.name ? server.name + ' ' : '') + '(' + server.serverId + ')';
+}
+
+function ensureAgentDeployServer(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
 	if (!opts.serverId) return;
-	if (AGENT_DEPLOY_SERVER_IDS.has(opts.serverId)) return;
-	throw new Error('agent-safe deploy policy allows only servers: ' + AGENT_DEPLOY_SERVERS.map((server) => server.name + ' (' + server.serverId + ')').join(', '));
+	if (policy.servers.some((server) => server.serverId === opts.serverId)) return;
+	throw new Error('agent-safe deploy policy allows only servers: ' + policy.servers.map(agentDeployServerLabel).join(', '));
 }
 
-function ensureAgentDeployEnvironment(opts: Record<string, any>) {
-	if (!opts.environmentId || opts.environmentId === AGENT_DEPLOY_PROJECT.environmentId) return;
-	throw new Error('agent-safe deploy policy allows writes only in project "' + AGENT_DEPLOY_PROJECT.name + '" environment "' + AGENT_DEPLOY_PROJECT.environmentName + '" (' + AGENT_DEPLOY_PROJECT.environmentId + ')');
+function agentDeployProjectLabel(project: { projectName: string; environmentName: string; environmentId: string }) {
+	return project.projectName + '/' + project.environmentName + ' (' + project.environmentId + ')';
 }
 
-function normalizeAgentDeployCreate(opts: Record<string, any>) {
-	ensureAgentDeployEnvironment(opts);
-	opts.environmentId = AGENT_DEPLOY_PROJECT.environmentId;
-	ensureAgentDeployServer(opts);
-	if (!opts.serverId) opts.serverId = AGENT_DEPLOY_SERVERS[0]?.serverId;
+function allowedAgentDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, environmentId: string | undefined) {
+	if (!environmentId) return policy.projects[0];
+	return policy.projects.find((project) => project.environmentId === environmentId);
+}
+
+function ensureAgentDeployEnvironment(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
+	const project = allowedAgentDeployProject(policy, opts.environmentId);
+	if (project) return project;
+	throw new Error('agent-safe deploy policy allows writes only in projects: ' + policy.projects.map(agentDeployProjectLabel).join(', '));
+}
+
+function normalizeAgentDeployCreate(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
+	const project = ensureAgentDeployEnvironment(policy, opts);
+	opts.environmentId = project.environmentId;
+	ensureAgentDeployServer(policy, opts);
+	if (!opts.serverId) opts.serverId = policy.servers[0]?.serverId;
 }
 
 function serviceProjectName(service: any): string | undefined {
 	return stringValue(service?.environment?.project?.name) ?? stringValue(service?.project?.name);
 }
 
-async function assertAgentServiceInDeployProject(kind: 'application' | 'compose', id: string | undefined) {
+function serviceMatchesAgentDeployProject(project: ReturnType<typeof readAgentDeployPolicyConfig>['projects'][number], service: any) {
+	const projectMatches = project.projectId
+		? service?.environment?.project?.projectId === project.projectId
+		: serviceProjectName(service) === project.projectName;
+	return service?.environmentId === project.environmentId && projectMatches;
+}
+
+async function assertAgentServiceInDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, kind: 'application' | 'compose', id: string | undefined) {
 	if (!id) throw new Error('agent-safe deploy policy requires ' + kind + ' id');
 	const endpoint = kind === 'application' ? 'application.one' : 'compose.one';
 	const key = kind === 'application' ? 'applicationId' : 'composeId';
 	const service = await apiGet(endpoint, { [key]: id });
-	if (service?.environmentId !== AGENT_DEPLOY_PROJECT.environmentId || serviceProjectName(service) !== AGENT_DEPLOY_PROJECT.name) {
-		throw new Error('agent-safe deploy policy allows writes only inside project "' + AGENT_DEPLOY_PROJECT.name + '"');
+	if (!policy.projects.some((project) => serviceMatchesAgentDeployProject(project, service))) {
+		throw new Error('agent-safe deploy policy allows writes only inside projects: ' + policy.projects.map((project) => project.projectName).join(', '));
 	}
-	if (service?.serverId) ensureAgentDeployServer({ serverId: service.serverId });
+	if (service?.serverId) ensureAgentDeployServer(policy, { serverId: service.serverId });
 	return service;
 }
 
-function assertAgentDomainHost(host: string | undefined) {
+function assertAgentDomainHost(policy: ReturnType<typeof readAgentDeployPolicyConfig>, host: string | undefined) {
 	if (!host) return;
-	if (AGENT_DEPLOY_DOMAIN_SUFFIXES.some((suffix) => host.endsWith(suffix))) return;
-	throw new Error('agent-safe deploy policy allows domains ending with: ' + AGENT_DEPLOY_DOMAIN_SUFFIXES.join(', '));
+	if (policy.domainSuffixes.some((suffix) => host.endsWith(suffix))) return;
+	throw new Error('agent-safe deploy policy allows domains ending with: ' + policy.domainSuffixes.join(', '));
 }
 
-async function assertAgentDomainInDeployProject(opts: Record<string, any>) {
+async function assertAgentDomainInDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
 	if (opts.applicationId) {
-		await assertAgentServiceInDeployProject('application', opts.applicationId);
+		await assertAgentServiceInDeployProject(policy, 'application', opts.applicationId);
 		return;
 	}
 	if (opts.composeId) {
-		await assertAgentServiceInDeployProject('compose', opts.composeId);
+		await assertAgentServiceInDeployProject(policy, 'compose', opts.composeId);
 		return;
 	}
 	if (!opts.domainId) throw new Error('agent-safe deploy policy requires applicationId, composeId, or domainId for domain writes');
 	const domain = await apiGet('domain.one', { domainId: opts.domainId });
 	if (domain?.applicationId) {
-		await assertAgentServiceInDeployProject('application', domain.applicationId);
+		await assertAgentServiceInDeployProject(policy, 'application', domain.applicationId);
 		return;
 	}
 	if (domain?.composeId) {
-		await assertAgentServiceInDeployProject('compose', domain.composeId);
+		await assertAgentServiceInDeployProject(policy, 'compose', domain.composeId);
 		return;
 	}
 	throw new Error('agent-safe deploy policy could not resolve domain parent service');
 }
 
 async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
+	const policy = readAgentDeployPolicyConfig();
 	if (endpoint === 'application.create' || endpoint === 'compose.create') {
-		normalizeAgentDeployCreate(opts);
+		normalizeAgentDeployCreate(policy, opts);
 		return;
 	}
 	if (AGENT_DEPLOY_SERVICE_MUTATIONS.has(endpoint)) {
-		ensureAgentDeployEnvironment(opts);
-		ensureAgentDeployServer(opts);
+		ensureAgentDeployEnvironment(policy, opts);
+		ensureAgentDeployServer(policy, opts);
 		if (endpoint.startsWith('application.')) {
-			await assertAgentServiceInDeployProject('application', opts.applicationId);
+			await assertAgentServiceInDeployProject(policy, 'application', opts.applicationId);
 		} else {
-			await assertAgentServiceInDeployProject('compose', opts.composeId);
+			await assertAgentServiceInDeployProject(policy, 'compose', opts.composeId);
 		}
 		return;
 	}
 	if (AGENT_DEPLOY_DOMAIN_MUTATIONS.has(endpoint)) {
-		assertAgentDomainHost(opts.host);
-		await assertAgentDomainInDeployProject(opts);
+		assertAgentDomainHost(policy, opts.host);
+		await assertAgentDomainInDeployProject(policy, opts);
 		return;
 	}
 	throw new Error('agent-safe deploy policy does not allow write endpoint ' + endpoint);
 }
 
 function agentDeployPolicy() {
+	const policy = readAgentDeployPolicyConfig();
 	return {
-		project: AGENT_DEPLOY_PROJECT,
-		servers: AGENT_DEPLOY_SERVERS,
-		domainSuffixes: AGENT_DEPLOY_DOMAIN_SUFFIXES,
+		...policy,
 		examples: [
 			'dokploy-agent compose create --name demo --composeType docker-compose --composeFile <compose.yaml>',
-			'dokploy-agent application create --name demo --serverId ' + AGENT_DEPLOY_SERVERS[0]?.serverId,
-			'dokploy-agent domain create --composeId <id> --host demo.apps.example.net --https --certificateType letsencrypt --domainType compose',
+			'dokploy-agent application create --name demo --serverId ' + policy.servers[0]?.serverId,
+			'dokploy-agent domain create --composeId <id> --host demo' + policy.domainSuffixes[0] + ' --https --certificateType letsencrypt --domainType compose',
 		],
 	};
 }
@@ -804,9 +785,10 @@ function printAgentDeployPolicy(jsonOutput: boolean) {
 		return;
 	}
 	console.log('agent-safe deploy policy');
-	console.log('project: ' + policy.project.name + ' / ' + policy.project.environmentName + ' (' + policy.project.environmentId + ')');
+	console.log('projects:');
+	for (const project of policy.projects) console.log('- ' + agentDeployProjectLabel(project));
 	console.log('servers:');
-	for (const server of policy.servers) console.log('- ' + server.name + ' (' + server.serverId + ') ' + server.hint);
+	for (const server of policy.servers) console.log('- ' + agentDeployServerLabel(server) + (server.hint ? ' ' + server.hint : ''));
 	console.log('domain suffixes: ' + policy.domainSuffixes.join(', '));
 	console.log('examples:');
 	for (const example of policy.examples) console.log(example);
@@ -1002,13 +984,16 @@ function generateFile(
 	const safetyCommands = isAgentSafeBuild
 		? generateSafetyCommandCode(report)
 		: "";
+	const clientImports = isAgentSafeBuild
+		? "apiPost, apiGet, readAgentDeployPolicyConfig"
+		: "apiPost, apiGet";
 
 	return `// Auto-generated from openapi.json, do not edit manually.
 // Run: npx tsx scripts/generate.ts
 
 import type { Command } from "commander";
 import chalk from "chalk";
-import { apiPost, apiGet } from "../client.js";
+import { ${clientImports} } from "../client.js";
 import { sanitizeForAgent } from "../redact.js";
 
 interface SafetyEntry {
