@@ -51,6 +51,7 @@
     "prebuild": "pnpm run generate",
     "dev": "tsx src/index.ts",
     "lint": "biome check --write .",
+    "pretest": "pnpm run build",
     "test": "vitest run"
   },
   "types": "dist/index.d.ts",
