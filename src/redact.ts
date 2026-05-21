@@ -32,6 +32,22 @@ const SECRET_KEY_PARTS = new Set([
 	"dsn",
 ]);
 const LOG_KEY_PATTERN = /(?:log|logs|stdout|stderr|message|output)/i;
+const PUBLIC_IDENTIFIER_KEYS = new Set([
+	"id",
+	"applicationid",
+	"composeid",
+	"deploymentid",
+	"domainid",
+	"environmentid",
+	"projectid",
+	"serverid",
+	"postgresid",
+	"mysqlid",
+	"mariadbid",
+	"mongoid",
+	"redisid",
+	"libsqlid",
+]);
 const ENV_KEY_PATTERN =
 	/(?:api|key|token|secret|password|passworkd|passwd|pass|pwd|credential|private|authorization|webhook|dsn|url|uri)/i;
 const ENV_ASSIGNMENT_PATTERN =
@@ -89,6 +105,12 @@ export function isSensitiveKey(key: string): boolean {
 		.filter(Boolean);
 
 	return parts.some((part) => SECRET_KEY_PARTS.has(part));
+}
+
+export function isPublicIdentifierKey(key: string): boolean {
+	return PUBLIC_IDENTIFIER_KEYS.has(
+		key.toLowerCase().replace(/[^a-z0-9]+/g, ""),
+	);
 }
 
 export function isSensitiveEnvKey(key: string): boolean {
@@ -179,7 +201,9 @@ function sanitizeValue(
 	if (data === null || data === undefined) return data;
 
 	if (typeof data === "string") {
-		if (key && isSensitiveKey(key)) return maskSecret(data);
+		if (key && isSensitiveKey(key) && !isPublicIdentifierKey(key)) {
+			return maskSecret(data);
+		}
 		const redacted = redactString(data);
 		if (options.logOutput || (key && LOG_KEY_PATTERN.test(key))) {
 			const filtered = filterLogString(

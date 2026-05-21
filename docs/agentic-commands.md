@@ -36,7 +36,7 @@ Aliases, clearly marked in help:
 
 ## `application logs --appName APP_NAME --tail 200 --json`
 
-Reads runtime logs without requiring agents to copy redacted application IDs. Selectors: `--applicationId`, `--appName`, `--name`, or `--q`. Refine ambiguous matches with `--project` and `--env`.
+Reads runtime logs without requiring a separate ID lookup. Selectors: `--applicationId`, `--appName`, `--name`, or `--q`. Refine ambiguous matches with `--project` and `--env`.
 
 Local filtering after redaction: `--local-search`, `--local-context`, `--local-tail`, and `--local-max-chars`.
 

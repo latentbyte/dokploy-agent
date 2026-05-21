@@ -254,6 +254,7 @@ When forwarding output to the agent, apply a scrubber that masks secret-like val
 
 - strip env values to first 4 characters
 - never emit full `DOKPLOY_API_KEY`, service tokens, credentials, or private keys
+- keep public resource IDs visible, for example `applicationId`, `serverId`, and inventory `id`
 
 Suggested sanitizer behavior:
 

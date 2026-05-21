@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	filterLogString,
+	isPublicIdentifierKey,
 	isSensitiveEnvKey,
 	isSensitiveKey,
 	limitLogString,
@@ -22,6 +23,22 @@ describe("agent redaction", () => {
 		});
 	});
 
+	it("keeps public resource IDs visible", () => {
+		const output = sanitizeForAgent({
+			id: "app-row-id",
+			applicationId: "app-123456",
+			serverId: "server-123456",
+			organizationId: "org-123456",
+		});
+
+		expect(output).toEqual({
+			id: "app-row-id",
+			applicationId: "app-123456",
+			serverId: "server-123456",
+			organizationId: "org-***",
+		});
+	});
+
 	it("keeps very short secret values unchanged", () => {
 		expect(maskSecret("abc")).toBe("abc");
 	});
@@ -31,6 +48,9 @@ describe("agent redaction", () => {
 		expect(isSensitiveKey("apiUrl")).toBe(true);
 		expect(isSensitiveKey("databaseUrl")).toBe(true);
 		expect(isSensitiveKey("serverId")).toBe(true);
+		expect(isPublicIdentifierKey("serverId")).toBe(true);
+		expect(isPublicIdentifierKey("applicationId")).toBe(true);
+		expect(isPublicIdentifierKey("organizationId")).toBe(false);
 		expect(isSensitiveKey("dbPwd")).toBe(true);
 		expect(isSensitiveKey("valid")).toBe(false);
 		expect(isSensitiveEnvKey("POSTGRESPASSWORD")).toBe(true);
