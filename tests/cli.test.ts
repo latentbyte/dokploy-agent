@@ -84,6 +84,13 @@ describe("CLI", () => {
 		expect(output).toContain("--tail");
 	});
 
+	it("should show agent-friendly application log options", () => {
+		const output = run("application", "logs", "--help");
+		expect(output).toContain("--appName");
+		expect(output).toContain("--name");
+		expect(output).toContain("--local-search");
+	});
+
 	it("should show inventory aliases clearly", () => {
 		const output = run("--help");
 		expect(output).toContain("service");

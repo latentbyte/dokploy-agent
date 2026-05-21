@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import { CommanderError, program } from "commander";
 import { formatCliError } from "./client.js";
+import { registerApplicationLogCommands } from "./commands/application-logs.js";
 import { registerAuthCommand } from "./commands/auth.js";
 import { registerComposeToolCommands } from "./commands/compose-tools.js";
 import { registerDeploymentLogsCommand } from "./commands/deployment-logs.js";
@@ -52,6 +53,7 @@ program
 
 registerAuthCommand(program);
 registerGeneratedCommands(program);
+registerApplicationLogCommands(program);
 registerDeploymentLogsCommand(program);
 registerServiceInventoryCommands(program);
 registerComposeToolCommands(program);

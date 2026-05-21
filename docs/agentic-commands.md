@@ -34,6 +34,12 @@ Aliases, clearly marked in help:
 
 `--fields name,domains,repo` selects fields.
 
+## `application logs --appName APP_NAME --tail 200 --json`
+
+Reads runtime logs without requiring agents to copy redacted application IDs. Selectors: `--applicationId`, `--appName`, `--name`, or `--q`. Refine ambiguous matches with `--project` and `--env`.
+
+Local filtering after redaction: `--local-search`, `--local-context`, `--local-tail`, and `--local-max-chars`.
+
 ## `compose effective --composeId ID --json`
 
 Returns effective compose from Dokploy conversion. Use `--no-dokploy-labels` and `--no-dokploy-networks` to strip generated noise.
