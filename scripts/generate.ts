@@ -666,8 +666,9 @@ function agentDeployServerLabel(server: { serverId: string; name?: string }) {
 }
 
 function ensureAgentDeployServer(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
-	if (!opts.serverId) return;
-	if (policy.servers.some((server) => server.serverId === opts.serverId)) return;
+	if (!opts.serverId) return undefined;
+	const server = policy.servers.find((candidate) => candidate.serverId === opts.serverId);
+	if (server) return server;
 	throw new Error('agent-safe deploy policy rejects serverId ' + opts.serverId + '; allowed servers: ' + policy.servers.map(agentDeployServerLabel).join(', '));
 }
 
@@ -704,6 +705,10 @@ function serviceMatchesAgentDeployProject(project: ReturnType<typeof readAgentDe
 	return service?.environmentId === project.environmentId && projectMatches;
 }
 
+function serviceServerId(service: any): string | undefined {
+	return stringValue(service?.serverId) ?? stringValue(service?.server?.serverId) ?? stringValue(service?.buildServer?.serverId);
+}
+
 async function assertAgentServiceInDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, kind: 'application' | 'compose', id: string | undefined) {
 	if (!id) throw new Error('agent-safe deploy policy requires ' + kind + ' id');
 	const endpoint = kind === 'application' ? 'application.one' : 'compose.one';
@@ -714,42 +719,55 @@ async function assertAgentServiceInDeployProject(policy: ReturnType<typeof readA
 		const serviceEnvironment = service?.environment?.name ?? service?.environmentId ?? 'unknown';
 		throw new Error('agent-safe deploy policy rejects ' + kind + ' ' + id + ' in ' + serviceProject + '/' + serviceEnvironment + '; allowed projects: ' + policy.projects.map(agentDeployProjectLabel).join(', '));
 	}
-	if (service?.serverId) ensureAgentDeployServer(policy, { serverId: service.serverId });
+	const serverId = serviceServerId(service);
+	if (serverId) ensureAgentDeployServer(policy, { serverId });
 	return service;
 }
 
-function assertAgentDomainHost(policy: ReturnType<typeof readAgentDeployPolicyConfig>, host: string | undefined) {
-	if (!host) return;
-	const domainSuffix = policy.domainSuffixes
+function agentDeployDomainSuffixesForServer(policy: ReturnType<typeof readAgentDeployPolicyConfig>, serverId: string | undefined) {
+	if (!serverId) return policy.domainSuffixes;
+	const server = ensureAgentDeployServer(policy, { serverId });
+	return server?.domainSuffixes?.length ? server.domainSuffixes : policy.domainSuffixes;
+}
+
+function matchingAgentDomainSuffix(host: string, suffixes: string[]) {
+	return suffixes
 		.filter((suffix) => host.endsWith(suffix))
+		.filter((suffix) => {
+			const domainName = host.slice(0, -suffix.length);
+			return domainName.length > 0 && !domainName.includes('.');
+		})
 		.sort((a, b) => b.length - a.length)[0];
+}
+
+function assertAgentDomainHost(policy: ReturnType<typeof readAgentDeployPolicyConfig>, host: string | undefined, serverId: string | undefined) {
+	if (!host) return;
+	const normalizedHost = host.toLowerCase();
+	const allowedSuffixes = agentDeployDomainSuffixesForServer(policy, serverId);
+	const domainSuffix = matchingAgentDomainSuffix(normalizedHost, allowedSuffixes);
 	if (!domainSuffix) {
-		throw new Error('agent-safe deploy policy rejects host ' + host + '; allowed domain suffixes: ' + policy.domainSuffixes.join(', '));
+		throw new Error('agent-safe deploy policy rejects host ' + host + '; allowed wildcard domains: *' + allowedSuffixes.join(', *'));
 	}
 	if (!policy.domainNameSuffix) return;
-	const domainName = host.slice(0, -domainSuffix.length);
+	const domainName = normalizedHost.slice(0, -domainSuffix.length);
 	if (domainName.endsWith(policy.domainNameSuffix)) return;
 	throw new Error('agent-safe deploy policy rejects host ' + host + '; domain name before ' + domainSuffix + ' must end with: ' + policy.domainNameSuffix);
 }
 
 async function assertAgentDomainInDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
 	if (opts.applicationId) {
-		await assertAgentServiceInDeployProject(policy, 'application', opts.applicationId);
-		return;
+		return assertAgentServiceInDeployProject(policy, 'application', opts.applicationId);
 	}
 	if (opts.composeId) {
-		await assertAgentServiceInDeployProject(policy, 'compose', opts.composeId);
-		return;
+		return assertAgentServiceInDeployProject(policy, 'compose', opts.composeId);
 	}
 	if (!opts.domainId) throw new Error('agent-safe deploy policy requires applicationId, composeId, or domainId for domain writes');
 	const domain = await apiGet('domain.one', { domainId: opts.domainId });
 	if (domain?.applicationId) {
-		await assertAgentServiceInDeployProject(policy, 'application', domain.applicationId);
-		return;
+		return assertAgentServiceInDeployProject(policy, 'application', domain.applicationId);
 	}
 	if (domain?.composeId) {
-		await assertAgentServiceInDeployProject(policy, 'compose', domain.composeId);
-		return;
+		return assertAgentServiceInDeployProject(policy, 'compose', domain.composeId);
 	}
 	throw new Error('agent-safe deploy policy could not resolve domain parent service');
 }
@@ -771,8 +789,8 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 		return;
 	}
 	if (AGENT_DEPLOY_DOMAIN_MUTATIONS.has(endpoint)) {
-		assertAgentDomainHost(policy, opts.host);
-		await assertAgentDomainInDeployProject(policy, opts);
+		const service = await assertAgentDomainInDeployProject(policy, opts);
+		assertAgentDomainHost(policy, opts.host, serviceServerId(service));
 		return;
 	}
 	throw new Error('agent-safe deploy policy does not allow write endpoint ' + endpoint);
@@ -802,6 +820,9 @@ function printAgentDeployPolicy(jsonOutput: boolean) {
 	console.log('servers:');
 	for (const server of policy.servers) console.log('- ' + agentDeployServerLabel(server) + (server.hint ? ' ' + server.hint : ''));
 	console.log('domain suffixes: ' + policy.domainSuffixes.join(', '));
+	for (const server of policy.servers) {
+		if (server.domainSuffixes?.length) console.log('domain suffixes for ' + agentDeployServerLabel(server) + ': ' + server.domainSuffixes.join(', '));
+	}
 	console.log('domain name suffix: ' + (policy.domainNameSuffix ?? '(none)'));
 	console.log('examples:');
 	for (const example of policy.examples) console.log(example);

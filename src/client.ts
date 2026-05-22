@@ -17,6 +17,7 @@ export interface AgentDeployServerConfig {
 	serverId: string;
 	name?: string;
 	hint?: string;
+	domainSuffixes?: string[];
 }
 
 export interface AgentDeployProjectConfig {
@@ -143,8 +144,22 @@ export function saveAuthConfig(url: string, token: string): void {
 }
 
 function assertString(value: unknown, name: string): string {
-	if (typeof value === "string" && value.trim()) return value;
+	if (typeof value === "string" && value.trim()) return value.trim();
 	throw new Error(`Missing ${name} in agentDeployPolicy config.`);
+}
+
+function normalizeDomainSuffix(value: unknown, name: string): string {
+	const suffix = assertString(value, name).toLowerCase();
+	if (suffix.startsWith("*.")) return suffix.slice(1);
+	return suffix.startsWith(".") ? suffix : `.${suffix}`;
+}
+
+function readDomainSuffixes(
+	value: unknown,
+	name: string,
+): string[] | undefined {
+	if (!Array.isArray(value)) return undefined;
+	return value.map((suffix) => normalizeDomainSuffix(suffix, name));
 }
 
 export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
@@ -169,12 +184,16 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 				serverId: assertString(server.serverId, "servers[].serverId"),
 				name:
 					typeof server.name === "string" && server.name.trim()
-						? server.name
+						? server.name.trim()
 						: undefined,
 				hint:
 					typeof server.hint === "string" && server.hint.trim()
-						? server.hint
+						? server.hint.trim()
 						: undefined,
+				domainSuffixes: readDomainSuffixes(
+					server.domainSuffixes,
+					"servers[].domainSuffixes[]",
+				),
 			}))
 		: [];
 	if (servers.length === 0) {
@@ -183,11 +202,8 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 		);
 	}
 
-	const domainSuffixes = Array.isArray(policy.domainSuffixes)
-		? policy.domainSuffixes.map((suffix: unknown) =>
-				assertString(suffix, "domainSuffixes[]"),
-			)
-		: [];
+	const domainSuffixes =
+		readDomainSuffixes(policy.domainSuffixes, "domainSuffixes[]") ?? [];
 	if (domainSuffixes.length === 0) {
 		throw new Error(
 			"agentDeployPolicy.domainSuffixes must include at least one suffix.",

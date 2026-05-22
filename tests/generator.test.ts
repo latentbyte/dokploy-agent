@@ -206,6 +206,9 @@ describe("generator", () => {
 			expect(generatedContent).toContain("policy.servers");
 			expect(generatedContent).toContain("policy.domainSuffixes");
 			expect(generatedContent).toContain("policy.domainNameSuffix");
+			expect(generatedContent).toContain("server.domainSuffixes");
+			expect(generatedContent).toContain("matchingAgentDomainSuffix");
+			expect(generatedContent).toContain("allowed wildcard domains");
 			expect(generatedContent).toContain("must end with");
 			expect(fs.readFileSync(generatedPath, "utf8")).toBe(before);
 		} finally {

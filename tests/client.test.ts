@@ -213,6 +213,31 @@ describe("readAgentDeployPolicyConfig", () => {
 			domainNameSuffix: "-agent",
 		});
 	});
+
+	it("should normalize wildcard and bare domain suffixes", async () => {
+		writePolicyConfig({
+			...basePolicy,
+			domainSuffixes: ["*.agent.srv1.example.net"],
+			servers: [
+				{
+					serverId: "server-1",
+					domainSuffixes: ["srv1.example.net"],
+				},
+			],
+		});
+
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+
+		expect(readAgentDeployPolicyConfig()).toMatchObject({
+			domainSuffixes: [".agent.srv1.example.net"],
+			servers: [
+				{
+					serverId: "server-1",
+					domainSuffixes: [".srv1.example.net"],
+				},
+			],
+		});
+	});
 });
 
 describe("saveAuthConfig", () => {

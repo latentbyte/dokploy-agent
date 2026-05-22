@@ -66,7 +66,8 @@ Runtime policy:
 - allowed deploy servers come from `agentDeployPolicy.servers`
 - omitted `serverId` on create defaults to the first configured server
 - updates, deploys, and domain writes first resolve the target service and require it to belong to one configured project/environment
-- domain hosts must end with one of the suffixes in `agentDeployPolicy.domainSuffixes`
+- domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.agent.srv1.example.net` for `*.agent.srv1.example.net`
+- server entries can set `domainSuffixes` to bind a deploy server to a narrower domain set
 - when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value
 
 Example config shape:
@@ -88,11 +89,11 @@ Example config shape:
       {
         "name": "server-a",
         "serverId": "srvA0000000000000000a",
-        "hint": "srv1.example.net"
+        "hint": "srv1.example.net",
+        "domainSuffixes": ["*.agent.srv1.example.net"]
       }
     ],
-    "domainSuffixes": [".apps.example.net"],
-    "domainNameSuffix": "-agent"
+    "domainSuffixes": ["*.agent.srv1.example.net"]
   }
 }
 ```
