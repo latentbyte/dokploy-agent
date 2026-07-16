@@ -85,6 +85,38 @@ describe("agent redaction", () => {
 		expect(output).not.toContain("pwd-secret");
 	});
 
+	it("redacts quoted assignments with spaces and escaped quotes", () => {
+		const output = redactString(
+			['TOKEN="secret value"', "PASS='token value'", "NOTE=not secret"].join(
+				"\n",
+			),
+		);
+		expect(output).toContain("TOKEN=secr***");
+		expect(output).toContain("PASS=toke***");
+		expect(output).not.toContain("secret value");
+		expect(output).not.toContain("token value");
+		const escaped = redactString('TOKEN="abc\\"def"\n');
+		expect(escaped).toContain('TOKEN=abc"***');
+	});
+
+	it("redacts numeric secrets from nested objects and arrays", () => {
+		const output = sanitizeForAgent({
+			deployment: {
+				password: 123456,
+				token: "abc",
+			},
+			services: [{ apiToken: 654321 }, "TOKEN=shouldhide"],
+		});
+
+		expect(output).toEqual({
+			deployment: {
+				password: "1234***",
+				token: "abc",
+			},
+			services: [{ apiToken: "6543***" }, "TOKEN=shou***"],
+		});
+	});
+
 	it("redacts secret-like log text", () => {
 		const output = redactString(
 			"DOKPLOY_API_KEY=abcd1234 Authorization: Bearer eyJabcdef.eyJpayload.sig",

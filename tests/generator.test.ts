@@ -2,11 +2,41 @@ import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { Command } from "commander";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as client from "../src/client.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
+
+async function loadAgentSafeGeneratedCommands() {
+	const tempDir = fs.mkdtempSync(
+		path.join(os.tmpdir(), "dokploy-cli-agent-safe-"),
+	);
+	const outPath = path.join(tempDir, "src", "generated", "commands.ts");
+
+	try {
+		execFileSync(
+			"pnpm",
+			["exec", "tsx", "scripts/generate.ts", "--agent-safe", "--out", outPath],
+			{
+				cwd: ROOT,
+			},
+		);
+
+		const modulePath = pathToFileURL(outPath).href;
+		const { registerGeneratedCommands } = await import(modulePath);
+		return { registerGeneratedCommands, tempDir };
+	} catch (error) {
+		fs.rmSync(tempDir, { recursive: true, force: true });
+		throw error;
+	}
+}
 
 describe("generator", () => {
 	const specPath = path.join(ROOT, "openapi.json");
@@ -215,4 +245,195 @@ describe("generator", () => {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
 	}, 15_000);
+
+	it("parses array and object options as structured JSON", async () => {
+		const program = new Command();
+		const postSpy = vi
+			.spyOn(client, "apiPost")
+			.mockResolvedValue({ data: "ok" });
+
+		await import("../src/generated/commands.js").then(
+			({ registerGeneratedCommands }) => {
+				registerGeneratedCommands(program);
+			},
+		);
+
+		await program.parseAsync([
+			"node",
+			"cli",
+			"application",
+			"update",
+			"--applicationId",
+			"app-1",
+			"--watchPaths",
+			'["a", "b"]',
+			"--healthCheckSwarm",
+			'{"Test":["curl", "-f"], "Interval": 30}',
+		]);
+
+		expect(postSpy).toHaveBeenCalledTimes(1);
+		const payload = postSpy.mock.calls[0]?.[1];
+		expect(payload).toEqual(
+			expect.objectContaining({
+				watchPaths: ["a", "b"],
+				healthCheckSwarm: {
+					Test: ["curl", "-f"],
+					Interval: 30,
+				},
+			}),
+		);
+	});
+
+	it("rejects malformed JSON for complex options", async () => {
+		const program = new Command();
+		const postSpy = vi
+			.spyOn(client, "apiPost")
+			.mockResolvedValue({ data: "ok" });
+
+		await import("../src/generated/commands.js").then(
+			({ registerGeneratedCommands }) => {
+				registerGeneratedCommands(program);
+			},
+		);
+
+		await expect(
+			program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"update",
+				"--applicationId",
+				"app-1",
+				"--watchPaths",
+				"[a,b",
+			]),
+		).rejects.toThrow("Invalid JSON for --watchPaths");
+		expect(postSpy).not.toHaveBeenCalled();
+	});
+
+	it("accepts nullable complex options when JSON null is provided", async () => {
+		const program = new Command();
+		const postSpy = vi
+			.spyOn(client, "apiPost")
+			.mockResolvedValue({ data: "ok" });
+
+		await import("../src/generated/commands.js").then(
+			({ registerGeneratedCommands }) => {
+				registerGeneratedCommands(program);
+			},
+		);
+
+		await program.parseAsync([
+			"node",
+			"cli",
+			"application",
+			"update",
+			"--applicationId",
+			"app-1",
+			"--healthCheckSwarm",
+			"null",
+		]);
+
+		const payload = postSpy.mock.calls[0]?.[1];
+		expect(payload?.healthCheckSwarm).toBe(null);
+	});
+
+	it("rejects disallowed buildServerId option in agent-safe application.update", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			const policy = {
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [{ serverId: "srv-allowed" }],
+				domainSuffixes: [".example.com"],
+			};
+
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue(policy);
+			const apiPostSpy = vi
+				.spyOn(client, "apiPost")
+				.mockResolvedValue({ ok: true });
+			vi.spyOn(client, "apiGet").mockResolvedValue({
+				environmentId: "env-1",
+				environment: {
+					project: { name: "agent-project", projectId: "proj-1" },
+					name: "production",
+				},
+				serverId: "srv-allowed",
+				buildServerId: "srv-forbidden",
+			});
+
+			registerGeneratedCommands(program);
+			await expect(
+				program.parseAsync([
+					"node",
+					"cli",
+					"application",
+					"update",
+					"--applicationId",
+					"app-1",
+					"--buildServerId",
+					"srv-forbidden",
+				]),
+			).rejects.toThrow("buildServerId");
+			expect(apiPostSpy).not.toHaveBeenCalled();
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects resolved nested disallowed build server in existing service", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			const policy = {
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [{ serverId: "srv-allowed" }],
+				domainSuffixes: [".example.com"],
+			};
+
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue(policy);
+			const apiGetSpy = vi.spyOn(client, "apiGet").mockResolvedValue({
+				environmentId: "env-1",
+				environment: {
+					project: { name: "agent-project" },
+					name: "production",
+				},
+				serverId: "srv-allowed",
+				buildServerId: "srv-forbidden",
+			});
+			const apiPostSpy = vi
+				.spyOn(client, "apiPost")
+				.mockResolvedValue({ ok: true });
+
+			registerGeneratedCommands(program);
+			await expect(
+				program.parseAsync([
+					"node",
+					"cli",
+					"application",
+					"update",
+					"--applicationId",
+					"app-1",
+				]),
+			).rejects.toThrow("buildServerId");
+			expect(apiGetSpy).toHaveBeenCalled();
+			expect(apiPostSpy).not.toHaveBeenCalled();
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
 });

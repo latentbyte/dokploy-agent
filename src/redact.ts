@@ -51,7 +51,18 @@ const PUBLIC_IDENTIFIER_KEYS = new Set([
 const ENV_KEY_PATTERN =
 	/(?:api|key|token|secret|password|passworkd|passwd|pass|pwd|credential|private|authorization|webhook|dsn|url|uri)/i;
 const ENV_ASSIGNMENT_PATTERN =
-	/(^|[\s([{,;'-])(["']?)([A-Za-z_][A-Za-z0-9_.-]*)(\2\s*[:=]\s*["']?)([^\s"',}\]]+)/gm;
+	/(^|[\s([{,;'-])([A-Za-z_][A-Za-z0-9_.-]*)(\s*[:=]\s*)((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',}\]]+))/gm;
+
+function stripQuotedValue(value: string): string {
+	if (value.length < 2) return value;
+	if (
+		(value.startsWith('"') && value.endsWith('"')) ||
+		(value.startsWith("'") && value.endsWith("'"))
+	) {
+		return value.slice(1, -1).replace(/\\(["'])/g, "$1");
+	}
+	return value;
+}
 
 const STRING_SECRET_PATTERNS: Array<
 	[RegExp, (match: string, ...groups: string[]) => string]
@@ -61,19 +72,16 @@ const STRING_SECRET_PATTERNS: Array<
 		(
 			match: string,
 			prefix: string,
-			quote: string,
 			key: string,
 			separator: string,
 			value: string,
 		) => {
 			if (!isSensitiveEnvKey(key)) return match;
-			if (
-				key.toLowerCase() === "authorization" &&
-				/^(bearer|basic)$/i.test(value)
-			) {
-				return match;
+			if (key.toLowerCase() === "authorization") {
+				const bare = stripQuotedValue(value);
+				if (/^(bearer|basic)$/i.test(bare)) return match;
 			}
-			return `${prefix}${quote}${key}${separator}${maskSecret(value)}`;
+			return `${prefix}${key}${separator}${maskSecret(stripQuotedValue(value))}`;
 		},
 	],
 	[
@@ -217,7 +225,12 @@ function sanitizeValue(
 		return redacted;
 	}
 
-	if (typeof data === "number" || typeof data === "boolean") return data;
+	if (typeof data === "number" || typeof data === "boolean") {
+		if (key && isSensitiveKey(key) && !isPublicIdentifierKey(key)) {
+			return maskSecret(String(data));
+		}
+		return data;
+	}
 
 	if (Array.isArray(data)) {
 		return data.map((item) => sanitizeValue(item, options, key));

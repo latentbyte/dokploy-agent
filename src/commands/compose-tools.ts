@@ -79,26 +79,47 @@ function parseServicesFromYaml(input: string): JsonObject[] {
 	const lines = input.split(/\r?\n/);
 	const services: JsonObject[] = [];
 	let inServices = false;
+	let servicesIndent: number | undefined;
+	let serviceIndent: number | undefined;
 	let current: JsonObject | undefined;
-	let currentIndent = 0;
 	for (const line of lines) {
 		const trimmed = line.trim();
 		if (!trimmed || trimmed.startsWith("#")) continue;
 		const indent = line.length - line.trimStart().length;
-		if (trimmed === "services:") {
+
+		if (/^services\s*:\s*(?:#.*)?$/.test(trimmed)) {
 			inServices = true;
+			servicesIndent = indent;
+			serviceIndent = undefined;
+			current = undefined;
 			continue;
 		}
-		if (inServices && indent === 0 && trimmed.endsWith(":")) break;
-		if (!inServices) continue;
-		const serviceMatch = trimmed.match(/^([A-Za-z0-9_.-]+):\s*$/);
-		if (serviceMatch && indent > 0) {
-			current = { name: serviceMatch[1] };
-			currentIndent = indent;
-			services.push(current);
+		if (!inServices || servicesIndent === undefined) continue;
+		if (indent <= servicesIndent) {
+			break;
+		}
+
+		const serviceMatch = trimmed.match(
+			/^(?:([A-Za-z0-9_.-]+)|(["'])([^"']+)\2):\s*(?:#.*)?$/,
+		);
+		if (serviceMatch) {
+			if (serviceIndent === undefined) {
+				serviceIndent = indent;
+			}
+			if (indent === serviceIndent) {
+				current = {
+					name: serviceMatch[1] ?? serviceMatch[3],
+				};
+				services.push(current);
+			}
 			continue;
 		}
-		if (!current || indent <= currentIndent) continue;
+
+		if (!current || serviceIndent === undefined || indent <= serviceIndent) {
+			current = undefined;
+			continue;
+		}
+
 		for (const key of ["image", "build", "ports", "volumes", "env_file"]) {
 			if (trimmed.startsWith(`${key}:`))
 				current[key] = trimmed.slice(key.length + 1).trim() || true;

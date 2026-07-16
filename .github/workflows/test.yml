@@ -3,6 +3,7 @@ name: tests
 on:
   push:
     branches-ignore: [main]
+  pull_request:
   workflow_dispatch:
 
 env:
@@ -26,5 +27,6 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: pnpm
       - run: pnpm install --ignore-scripts
+      - run: pnpm run check
       - run: pnpm run build
       - run: pnpm run test

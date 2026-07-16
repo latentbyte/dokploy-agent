@@ -117,12 +117,14 @@ interface CommandInfo {
 	options: OptionInfo[];
 }
 
+type OptionType = "string" | "number" | "boolean" | "array" | "object";
+
 interface OptionInfo {
 	name: string;
 	flag: string;
 	description: string;
 	required: boolean;
-	type: "string" | "number" | "boolean";
+	type: OptionType;
 	enumValues?: string[];
 }
 
@@ -236,11 +238,24 @@ const AGENT_STATE_ENDPOINTS = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-function resolveType(prop: SchemaProperty): "string" | "number" | "boolean" {
-	const raw =
-		prop.type ?? prop.anyOf?.find((s) => s.type && s.type !== "null")?.type;
-	if (raw === "number" || raw === "integer") return "number";
-	if (raw === "boolean") return "boolean";
+function resolveType(prop: SchemaProperty): OptionType {
+	const direct = resolveSchemaType(prop.type);
+	if (direct) return direct;
+	const nested = prop.anyOf?.find((candidate) => {
+		if (candidate.type === undefined) return true;
+		return candidate.type !== "null";
+	});
+	if (nested) return resolveType(nested);
+	return "string";
+}
+
+function resolveSchemaType(value: string | undefined): OptionType | undefined {
+	if (!value) return undefined;
+	if (value === "number" || value === "integer") return "number";
+	if (value === "boolean") return "boolean";
+	if (value === "array") return "array";
+	if (value === "object") return "object";
+	if (value === "string") return "string";
 	return "string";
 }
 
@@ -558,6 +573,9 @@ function generateCoercion(opt: OptionInfo): string {
 	if (opt.type === "boolean") {
 		return `if (opts["${opt.name}"] != null) opts["${opt.name}"] = opts["${opt.name}"] === true || opts["${opt.name}"] === "true";`;
 	}
+	if (opt.type === "array" || opt.type === "object") {
+		return `if (opts["${opt.name}"] != null) opts["${opt.name}"] = parseJsonOption(opts["${opt.name}"], "${opt.name}", "${opt.type}");`;
+	}
 	return "";
 }
 
@@ -665,11 +683,22 @@ function agentDeployServerLabel(server: { serverId: string; name?: string }) {
 	return (server.name ? server.name + ' ' : '') + '(' + server.serverId + ')';
 }
 
-function ensureAgentDeployServer(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
-	if (!opts.serverId) return undefined;
-	const server = policy.servers.find((candidate) => candidate.serverId === opts.serverId);
+function ensureAgentDeployServer(
+	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
+	serverId: string | undefined,
+	label = "serverId",
+) {
+	if (!serverId) return undefined;
+	const server = policy.servers.find((candidate) => candidate.serverId === serverId);
 	if (server) return server;
-	throw new Error('agent-safe deploy policy rejects serverId ' + opts.serverId + '; allowed servers: ' + policy.servers.map(agentDeployServerLabel).join(', '));
+	throw new Error(
+		'agent-safe deploy policy rejects ' +
+			label +
+			' ' +
+			serverId +
+			'; allowed servers: ' +
+			policy.servers.map(agentDeployServerLabel).join(', '),
+	);
 }
 
 function agentDeployProjectLabel(project: { projectName: string; environmentName: string; environmentId: string }) {
@@ -690,7 +719,7 @@ function ensureAgentDeployEnvironment(policy: ReturnType<typeof readAgentDeployP
 function normalizeAgentDeployCreate(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
 	const project = ensureAgentDeployEnvironment(policy, opts);
 	opts.environmentId = project.environmentId;
-	ensureAgentDeployServer(policy, opts);
+	ensureAgentDeployServer(policy, stringValue(opts.serverId), 'serverId');
 	if (!opts.serverId) opts.serverId = policy.servers[0]?.serverId;
 }
 
@@ -706,7 +735,36 @@ function serviceMatchesAgentDeployProject(project: ReturnType<typeof readAgentDe
 }
 
 function serviceServerId(service: any): string | undefined {
-	return stringValue(service?.serverId) ?? stringValue(service?.server?.serverId) ?? stringValue(service?.buildServer?.serverId);
+	return (
+		stringValue(service?.serverId) ??
+		stringValue(service?.server?.serverId) ??
+		stringValue(service?.buildServer?.serverId) ??
+		stringValue(service?.buildServerId)
+	);
+}
+
+function validateAgentDeployServerIds(
+	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
+	labelsToServerIds: Array<{ label: string; serverId: string | undefined }>,
+) {
+	const seen = new Set<string>();
+	for (const { label, serverId } of labelsToServerIds) {
+		if (!serverId || seen.has(serverId)) continue;
+		seen.add(serverId);
+		ensureAgentDeployServer(policy, serverId, label);
+	}
+}
+
+function assertServiceServersAllowed(
+	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
+	service: any,
+) {
+	validateAgentDeployServerIds(policy, [
+		{ label: 'serverId', serverId: stringValue(service?.serverId) },
+		{ label: 'buildServerId', serverId: stringValue(service?.buildServerId) },
+		{ label: 'server.serverId', serverId: stringValue(service?.server?.serverId) },
+		{ label: 'buildServer.serverId', serverId: stringValue(service?.buildServer?.serverId) },
+	]);
 }
 
 async function assertAgentServiceInDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, kind: 'application' | 'compose', id: string | undefined) {
@@ -715,18 +773,30 @@ async function assertAgentServiceInDeployProject(policy: ReturnType<typeof readA
 	const key = kind === 'application' ? 'applicationId' : 'composeId';
 	const service = await apiGet(endpoint, { [key]: id });
 	if (!policy.projects.some((project) => serviceMatchesAgentDeployProject(project, service))) {
-		const serviceProject = service?.environment?.project?.name ?? service?.project?.name ?? 'unknown';
-		const serviceEnvironment = service?.environment?.name ?? service?.environmentId ?? 'unknown';
-		throw new Error('agent-safe deploy policy rejects ' + kind + ' ' + id + ' in ' + serviceProject + '/' + serviceEnvironment + '; allowed projects: ' + policy.projects.map(agentDeployProjectLabel).join(', '));
+		const serviceProject =
+			service?.environment?.project?.name ?? service?.project?.name ?? 'unknown';
+		const serviceEnvironment =
+			service?.environment?.name ?? service?.environmentId ?? 'unknown';
+		throw new Error(
+			'agent-safe deploy policy rejects ' +
+				kind +
+				' ' +
+				id +
+				' in ' +
+				serviceProject +
+				'/' +
+				serviceEnvironment +
+				'; allowed projects: ' +
+				policy.projects.map(agentDeployProjectLabel).join(', '),
+		);
 	}
-	const serverId = serviceServerId(service);
-	if (serverId) ensureAgentDeployServer(policy, { serverId });
+	assertServiceServersAllowed(policy, service);
 	return service;
 }
 
 function agentDeployDomainSuffixesForServer(policy: ReturnType<typeof readAgentDeployPolicyConfig>, serverId: string | undefined) {
 	if (!serverId) return policy.domainSuffixes;
-	const server = ensureAgentDeployServer(policy, { serverId });
+	const server = ensureAgentDeployServer(policy, serverId, 'serverId');
 	return server?.domainSuffixes?.length ? server.domainSuffixes : policy.domainSuffixes;
 }
 
@@ -780,7 +850,8 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 	}
 	if (AGENT_DEPLOY_SERVICE_MUTATIONS.has(endpoint)) {
 		ensureAgentDeployEnvironment(policy, opts);
-		ensureAgentDeployServer(policy, opts);
+		ensureAgentDeployServer(policy, stringValue(opts.serverId), 'serverId');
+		ensureAgentDeployServer(policy, stringValue(opts.buildServerId), 'buildServerId');
 		if (endpoint.startsWith('application.')) {
 			await assertAgentServiceInDeployProject(policy, 'application', opts.applicationId);
 		} else {
@@ -1022,13 +1093,27 @@ function generateFile(
 		? "apiPost, apiGet, readAgentDeployPolicyConfig"
 		: "apiPost, apiGet";
 
+	const clientImport = path
+		.relative(path.dirname(OUT_PATH), path.join(ROOT, "src", "client.js"))
+		.replaceAll(path.sep, "/");
+	const redactImport = path
+		.relative(path.dirname(OUT_PATH), path.join(ROOT, "src", "redact.js"))
+		.replaceAll(path.sep, "/");
+
+	const normalizedClientImport = clientImport.startsWith(".")
+		? clientImport
+		: `./${clientImport}`;
+	const normalizedRedactImport = redactImport.startsWith(".")
+		? redactImport
+		: `./${redactImport}`;
+
 	return `// Auto-generated from openapi.json, do not edit manually.
 // Run: npx tsx scripts/generate.ts
 
 import type { Command } from "commander";
 import chalk from "chalk";
-import { ${clientImports} } from "../client.js";
-import { sanitizeForAgent } from "../redact.js";
+import { ${clientImports} } from "${normalizedClientImport}";
+import { sanitizeForAgent } from "${normalizedRedactImport}";
 
 interface SafetyEntry {
 	endpoint: string;
@@ -1041,6 +1126,35 @@ interface SafetyEntry {
 
 const AGENT_SAFE_BUILD = ${isAgentSafeBuild ? "true" : "false"};
 ${safetyCommands}
+function parseJsonOption(value: unknown, name: string, kind: "array" | "object") {
+	if (value === null || value === undefined || value === "") return value;
+	if (kind === "array" && (value === null || Array.isArray(value))) return value;
+	if (
+		kind === "object" &&
+		(value === null || (value && typeof value === "object" && !Array.isArray(value)))
+	) return value;
+	if (typeof value !== "string") {
+		throw new Error("Invalid " + kind + " for --" + name + "; expected JSON string.");
+	}
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(value);
+	} catch (error) {
+		throw new Error("Invalid JSON for --" + name + ": " + (error instanceof Error ? error.message : "invalid JSON"));
+	}
+	if (kind === "array" && parsed !== null && !Array.isArray(parsed)) {
+		throw new Error("Expected array for --" + name + ", received: " + String(parsed) + ".");
+	}
+	if (
+		kind === "object" &&
+		parsed !== null &&
+		(typeof parsed !== "object" || Array.isArray(parsed))
+	) {
+		throw new Error("Expected object for --" + name + ", received: " + String(parsed) + ".");
+	}
+	return parsed;
+}
+
 function extractAgentLogOptions(opts: Record<string, any>) {
 	const options = {
 		logSearch: opts.localSearch,

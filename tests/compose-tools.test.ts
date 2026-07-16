@@ -60,6 +60,39 @@ describe("compose tool helpers", () => {
 		expect(output).not.toContain("traefik.enable");
 	});
 
+	it("summarizes yaml services with quoted names and ignores nested mapping keys", () => {
+		const yaml = [
+			"services:",
+			"  # service definition",
+			"  web:",
+			"    image: nginx",
+			"    build: .",
+			"    ports:",
+			"      - 80:80",
+			"    environment:",
+			"      NODE_ENV: production",
+			'  "db":',
+			"    image: postgres",
+			"    healthcheck:",
+			'      test: "curl http://localhost"',
+			"    build: .",
+			"networks:",
+			"  dokploy-network:",
+			"    external: true",
+		].join("\n");
+
+		const output = composeToolsInternals.summarizeComposeData(yaml);
+		const names = output.services.map((service) => service.name);
+
+		expect(names).toEqual(["web", "db"]);
+		expect(output.services).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ name: "web", image: "nginx", build: "." }),
+				expect.objectContaining({ name: "db", image: "postgres", build: "." }),
+			]),
+		);
+	});
+
 	it("summarizes compose services", () => {
 		expect(composeToolsInternals.summarizeComposeData(composeObject)).toEqual({
 			services: [

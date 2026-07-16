@@ -17,6 +17,35 @@ interface SafetyEntry {
 
 const AGENT_SAFE_BUILD = false;
 
+function parseJsonOption(value: unknown, name: string, kind: "array" | "object") {
+	if (value === null || value === undefined || value === "") return value;
+	if (kind === "array" && (value === null || Array.isArray(value))) return value;
+	if (
+		kind === "object" &&
+		(value === null || (value && typeof value === "object" && !Array.isArray(value)))
+	) return value;
+	if (typeof value !== "string") {
+		throw new Error("Invalid " + kind + " for --" + name + "; expected JSON string.");
+	}
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(value);
+	} catch (error) {
+		throw new Error("Invalid JSON for --" + name + ": " + (error instanceof Error ? error.message : "invalid JSON"));
+	}
+	if (kind === "array" && parsed !== null && !Array.isArray(parsed)) {
+		throw new Error("Expected array for --" + name + ", received: " + String(parsed) + ".");
+	}
+	if (
+		kind === "object" &&
+		parsed !== null &&
+		(typeof parsed !== "object" || Array.isArray(parsed))
+	) {
+		throw new Error("Expected object for --" + name + ", received: " + String(parsed) + ".");
+	}
+	return parsed;
+}
+
 function extractAgentLogOptions(opts: Record<string, any>) {
 	const options = {
 		logSearch: opts.localSearch,
@@ -68,7 +97,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["metricsConfig"] != null) opts["metricsConfig"] = parseJsonOption(opts["metricsConfig"], "metricsConfig", "object");
 			const data = await apiPost("admin.setupMonitoring", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -135,7 +164,8 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["domains"] != null) opts["domains"] = parseJsonOption(opts["domains"], "domains", "array");
+			if (opts["configFiles"] != null) opts["configFiles"] = parseJsonOption(opts["configFiles"], "configFiles", "array");
 			const data = await apiPost("ai.deploy", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -520,6 +550,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			const data = await apiPost("application.saveBitbucketProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -595,6 +626,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			const data = await apiPost("application.saveGiteaProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -616,6 +648,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			const data = await apiPost("application.saveGithubProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -639,6 +672,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			const data = await apiPost("application.saveGitlabProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -657,6 +691,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			const data = await apiPost("application.saveGitProvider", opts);
 			printOutput(data, jsonOutput, false);
@@ -817,6 +852,8 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
+			if (opts["previewLabels"] != null) opts["previewLabels"] = parseJsonOption(opts["previewLabels"], "previewLabels", "array");
 			if (opts["previewPort"] != null) opts["previewPort"] = Number(opts["previewPort"]);
 			if (opts["previewHttps"] != null) opts["previewHttps"] = opts["previewHttps"] === true || opts["previewHttps"] === "true";
 			if (opts["previewLimit"] != null) opts["previewLimit"] = Number(opts["previewLimit"]);
@@ -824,10 +861,22 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["previewRequireCollaboratorPermissions"] != null) opts["previewRequireCollaboratorPermissions"] = opts["previewRequireCollaboratorPermissions"] === true || opts["previewRequireCollaboratorPermissions"] === "true";
 			if (opts["rollbackActive"] != null) opts["rollbackActive"] = opts["rollbackActive"] === true || opts["rollbackActive"] === "true";
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["args"] != null) opts["args"] = parseJsonOption(opts["args"], "args", "array");
 			if (opts["cleanCache"] != null) opts["cleanCache"] = opts["cleanCache"] === true || opts["cleanCache"] === "true";
 			if (opts["autoDeploy"] != null) opts["autoDeploy"] = opts["autoDeploy"] === true || opts["autoDeploy"] === "true";
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["healthCheckSwarm"] != null) opts["healthCheckSwarm"] = parseJsonOption(opts["healthCheckSwarm"], "healthCheckSwarm", "object");
+			if (opts["restartPolicySwarm"] != null) opts["restartPolicySwarm"] = parseJsonOption(opts["restartPolicySwarm"], "restartPolicySwarm", "object");
+			if (opts["placementSwarm"] != null) opts["placementSwarm"] = parseJsonOption(opts["placementSwarm"], "placementSwarm", "object");
+			if (opts["updateConfigSwarm"] != null) opts["updateConfigSwarm"] = parseJsonOption(opts["updateConfigSwarm"], "updateConfigSwarm", "object");
+			if (opts["rollbackConfigSwarm"] != null) opts["rollbackConfigSwarm"] = parseJsonOption(opts["rollbackConfigSwarm"], "rollbackConfigSwarm", "object");
+			if (opts["modeSwarm"] != null) opts["modeSwarm"] = parseJsonOption(opts["modeSwarm"], "modeSwarm", "object");
+			if (opts["labelsSwarm"] != null) opts["labelsSwarm"] = parseJsonOption(opts["labelsSwarm"], "labelsSwarm", "object");
+			if (opts["networkSwarm"] != null) opts["networkSwarm"] = parseJsonOption(opts["networkSwarm"], "networkSwarm", "array");
+			if (opts["stopGracePeriodSwarm"] != null) opts["stopGracePeriodSwarm"] = Number(opts["stopGracePeriodSwarm"]);
+			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
+			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = opts["isStaticSpa"] === true || opts["isStaticSpa"] === "true";
 			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
@@ -1772,6 +1821,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["randomize"] != null) opts["randomize"] = opts["randomize"] === true || opts["randomize"] === "true";
 			if (opts["isolatedDeployment"] != null) opts["isolatedDeployment"] = opts["isolatedDeployment"] === true || opts["isolatedDeployment"] === "true";
 			if (opts["isolatedDeploymentsVolume"] != null) opts["isolatedDeploymentsVolume"] = opts["isolatedDeploymentsVolume"] === true || opts["isolatedDeploymentsVolume"] === "true";
+			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			const data = await apiPost("compose.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1799,7 +1849,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["permissions"] != null) opts["permissions"] = parseJsonOption(opts["permissions"], "permissions", "object");
 			const data = await apiPost("customRole.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1853,7 +1903,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["permissions"] != null) opts["permissions"] = parseJsonOption(opts["permissions"], "permissions", "object");
 			const data = await apiPost("customRole.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1994,7 +2044,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["additionalFlags"] != null) opts["additionalFlags"] = parseJsonOption(opts["additionalFlags"], "additionalFlags", "array");
 			const data = await apiPost("destination.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2041,7 +2091,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["additionalFlags"] != null) opts["additionalFlags"] = parseJsonOption(opts["additionalFlags"], "additionalFlags", "array");
 			const data = await apiPost("destination.testConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2063,7 +2113,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["additionalFlags"] != null) opts["additionalFlags"] = parseJsonOption(opts["additionalFlags"], "additionalFlags", "array");
 			const data = await apiPost("destination.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2302,6 +2352,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
 			if (opts["stripPath"] != null) opts["stripPath"] = opts["stripPath"] === true || opts["stripPath"] === "true";
+			if (opts["middlewares"] != null) opts["middlewares"] = parseJsonOption(opts["middlewares"], "middlewares", "array");
 			const data = await apiPost("domain.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2369,6 +2420,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
 			if (opts["stripPath"] != null) opts["stripPath"] = opts["stripPath"] === true || opts["stripPath"] === "true";
+			if (opts["middlewares"] != null) opts["middlewares"] = parseJsonOption(opts["middlewares"], "middlewares", "array");
 			const data = await apiPost("domain.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3117,6 +3169,16 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["externalGRPCPort"] != null) opts["externalGRPCPort"] = Number(opts["externalGRPCPort"]);
 			if (opts["externalAdminPort"] != null) opts["externalAdminPort"] = Number(opts["externalAdminPort"]);
+			if (opts["healthCheckSwarm"] != null) opts["healthCheckSwarm"] = parseJsonOption(opts["healthCheckSwarm"], "healthCheckSwarm", "object");
+			if (opts["restartPolicySwarm"] != null) opts["restartPolicySwarm"] = parseJsonOption(opts["restartPolicySwarm"], "restartPolicySwarm", "object");
+			if (opts["placementSwarm"] != null) opts["placementSwarm"] = parseJsonOption(opts["placementSwarm"], "placementSwarm", "object");
+			if (opts["updateConfigSwarm"] != null) opts["updateConfigSwarm"] = parseJsonOption(opts["updateConfigSwarm"], "updateConfigSwarm", "object");
+			if (opts["rollbackConfigSwarm"] != null) opts["rollbackConfigSwarm"] = parseJsonOption(opts["rollbackConfigSwarm"], "rollbackConfigSwarm", "object");
+			if (opts["modeSwarm"] != null) opts["modeSwarm"] = parseJsonOption(opts["modeSwarm"], "modeSwarm", "object");
+			if (opts["labelsSwarm"] != null) opts["labelsSwarm"] = parseJsonOption(opts["labelsSwarm"], "labelsSwarm", "object");
+			if (opts["networkSwarm"] != null) opts["networkSwarm"] = parseJsonOption(opts["networkSwarm"], "networkSwarm", "array");
+			if (opts["stopGracePeriodSwarm"] != null) opts["stopGracePeriodSwarm"] = Number(opts["stopGracePeriodSwarm"]);
+			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("libsql.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -3463,7 +3525,19 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["args"] != null) opts["args"] = parseJsonOption(opts["args"], "args", "array");
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
+			if (opts["healthCheckSwarm"] != null) opts["healthCheckSwarm"] = parseJsonOption(opts["healthCheckSwarm"], "healthCheckSwarm", "object");
+			if (opts["restartPolicySwarm"] != null) opts["restartPolicySwarm"] = parseJsonOption(opts["restartPolicySwarm"], "restartPolicySwarm", "object");
+			if (opts["placementSwarm"] != null) opts["placementSwarm"] = parseJsonOption(opts["placementSwarm"], "placementSwarm", "object");
+			if (opts["updateConfigSwarm"] != null) opts["updateConfigSwarm"] = parseJsonOption(opts["updateConfigSwarm"], "updateConfigSwarm", "object");
+			if (opts["rollbackConfigSwarm"] != null) opts["rollbackConfigSwarm"] = parseJsonOption(opts["rollbackConfigSwarm"], "rollbackConfigSwarm", "object");
+			if (opts["modeSwarm"] != null) opts["modeSwarm"] = parseJsonOption(opts["modeSwarm"], "modeSwarm", "object");
+			if (opts["labelsSwarm"] != null) opts["labelsSwarm"] = parseJsonOption(opts["labelsSwarm"], "labelsSwarm", "object");
+			if (opts["networkSwarm"] != null) opts["networkSwarm"] = parseJsonOption(opts["networkSwarm"], "networkSwarm", "array");
+			if (opts["stopGracePeriodSwarm"] != null) opts["stopGracePeriodSwarm"] = Number(opts["stopGracePeriodSwarm"]);
+			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
+			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("mariadb.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -3728,7 +3802,19 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["args"] != null) opts["args"] = parseJsonOption(opts["args"], "args", "array");
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
+			if (opts["healthCheckSwarm"] != null) opts["healthCheckSwarm"] = parseJsonOption(opts["healthCheckSwarm"], "healthCheckSwarm", "object");
+			if (opts["restartPolicySwarm"] != null) opts["restartPolicySwarm"] = parseJsonOption(opts["restartPolicySwarm"], "restartPolicySwarm", "object");
+			if (opts["placementSwarm"] != null) opts["placementSwarm"] = parseJsonOption(opts["placementSwarm"], "placementSwarm", "object");
+			if (opts["updateConfigSwarm"] != null) opts["updateConfigSwarm"] = parseJsonOption(opts["updateConfigSwarm"], "updateConfigSwarm", "object");
+			if (opts["rollbackConfigSwarm"] != null) opts["rollbackConfigSwarm"] = parseJsonOption(opts["rollbackConfigSwarm"], "rollbackConfigSwarm", "object");
+			if (opts["modeSwarm"] != null) opts["modeSwarm"] = parseJsonOption(opts["modeSwarm"], "modeSwarm", "object");
+			if (opts["labelsSwarm"] != null) opts["labelsSwarm"] = parseJsonOption(opts["labelsSwarm"], "labelsSwarm", "object");
+			if (opts["networkSwarm"] != null) opts["networkSwarm"] = parseJsonOption(opts["networkSwarm"], "networkSwarm", "array");
+			if (opts["stopGracePeriodSwarm"] != null) opts["stopGracePeriodSwarm"] = Number(opts["stopGracePeriodSwarm"]);
+			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
+			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			if (opts["replicaSets"] != null) opts["replicaSets"] = opts["replicaSets"] === true || opts["replicaSets"] === "true";
 			const data = await apiPost("mongo.update", opts);
@@ -4099,7 +4185,19 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["args"] != null) opts["args"] = parseJsonOption(opts["args"], "args", "array");
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
+			if (opts["healthCheckSwarm"] != null) opts["healthCheckSwarm"] = parseJsonOption(opts["healthCheckSwarm"], "healthCheckSwarm", "object");
+			if (opts["restartPolicySwarm"] != null) opts["restartPolicySwarm"] = parseJsonOption(opts["restartPolicySwarm"], "restartPolicySwarm", "object");
+			if (opts["placementSwarm"] != null) opts["placementSwarm"] = parseJsonOption(opts["placementSwarm"], "placementSwarm", "object");
+			if (opts["updateConfigSwarm"] != null) opts["updateConfigSwarm"] = parseJsonOption(opts["updateConfigSwarm"], "updateConfigSwarm", "object");
+			if (opts["rollbackConfigSwarm"] != null) opts["rollbackConfigSwarm"] = parseJsonOption(opts["rollbackConfigSwarm"], "rollbackConfigSwarm", "object");
+			if (opts["modeSwarm"] != null) opts["modeSwarm"] = parseJsonOption(opts["modeSwarm"], "modeSwarm", "object");
+			if (opts["labelsSwarm"] != null) opts["labelsSwarm"] = parseJsonOption(opts["labelsSwarm"], "labelsSwarm", "object");
+			if (opts["networkSwarm"] != null) opts["networkSwarm"] = parseJsonOption(opts["networkSwarm"], "networkSwarm", "array");
+			if (opts["stopGracePeriodSwarm"] != null) opts["stopGracePeriodSwarm"] = Number(opts["stopGracePeriodSwarm"]);
+			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
+			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("mysql.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -4145,6 +4243,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["headers"] != null) opts["headers"] = parseJsonOption(opts["headers"], "headers", "object");
 			const data = await apiPost("notification.createCustom", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4211,6 +4310,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			if (opts["smtpPort"] != null) opts["smtpPort"] = Number(opts["smtpPort"]);
+			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.createEmail", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4401,6 +4501,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.createResend", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4563,7 +4664,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["headers"] != null) opts["headers"] = parseJsonOption(opts["headers"], "headers", "object");
 			const data = await apiPost("notification.testCustomConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4596,6 +4697,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["smtpPort"] != null) opts["smtpPort"] = Number(opts["smtpPort"]);
+			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.testEmailConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4690,7 +4792,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.testResendConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4766,6 +4868,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["headers"] != null) opts["headers"] = parseJsonOption(opts["headers"], "headers", "object");
 			const data = await apiPost("notification.updateCustom", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4838,6 +4941,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
 			if (opts["smtpPort"] != null) opts["smtpPort"] = Number(opts["smtpPort"]);
+			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.updateEmail", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5046,6 +5150,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
 			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
 			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.updateResend", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5801,7 +5906,19 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["args"] != null) opts["args"] = parseJsonOption(opts["args"], "args", "array");
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
+			if (opts["healthCheckSwarm"] != null) opts["healthCheckSwarm"] = parseJsonOption(opts["healthCheckSwarm"], "healthCheckSwarm", "object");
+			if (opts["restartPolicySwarm"] != null) opts["restartPolicySwarm"] = parseJsonOption(opts["restartPolicySwarm"], "restartPolicySwarm", "object");
+			if (opts["placementSwarm"] != null) opts["placementSwarm"] = parseJsonOption(opts["placementSwarm"], "placementSwarm", "object");
+			if (opts["updateConfigSwarm"] != null) opts["updateConfigSwarm"] = parseJsonOption(opts["updateConfigSwarm"], "updateConfigSwarm", "object");
+			if (opts["rollbackConfigSwarm"] != null) opts["rollbackConfigSwarm"] = parseJsonOption(opts["rollbackConfigSwarm"], "rollbackConfigSwarm", "object");
+			if (opts["modeSwarm"] != null) opts["modeSwarm"] = parseJsonOption(opts["modeSwarm"], "modeSwarm", "object");
+			if (opts["labelsSwarm"] != null) opts["labelsSwarm"] = parseJsonOption(opts["labelsSwarm"], "labelsSwarm", "object");
+			if (opts["networkSwarm"] != null) opts["networkSwarm"] = parseJsonOption(opts["networkSwarm"], "networkSwarm", "array");
+			if (opts["stopGracePeriodSwarm"] != null) opts["stopGracePeriodSwarm"] = Number(opts["stopGracePeriodSwarm"]);
+			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
+			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("postgres.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -5918,6 +6035,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["includeServices"] != null) opts["includeServices"] = opts["includeServices"] === true || opts["includeServices"] === "true";
+			if (opts["selectedServices"] != null) opts["selectedServices"] = parseJsonOption(opts["selectedServices"], "selectedServices", "array");
 			if (opts["duplicateInSameProject"] != null) opts["duplicateInSameProject"] = opts["duplicateInSameProject"] === true || opts["duplicateInSameProject"] === "true";
 			const data = await apiPost("project.duplicate", opts);
 			printOutput(data, jsonOutput, false);
@@ -6312,7 +6430,19 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["args"] != null) opts["args"] = parseJsonOption(opts["args"], "args", "array");
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
+			if (opts["healthCheckSwarm"] != null) opts["healthCheckSwarm"] = parseJsonOption(opts["healthCheckSwarm"], "healthCheckSwarm", "object");
+			if (opts["restartPolicySwarm"] != null) opts["restartPolicySwarm"] = parseJsonOption(opts["restartPolicySwarm"], "restartPolicySwarm", "object");
+			if (opts["placementSwarm"] != null) opts["placementSwarm"] = parseJsonOption(opts["placementSwarm"], "placementSwarm", "object");
+			if (opts["updateConfigSwarm"] != null) opts["updateConfigSwarm"] = parseJsonOption(opts["updateConfigSwarm"], "updateConfigSwarm", "object");
+			if (opts["rollbackConfigSwarm"] != null) opts["rollbackConfigSwarm"] = parseJsonOption(opts["rollbackConfigSwarm"], "rollbackConfigSwarm", "object");
+			if (opts["modeSwarm"] != null) opts["modeSwarm"] = parseJsonOption(opts["modeSwarm"], "modeSwarm", "object");
+			if (opts["labelsSwarm"] != null) opts["labelsSwarm"] = parseJsonOption(opts["labelsSwarm"], "labelsSwarm", "object");
+			if (opts["networkSwarm"] != null) opts["networkSwarm"] = parseJsonOption(opts["networkSwarm"], "networkSwarm", "array");
+			if (opts["stopGracePeriodSwarm"] != null) opts["stopGracePeriodSwarm"] = Number(opts["stopGracePeriodSwarm"]);
+			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
+			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			const data = await apiPost("redis.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -6813,7 +6943,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["metricsConfig"] != null) opts["metricsConfig"] = parseJsonOption(opts["metricsConfig"], "metricsConfig", "object");
 			const data = await apiPost("server.setupMonitoring", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7507,7 +7637,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["additionalPorts"] != null) opts["additionalPorts"] = parseJsonOption(opts["additionalPorts"], "additionalPorts", "array");
 			const data = await apiPost("settings.updateTraefikPorts", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7718,6 +7848,9 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["domains"] != null) opts["domains"] = parseJsonOption(opts["domains"], "domains", "array");
+			if (opts["oidcConfig"] != null) opts["oidcConfig"] = parseJsonOption(opts["oidcConfig"], "oidcConfig", "object");
+			if (opts["samlConfig"] != null) opts["samlConfig"] = parseJsonOption(opts["samlConfig"], "samlConfig", "object");
 			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = opts["overrideUserInfo"] === true || opts["overrideUserInfo"] === "true";
 			const data = await apiPost("sso.register", opts);
 			printOutput(data, jsonOutput, false);
@@ -7763,6 +7896,9 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["domains"] != null) opts["domains"] = parseJsonOption(opts["domains"], "domains", "array");
+			if (opts["oidcConfig"] != null) opts["oidcConfig"] = parseJsonOption(opts["oidcConfig"], "oidcConfig", "object");
+			if (opts["samlConfig"] != null) opts["samlConfig"] = parseJsonOption(opts["samlConfig"], "samlConfig", "object");
 			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = opts["overrideUserInfo"] === true || opts["overrideUserInfo"] === "true";
 			const data = await apiPost("sso.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -7985,7 +8121,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["tagIds"] != null) opts["tagIds"] = parseJsonOption(opts["tagIds"], "tagIds", "array");
 			const data = await apiPost("tag.bulkAssign", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8099,6 +8235,11 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
+			if (opts["accessedProjects"] != null) opts["accessedProjects"] = parseJsonOption(opts["accessedProjects"], "accessedProjects", "array");
+			if (opts["accessedEnvironments"] != null) opts["accessedEnvironments"] = parseJsonOption(opts["accessedEnvironments"], "accessedEnvironments", "array");
+			if (opts["accessedServices"] != null) opts["accessedServices"] = parseJsonOption(opts["accessedServices"], "accessedServices", "array");
+			if (opts["accessedGitProviders"] != null) opts["accessedGitProviders"] = parseJsonOption(opts["accessedGitProviders"], "accessedGitProviders", "array");
+			if (opts["accessedServers"] != null) opts["accessedServers"] = parseJsonOption(opts["accessedServers"], "accessedServers", "array");
 			if (opts["canCreateProjects"] != null) opts["canCreateProjects"] = opts["canCreateProjects"] === true || opts["canCreateProjects"] === "true";
 			if (opts["canCreateServices"] != null) opts["canCreateServices"] = opts["canCreateServices"] === true || opts["canCreateServices"] === "true";
 			if (opts["canDeleteProjects"] != null) opts["canDeleteProjects"] = opts["canDeleteProjects"] === true || opts["canDeleteProjects"] === "true";
@@ -8145,6 +8286,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["expiresIn"] != null) opts["expiresIn"] = Number(opts["expiresIn"]);
+			if (opts["metadata"] != null) opts["metadata"] = parseJsonOption(opts["metadata"], "metadata", "object");
 			if (opts["rateLimitEnabled"] != null) opts["rateLimitEnabled"] = opts["rateLimitEnabled"] === true || opts["rateLimitEnabled"] === "true";
 			if (opts["rateLimitTimeWindow"] != null) opts["rateLimitTimeWindow"] = Number(opts["rateLimitTimeWindow"]);
 			if (opts["rateLimitMax"] != null) opts["rateLimitMax"] = Number(opts["rateLimitMax"]);
@@ -8611,7 +8753,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-
+			if (opts["whitelabelingConfig"] != null) opts["whitelabelingConfig"] = parseJsonOption(opts["whitelabelingConfig"], "whitelabelingConfig", "object");
 			const data = await apiPost("whitelabeling.update", opts);
 			printOutput(data, jsonOutput, false);
 		});

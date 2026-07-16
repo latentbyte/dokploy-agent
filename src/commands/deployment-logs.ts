@@ -2,6 +2,12 @@ import * as crypto from "node:crypto";
 import * as net from "node:net";
 import * as tls from "node:tls";
 import chalk from "chalk";
+
+const socketFactory = {
+	connect: net.connect.bind(net),
+	secureConnect: tls.connect.bind(tls),
+};
+
 import type { Command } from "commander";
 import { apiGet, formatCliError, readAuthConfig } from "../client.js";
 import { filterLogString, limitLogString, redactString } from "../redact.js";
@@ -314,21 +320,37 @@ async function readDeploymentLogWebSocket(
 	return new Promise((resolve, reject) => {
 		let settled = false;
 		let upgraded = false;
-		let receivedFrame = false;
 		let buffer: Buffer<ArrayBufferLike> = Buffer.alloc(0);
 		let requestSent = false;
+		let idleTimer: ReturnType<typeof setTimeout> | undefined;
 		const chunks: string[] = [];
 		const key = crypto.randomBytes(16).toString("base64");
 
 		const socket = secure
-			? tls.connect({ host: url.hostname, port, servername: url.hostname })
-			: net.connect({ host: url.hostname, port });
+			? socketFactory.secureConnect({
+					host: url.hostname,
+					port,
+					servername: url.hostname,
+				})
+			: socketFactory.connect({ host: url.hostname, port });
+
+		const clearIdleTimer = () => {
+			if (idleTimer) {
+				clearTimeout(idleTimer);
+				idleTimer = undefined;
+			}
+		};
+
+		const scheduleIdleTimeout = () => {
+			clearIdleTimer();
+			idleTimer = setTimeout(() => finish(), options.idleTimeoutMs);
+		};
 
 		const finish = (err?: Error) => {
 			if (settled) return;
 			settled = true;
 			clearTimeout(totalTimer);
-			clearInterval(idleTimer);
+			clearIdleTimer();
 			socket.destroy();
 			if (err) {
 				reject(err);
@@ -338,9 +360,6 @@ async function readDeploymentLogWebSocket(
 		};
 
 		const totalTimer = setTimeout(() => finish(), options.timeoutMs);
-		const idleTimer = setInterval(() => {
-			if (receivedFrame) finish();
-		}, options.idleTimeoutMs);
 
 		const sendRequest = () => {
 			if (requestSent) return;
@@ -383,8 +402,8 @@ async function readDeploymentLogWebSocket(
 						return;
 					}
 					if (opcode === 1 || opcode === 2 || opcode === 0) {
-						receivedFrame = true;
 						chunks.push(payload.toString("utf8"));
+						scheduleIdleTimeout();
 					}
 				});
 			} catch (err) {
@@ -511,4 +530,6 @@ export const deploymentLogsInternals = {
 	deploymentServerId,
 	formatDeploymentLogOutput,
 	isMissingDeploymentLog,
+	readDeploymentLogWebSocket,
+	socketFactory,
 };
