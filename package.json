@@ -56,7 +56,7 @@
     "format": "pnpm run fmt",
     "fix": "pnpm run fmt",
     "pretest": "tsc -b --force && tsx scripts/write-build-info.ts",
-    "test": "vitest run"
+    "test": "vitest run --maxWorkers=2"
   },
   "types": "dist/index.d.ts",
   "pnpm": {
