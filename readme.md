@@ -1,6 +1,6 @@
 # Dokploy CLI
 
-Dokploy CLI is a command-line tool to manage your Dokploy server remotely. It provides **524 commands** auto-generated from the Dokploy OpenAPI spec, covering every API endpoint.
+Dokploy CLI is a command-line tool to manage your Dokploy server remotely. It provides **545 commands** auto-generated from the Dokploy OpenAPI spec, covering every API endpoint.
 
 ## Installation
 
@@ -88,23 +88,24 @@ dokploy application deploy --help
 | Group | Commands | Group | Commands |
 |---|---|---|---|
 | `admin` | 1 | `mysql` | 16 |
-| `ai` | 12 | `notification` | 41 |
+| `ai` | 14 | `notification` | 41 |
 | `application` | 31 | `organization` | 11 |
 | `audit-log` | 1 | `patch` | 12 |
 | `backup` | 12 | `port` | 4 |
 | `bitbucket` | 7 | `postgres` | 16 |
 | `certificates` | 5 | `preview-deployment` | 4 |
 | `cluster` | 4 | `project` | 9 |
-| `compose` | 30 | `redirects` | 4 |
+| `compose` | 31 | `redirects` | 4 |
 | `custom-role` | 6 | `redis` | 16 |
 | `deployment` | 8 | `registry` | 7 |
 | `destination` | 6 | `rollback` | 2 |
 | `docker` | 12 | `schedule` | 6 |
-| `domain` | 9 | `security` | 4 |
-| `environment` | 7 | `server` | 17 |
-| `gitea` | 8 | `settings` | 51 |
+| `domain` | 9 | `scim` | 3 |
+| `environment` | 7 | `security` | 4 |
+| `forward-auth` | 10 | `server` | 18 |
+| `gitea` | 8 | `settings` | 54 |
 | `github` | 6 | `ssh-key` | 7 |
-| `gitlab` | 7 | `sso` | 10 |
+| `gitlab` | 7 | `sso` | 11 |
 | `git-provider` | 4 | `stripe` | 8 |
 | `libsql` | 14 | `swarm` | 4 |
 | `license-key` | 6 | `tag` | 8 |

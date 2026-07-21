@@ -1,10 +1,19 @@
 {
 	"generated": {
-		"total": 524,
-		"safe_count": 138,
-		"disallowed_count": 141,
-		"hidden_count": 245,
+		"total": 545,
+		"safe_count": 156,
+		"disallowed_count": 222,
+		"hidden_count": 167,
 		"safe": {
+			"ai": [
+				{
+					"endpoint": "ai.getCustomProviders",
+					"group": "ai",
+					"action": "get-custom-providers",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
 			"application": [
 				{
 					"endpoint": "application.create",
@@ -55,22 +64,6 @@
 					"endpoint": "application.redeploy",
 					"group": "application",
 					"action": "redeploy",
-					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveDockerProvider",
-					"group": "application",
-					"action": "save-docker-provider",
-					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveGitProvider",
-					"group": "application",
-					"action": "save-git-provider",
 					"method": "post",
 					"reason": "side-effect endpoint allowlisted for deploy",
 					"risk": "side-effect"
@@ -405,14 +398,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "domain.delete",
-					"group": "domain",
-					"action": "delete",
-					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "domain.one",
 					"group": "domain",
 					"action": "one",
@@ -447,6 +432,36 @@
 					"endpoint": "environment.search",
 					"group": "environment",
 					"action": "search",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"forward-auth": [
+				{
+					"endpoint": "forwardAuth.getAuthDomain",
+					"group": "forward-auth",
+					"action": "get-auth-domain",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "forwardAuth.listProviders",
+					"group": "forward-auth",
+					"action": "list-providers",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "forwardAuth.serverStatus",
+					"group": "forward-auth",
+					"action": "server-status",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "forwardAuth.status",
+					"group": "forward-auth",
+					"action": "status",
 					"method": "get",
 					"reason": "read-only endpoint"
 				}
@@ -564,6 +579,71 @@
 					"reason": "read-only endpoint"
 				}
 			],
+			"libsql": [
+				{
+					"endpoint": "libsql.one",
+					"group": "libsql",
+					"action": "one",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "libsql.readLogs",
+					"group": "libsql",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				}
+			],
+			"mariadb": [
+				{
+					"endpoint": "mariadb.one",
+					"group": "mariadb",
+					"action": "one",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "mariadb.readLogs",
+					"group": "mariadb",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				},
+				{
+					"endpoint": "mariadb.search",
+					"group": "mariadb",
+					"action": "search",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"mongo": [
+				{
+					"endpoint": "mongo.one",
+					"group": "mongo",
+					"action": "one",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "mongo.readLogs",
+					"group": "mongo",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				},
+				{
+					"endpoint": "mongo.search",
+					"group": "mongo",
+					"action": "search",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
 			"mounts": [
 				{
 					"endpoint": "mounts.allNamedByApplicationId",
@@ -583,6 +663,30 @@
 					"endpoint": "mounts.one",
 					"group": "mounts",
 					"action": "one",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"mysql": [
+				{
+					"endpoint": "mysql.one",
+					"group": "mysql",
+					"action": "one",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "mysql.readLogs",
+					"group": "mysql",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				},
+				{
+					"endpoint": "mysql.search",
+					"group": "mysql",
+					"action": "search",
 					"method": "get",
 					"reason": "read-only endpoint"
 				}
@@ -712,6 +816,30 @@
 					"reason": "read-only endpoint"
 				}
 			],
+			"redis": [
+				{
+					"endpoint": "redis.one",
+					"group": "redis",
+					"action": "one",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "redis.readLogs",
+					"group": "redis",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				},
+				{
+					"endpoint": "redis.search",
+					"group": "redis",
+					"action": "search",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
 			"registry": [
 				{
 					"endpoint": "registry.all",
@@ -740,6 +868,15 @@
 					"endpoint": "schedule.one",
 					"group": "schedule",
 					"action": "one",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"scim": [
+				{
+					"endpoint": "scim.listProviders",
+					"group": "scim",
+					"action": "list-providers",
 					"method": "get",
 					"reason": "read-only endpoint"
 				}
@@ -1004,6 +1141,15 @@
 					"reason": "read-only endpoint"
 				}
 			],
+			"sso": [
+				{
+					"endpoint": "sso.enforceSSO",
+					"group": "sso",
+					"action": "enforce-sso",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
 			"swarm": [
 				{
 					"endpoint": "swarm.getContainerStats",
@@ -1052,6 +1198,16 @@
 			]
 		},
 		"disallowed": {
+			"ai": [
+				{
+					"endpoint": "ai.saveCustomProviders",
+					"group": "ai",
+					"action": "save-custom-providers",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
 			"application": [
 				{
 					"endpoint": "application.cancelDeployment",
@@ -1158,6 +1314,14 @@
 					"risk": "side-effect"
 				},
 				{
+					"endpoint": "application.saveDockerProvider",
+					"group": "application",
+					"action": "save-docker-provider",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "application.saveEnvironment",
 					"group": "application",
 					"action": "save-environment",
@@ -1185,6 +1349,14 @@
 					"endpoint": "application.saveGitlabProvider",
 					"group": "application",
 					"action": "save-gitlab-provider",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.saveGitProvider",
+					"group": "application",
+					"action": "save-git-provider",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -1404,6 +1576,14 @@
 					"risk": "side-effect"
 				},
 				{
+					"endpoint": "compose.previewTemplate",
+					"group": "compose",
+					"action": "preview-template",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "compose.processTemplate",
 					"group": "compose",
 					"action": "process-template",
@@ -1564,6 +1744,14 @@
 			],
 			"domain": [
 				{
+					"endpoint": "domain.delete",
+					"group": "domain",
+					"action": "delete",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "domain.generateDomain",
 					"group": "domain",
 					"action": "generate-domain",
@@ -1614,6 +1802,366 @@
 					"risk": "side-effect"
 				}
 			],
+			"forward-auth": [
+				{
+					"endpoint": "forwardAuth.deployOnServer",
+					"group": "forward-auth",
+					"action": "deploy-on-server",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "forwardAuth.disable",
+					"group": "forward-auth",
+					"action": "disable",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "forwardAuth.enable",
+					"group": "forward-auth",
+					"action": "enable",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "forwardAuth.removeAuthDomain",
+					"group": "forward-auth",
+					"action": "remove-auth-domain",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "forwardAuth.removeOnServer",
+					"group": "forward-auth",
+					"action": "remove-on-server",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "forwardAuth.setAuthDomain",
+					"group": "forward-auth",
+					"action": "set-auth-domain",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"libsql": [
+				{
+					"endpoint": "libsql.changeStatus",
+					"group": "libsql",
+					"action": "change-status",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.create",
+					"group": "libsql",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.deploy",
+					"group": "libsql",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.move",
+					"group": "libsql",
+					"action": "move",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.rebuild",
+					"group": "libsql",
+					"action": "rebuild",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.reload",
+					"group": "libsql",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.remove",
+					"group": "libsql",
+					"action": "remove",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.saveEnvironment",
+					"group": "libsql",
+					"action": "save-environment",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.saveExternalPorts",
+					"group": "libsql",
+					"action": "save-external-ports",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.start",
+					"group": "libsql",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.stop",
+					"group": "libsql",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.update",
+					"group": "libsql",
+					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"mariadb": [
+				{
+					"endpoint": "mariadb.changePassword",
+					"group": "mariadb",
+					"action": "change-password",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.changeStatus",
+					"group": "mariadb",
+					"action": "change-status",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.create",
+					"group": "mariadb",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.deploy",
+					"group": "mariadb",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.move",
+					"group": "mariadb",
+					"action": "move",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.rebuild",
+					"group": "mariadb",
+					"action": "rebuild",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.reload",
+					"group": "mariadb",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.remove",
+					"group": "mariadb",
+					"action": "remove",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.saveEnvironment",
+					"group": "mariadb",
+					"action": "save-environment",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.saveExternalPort",
+					"group": "mariadb",
+					"action": "save-external-port",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.start",
+					"group": "mariadb",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.stop",
+					"group": "mariadb",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.update",
+					"group": "mariadb",
+					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"mongo": [
+				{
+					"endpoint": "mongo.changePassword",
+					"group": "mongo",
+					"action": "change-password",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.changeStatus",
+					"group": "mongo",
+					"action": "change-status",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.create",
+					"group": "mongo",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.deploy",
+					"group": "mongo",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.move",
+					"group": "mongo",
+					"action": "move",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.rebuild",
+					"group": "mongo",
+					"action": "rebuild",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.reload",
+					"group": "mongo",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.remove",
+					"group": "mongo",
+					"action": "remove",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.saveEnvironment",
+					"group": "mongo",
+					"action": "save-environment",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.saveExternalPort",
+					"group": "mongo",
+					"action": "save-external-port",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.start",
+					"group": "mongo",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.stop",
+					"group": "mongo",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.update",
+					"group": "mongo",
+					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
 			"mounts": [
 				{
 					"endpoint": "mounts.create",
@@ -1634,6 +2182,112 @@
 				{
 					"endpoint": "mounts.update",
 					"group": "mounts",
+					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"mysql": [
+				{
+					"endpoint": "mysql.changePassword",
+					"group": "mysql",
+					"action": "change-password",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.changeStatus",
+					"group": "mysql",
+					"action": "change-status",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.create",
+					"group": "mysql",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.deploy",
+					"group": "mysql",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.move",
+					"group": "mysql",
+					"action": "move",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.rebuild",
+					"group": "mysql",
+					"action": "rebuild",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.reload",
+					"group": "mysql",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.remove",
+					"group": "mysql",
+					"action": "remove",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.saveEnvironment",
+					"group": "mysql",
+					"action": "save-environment",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.saveExternalPort",
+					"group": "mysql",
+					"action": "save-external-port",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.start",
+					"group": "mysql",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.stop",
+					"group": "mysql",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.update",
+					"group": "mysql",
 					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
@@ -1916,6 +2570,112 @@
 					"risk": "side-effect"
 				}
 			],
+			"redis": [
+				{
+					"endpoint": "redis.changePassword",
+					"group": "redis",
+					"action": "change-password",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.changeStatus",
+					"group": "redis",
+					"action": "change-status",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.create",
+					"group": "redis",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.deploy",
+					"group": "redis",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.move",
+					"group": "redis",
+					"action": "move",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.rebuild",
+					"group": "redis",
+					"action": "rebuild",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.reload",
+					"group": "redis",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.remove",
+					"group": "redis",
+					"action": "remove",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.saveEnvironment",
+					"group": "redis",
+					"action": "save-environment",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.saveExternalPort",
+					"group": "redis",
+					"action": "save-external-port",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.start",
+					"group": "redis",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.stop",
+					"group": "redis",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.update",
+					"group": "redis",
+					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
 			"registry": [
 				{
 					"endpoint": "registry.create",
@@ -2010,6 +2770,24 @@
 					"risk": "side-effect"
 				}
 			],
+			"scim": [
+				{
+					"endpoint": "scim.deleteProvider",
+					"group": "scim",
+					"action": "delete-provider",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "scim.generateToken",
+					"group": "scim",
+					"action": "generate-token",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
 			"security": [
 				{
 					"endpoint": "security.create",
@@ -2076,6 +2854,14 @@
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
+				},
+				{
+					"endpoint": "server.updateBuildsConcurrency",
+					"group": "server",
+					"action": "update-builds-concurrency",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
 				}
 			],
 			"settings": [
@@ -2112,9 +2898,25 @@
 					"risk": "side-effect"
 				},
 				{
+					"endpoint": "settings.updateBuildsConcurrency",
+					"group": "settings",
+					"action": "update-builds-concurrency",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "settings.updateDockerCleanup",
 					"group": "settings",
 					"action": "update-docker-cleanup",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "settings.updateEnforceSSO",
+					"group": "settings",
+					"action": "update-enforce-sso",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2131,6 +2933,14 @@
 					"endpoint": "settings.updateMiddlewareTraefikConfig",
 					"group": "settings",
 					"action": "update-middleware-traefik-config",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "settings.updateRemoteServersOnly",
+					"group": "settings",
+					"action": "update-remote-servers-only",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2516,119 +3326,6 @@
 					"risk": "side-effect"
 				}
 			],
-			"libsql": [
-				{
-					"endpoint": "libsql.changeStatus",
-					"group": "libsql",
-					"action": "change-status",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.create",
-					"group": "libsql",
-					"action": "create",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.deploy",
-					"group": "libsql",
-					"action": "deploy",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.move",
-					"group": "libsql",
-					"action": "move",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.one",
-					"group": "libsql",
-					"action": "one",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account"
-				},
-				{
-					"endpoint": "libsql.readLogs",
-					"group": "libsql",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
-					"endpoint": "libsql.rebuild",
-					"group": "libsql",
-					"action": "rebuild",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.reload",
-					"group": "libsql",
-					"action": "reload",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.remove",
-					"group": "libsql",
-					"action": "remove",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.saveEnvironment",
-					"group": "libsql",
-					"action": "save-environment",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.saveExternalPorts",
-					"group": "libsql",
-					"action": "save-external-ports",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.start",
-					"group": "libsql",
-					"action": "start",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.stop",
-					"group": "libsql",
-					"action": "stop",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.update",
-					"group": "libsql",
-					"action": "update",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				}
-			],
 			"license-key": [
 				{
 					"endpoint": "licenseKey.activate",
@@ -2674,390 +3371,6 @@
 					"action": "validate",
 					"method": "post",
 					"reason": "license/account surface, not useful for normal deploy/debug agent work",
-					"risk": "side-effect"
-				}
-			],
-			"mariadb": [
-				{
-					"endpoint": "mariadb.changePassword",
-					"group": "mariadb",
-					"action": "change-password",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.changeStatus",
-					"group": "mariadb",
-					"action": "change-status",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.create",
-					"group": "mariadb",
-					"action": "create",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.deploy",
-					"group": "mariadb",
-					"action": "deploy",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.move",
-					"group": "mariadb",
-					"action": "move",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.one",
-					"group": "mariadb",
-					"action": "one",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account"
-				},
-				{
-					"endpoint": "mariadb.readLogs",
-					"group": "mariadb",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
-					"endpoint": "mariadb.rebuild",
-					"group": "mariadb",
-					"action": "rebuild",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.reload",
-					"group": "mariadb",
-					"action": "reload",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.remove",
-					"group": "mariadb",
-					"action": "remove",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.saveEnvironment",
-					"group": "mariadb",
-					"action": "save-environment",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.saveExternalPort",
-					"group": "mariadb",
-					"action": "save-external-port",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.search",
-					"group": "mariadb",
-					"action": "search",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account"
-				},
-				{
-					"endpoint": "mariadb.start",
-					"group": "mariadb",
-					"action": "start",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.stop",
-					"group": "mariadb",
-					"action": "stop",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.update",
-					"group": "mariadb",
-					"action": "update",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				}
-			],
-			"mongo": [
-				{
-					"endpoint": "mongo.changePassword",
-					"group": "mongo",
-					"action": "change-password",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.changeStatus",
-					"group": "mongo",
-					"action": "change-status",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.create",
-					"group": "mongo",
-					"action": "create",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.deploy",
-					"group": "mongo",
-					"action": "deploy",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.move",
-					"group": "mongo",
-					"action": "move",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.one",
-					"group": "mongo",
-					"action": "one",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account"
-				},
-				{
-					"endpoint": "mongo.readLogs",
-					"group": "mongo",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
-					"endpoint": "mongo.rebuild",
-					"group": "mongo",
-					"action": "rebuild",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.reload",
-					"group": "mongo",
-					"action": "reload",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.remove",
-					"group": "mongo",
-					"action": "remove",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.saveEnvironment",
-					"group": "mongo",
-					"action": "save-environment",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.saveExternalPort",
-					"group": "mongo",
-					"action": "save-external-port",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.search",
-					"group": "mongo",
-					"action": "search",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account"
-				},
-				{
-					"endpoint": "mongo.start",
-					"group": "mongo",
-					"action": "start",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.stop",
-					"group": "mongo",
-					"action": "stop",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.update",
-					"group": "mongo",
-					"action": "update",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				}
-			],
-			"mysql": [
-				{
-					"endpoint": "mysql.changePassword",
-					"group": "mysql",
-					"action": "change-password",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.changeStatus",
-					"group": "mysql",
-					"action": "change-status",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.create",
-					"group": "mysql",
-					"action": "create",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.deploy",
-					"group": "mysql",
-					"action": "deploy",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.move",
-					"group": "mysql",
-					"action": "move",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.one",
-					"group": "mysql",
-					"action": "one",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account"
-				},
-				{
-					"endpoint": "mysql.readLogs",
-					"group": "mysql",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
-					"endpoint": "mysql.rebuild",
-					"group": "mysql",
-					"action": "rebuild",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.reload",
-					"group": "mysql",
-					"action": "reload",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.remove",
-					"group": "mysql",
-					"action": "remove",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.saveEnvironment",
-					"group": "mysql",
-					"action": "save-environment",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.saveExternalPort",
-					"group": "mysql",
-					"action": "save-external-port",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.search",
-					"group": "mysql",
-					"action": "search",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account"
-				},
-				{
-					"endpoint": "mysql.start",
-					"group": "mysql",
-					"action": "start",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.stop",
-					"group": "mysql",
-					"action": "stop",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.update",
-					"group": "mysql",
-					"action": "update",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
 					"risk": "side-effect"
 				}
 			],
@@ -3471,134 +3784,6 @@
 					"action": "update-member-role",
 					"method": "post",
 					"reason": "organization/admin/member management surface, not useful for normal deploy/debug agent work",
-					"risk": "side-effect"
-				}
-			],
-			"redis": [
-				{
-					"endpoint": "redis.changePassword",
-					"group": "redis",
-					"action": "change-password",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.changeStatus",
-					"group": "redis",
-					"action": "change-status",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.create",
-					"group": "redis",
-					"action": "create",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.deploy",
-					"group": "redis",
-					"action": "deploy",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.move",
-					"group": "redis",
-					"action": "move",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.one",
-					"group": "redis",
-					"action": "one",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account"
-				},
-				{
-					"endpoint": "redis.readLogs",
-					"group": "redis",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
-					"endpoint": "redis.rebuild",
-					"group": "redis",
-					"action": "rebuild",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.reload",
-					"group": "redis",
-					"action": "reload",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.remove",
-					"group": "redis",
-					"action": "remove",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.saveEnvironment",
-					"group": "redis",
-					"action": "save-environment",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.saveExternalPort",
-					"group": "redis",
-					"action": "save-external-port",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.search",
-					"group": "redis",
-					"action": "search",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account"
-				},
-				{
-					"endpoint": "redis.start",
-					"group": "redis",
-					"action": "start",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.stop",
-					"group": "redis",
-					"action": "stop",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.update",
-					"group": "redis",
-					"action": "update",
-					"method": "post",
-					"reason": "service type unused in this Dokploy account",
 					"risk": "side-effect"
 				}
 			],
@@ -4209,8 +4394,48 @@
 					"risk": "secret-leakage"
 				},
 				{
+					"endpoint": "libsql.readLogs",
+					"group": "libsql",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				},
+				{
+					"endpoint": "mariadb.readLogs",
+					"group": "mariadb",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				},
+				{
+					"endpoint": "mongo.readLogs",
+					"group": "mongo",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				},
+				{
+					"endpoint": "mysql.readLogs",
+					"group": "mysql",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				},
+				{
 					"endpoint": "postgres.readLogs",
 					"group": "postgres",
+					"action": "read-logs",
+					"method": "get",
+					"reason": "read-only log endpoint with redaction",
+					"risk": "secret-leakage"
+				},
+				{
+					"endpoint": "redis.readLogs",
+					"group": "redis",
 					"action": "read-logs",
 					"method": "get",
 					"reason": "read-only log endpoint with redaction",
@@ -4237,46 +4462,6 @@
 					"risk": "external-ai-data-exposure"
 				},
 				{
-					"endpoint": "libsql.readLogs",
-					"group": "libsql",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
-					"endpoint": "mariadb.readLogs",
-					"group": "mariadb",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
-					"endpoint": "mongo.readLogs",
-					"group": "mongo",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
-					"endpoint": "mysql.readLogs",
-					"group": "mysql",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
-					"endpoint": "redis.readLogs",
-					"group": "redis",
-					"action": "read-logs",
-					"method": "get",
-					"reason": "service type unused in this Dokploy account",
-					"risk": "secret-leakage"
-				},
-				{
 					"endpoint": "settings.getLogCleanupStatus",
 					"group": "settings",
 					"action": "get-log-cleanup-status",
@@ -4289,9 +4474,9 @@
 		}
 	},
 	"openapi": {
-		"total": 524,
+		"total": 546,
 		"unavailable_count": 0,
-		"unavailable": {},
+		"unavailable": [],
 		"logs": {
 			"unavailable": []
 		}

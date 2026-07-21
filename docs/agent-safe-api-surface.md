@@ -12,6 +12,7 @@ Generated from `src/generated/commands.ts` (auto-generated from `openapi.json`).
 
 All commands below are `apiGet` based and considered safe-by-default in agent-safe builds after redaction and after the token-saving blacklist is applied.
 
+- `ai`: get-custom-providers
 - `application`: one, read-app-monitoring, read-logs, read-traefik-config, search
 - `audit-log`: all
 - `backup`: list-backup-files, one
@@ -24,6 +25,7 @@ All commands below are `apiGet` based and considered safe-by-default in agent-sa
 - `docker`: get-config, get-containers, get-containers-by-app-label, get-containers-by-app-name-match, get-service-containers-by-app-name, get-stack-containers-by-app-name
 - `domain`: by-application-id, by-compose-id, can-generate-traefik-me-domains, one
 - `environment`: by-project-id, one, search
+- `forward-auth`: get-auth-domain, list-providers, server-status, status
 - `git-provider`: all-for-permissions, get-all
 - `gitea`: get-gitea-branches, get-gitea-repositories, get-gitea-url, gitea-providers, one
 - `github`: get-github-branches, get-github-repositories, github-providers, one
@@ -42,10 +44,12 @@ All commands below are `apiGet` based and considered safe-by-default in agent-sa
 - `redis`: one, read-logs, search
 - `registry`: all, one
 - `schedule`: list, one
+- `scim`: list-providers
 - `security`: one
 - `server`: all, all-for-permissions, build-servers, count, get-default-command, get-server-metrics, get-server-time, one, public-ip, security, validate, with-sshkey
 - `settings`: check-gpustatus, check-infrastructure-health, get-docker-disk-usage, get-dokploy-cloud-ips, get-dokploy-version, get-ip, get-log-cleanup-status, get-release-tag, get-traefik-ports, get-web-server-settings, have-activate-requests, have-traefik-dashboard-port-enabled, health, is-cloud, is-user-subscribed, read-directories, read-middleware-traefik-config, read-traefik-config, read-traefik-env, read-traefik-file, read-web-server-traefik-config
 - `ssh-key`: all, all-for-apps, one
+- `sso`: enforce-sso
 - `swarm`: get-container-stats, get-node-apps, get-node-info, get-nodes
 - `volume-backups`: list, one
 
@@ -136,10 +140,10 @@ Disallowed means command exists in the generated CLI surface but policy blocks i
 
 Unavailable means command exists in `openapi.json` but is not generated into `src/generated/commands.ts`, so the current CLI cannot expose it without generator/client work.
 
-- generated total: 524
-- safe total: 138
-- disallowed total: 141
-- hidden total: 245
+- generated total: 545
+- safe total: 156
+- disallowed total: 222
+- hidden total: 167
 - not available total (in `openapi.json` but not generated): 0
 
 Full machine-readable list is in `docs/agent-safe-api-surface.json`.
@@ -148,22 +152,25 @@ Full machine-readable list is in `docs/agent-safe-api-surface.json`.
 
 - use `generated.disallowed` in the JSON file for a full per-group list
 - notable disallowed groups by count:
-  - application: 14
-  - backup: 3
-  - compose: 8
+  - application: 22
+  - backup: 10
+  - compose: 18
   - deployment: 2
-  - domain: 2
+  - domain: 3
   - environment: 4
+  - forward-auth: 6
   - libsql: 12
   - mariadb: 13
   - mongo: 13
   - mysql: 13
+  - patch: 8
   - postgres: 13
   - preview-deployment: 2
   - redis: 13
   - rollback: 2
   - schedule: 4
-  - settings: 4
+  - server: 6
+  - settings: 17
 
 ### Hidden (generated but omitted for token savings)
 
@@ -178,14 +185,9 @@ Full machine-readable list is in `docs/agent-safe-api-surface.json`.
   - gitea: 3
   - github: 2
   - gitlab: 3
-  - libsql: 14
   - license-key: 6
-  - mariadb: 16
-  - mongo: 16
-  - mysql: 16
   - notification: 41
   - organization: 11
-  - redis: 16
   - settings: 17
   - ssh-key: 4
   - sso: 10
@@ -197,7 +199,7 @@ Full machine-readable list is in `docs/agent-safe-api-surface.json`.
 ### Not available (API has it, generated CLI does not)
 
 - total: 0
-- the generator now emits all supported `get` and `post` OpenAPI endpoints
+- the generator emits all supported `get` and `post` OpenAPI endpoints except endpoints replaced by richer CLI overlays
 - future unsupported HTTP methods should go here
 
 ## State discovery commands
@@ -208,15 +210,15 @@ Full machine-readable list is in `docs/agent-safe-api-surface.json`.
 - Traefik state: app and server Traefik config, env, file reads, ports, dashboard port flag
 - Domain state: domains by application ID or compose ID, one domain lookup, Traefik.me capability
 
-The OpenAPI spec exposes application/compose/database logs only. It does not currently expose raw Docker daemon logs or Traefik runtime logs.
+The OpenAPI spec exposes application, compose, database, and deployment log reads. It does not currently expose raw Docker daemon logs or Traefik runtime logs.
 
 ## Logs-specific commands
 
-These log related endpoints are currently not on the safe list because most are not generated into the CLI yet. Logs are read-only but can contain secrets, tokens, connection strings, env dumps, headers, or user data.
+Logs are read-only but can contain secrets, tokens, connection strings, env dumps, headers, or user data.
 
-Custom non-OpenAPI deployment log support:
+Custom deployment log support:
 
-- `deployment.read-logs` is a CLI overlay, not generated from `openapi.json`
+- `deployment.read-logs` is a CLI overlay replacing the narrower generated OpenAPI command
 - it reads Dokploy deployment logs through the server WebSocket endpoint using a `logPath` from deployment metadata or a deployment source selector
 - prefer `--applicationId`, `--composeId`, `--serverId`, or `--deploymentId` over raw `--logPath`
 - application and compose selectors resolve the parent service first when deployment rows do not include the remote `serverId`
