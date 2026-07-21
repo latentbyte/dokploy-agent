@@ -85,20 +85,23 @@ describe("generator", () => {
 		expect(content).toContain('apiGet("postgres.readLogs"');
 	});
 
-	it("number of apiPost/apiGet calls should match valid endpoints", () => {
+	it("number of apiPost/apiGet calls should match non-overlay endpoints", () => {
 		const spec = JSON.parse(fs.readFileSync(specPath, "utf8"));
 		const content = fs.readFileSync(generatedPath, "utf8");
+		const overlayEndpoints = new Set(["deployment.readLogs"]);
 
-		// Count only endpoints with group.action pattern
+		// Count only endpoints with group.action pattern not implemented by overlays
 		let validEndpoints = 0;
 		for (const p of Object.keys(spec.paths)) {
 			const clean = p.replace(/^\//, "");
 			const [group, ...rest] = clean.split(".");
-			if (group && rest.length > 0) validEndpoints++;
+			if (group && rest.length > 0 && !overlayEndpoints.has(clean))
+				validEndpoints++;
 		}
 
 		const apiCalls = (content.match(/await api(Post|Get)\(/g) || []).length;
 		expect(apiCalls).toBe(validEndpoints);
+		expect(content).not.toContain('apiGet("deployment.readLogs"');
 	});
 
 	it("agent-safe builds should merge custom wildcard blacklists", () => {

@@ -40,6 +40,7 @@ const LEGACY_USER_AGENT_BLACKLIST_PATH = path.join(
 const AGENT_SAFE_ARG = "--agent-safe";
 const OUT_ARG = "--out";
 const AGENT_SAFE_TAG = "agent-safe";
+const CUSTOM_OVERLAY_ENDPOINTS = new Set(["deployment.readLogs"]);
 const isAgentSafeBuild =
 	process.argv.includes(AGENT_SAFE_ARG) ||
 	process.env.DOKPLOY_BUILD_TAG === AGENT_SAFE_TAG;
@@ -496,6 +497,7 @@ function parseSpec(spec: OpenAPISpec): ParsedSpec {
 	for (const [pathKey, methods] of Object.entries(spec.paths)) {
 		for (const [method, op] of Object.entries(methods)) {
 			const endpoint = pathKey.replace(/^\//, "");
+			if (CUSTOM_OVERLAY_ENDPOINTS.has(endpoint)) continue;
 			const [group, ...rest] = endpoint.split(".");
 			const action = rest.join(".");
 
@@ -1215,7 +1217,11 @@ const report = buildSafetyReport(
 );
 
 fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
-fs.writeFileSync(OUT_PATH, generateFile(parsed.commands, report, blacklist));
+const generatedFile = generateFile(parsed.commands, report, blacklist).replace(
+	/^[\t ]+$/gm,
+	"",
+);
+fs.writeFileSync(OUT_PATH, generatedFile);
 
 const target = isAgentSafeBuild ? "agent-safe" : "full";
 const generatedCount = isAgentSafeBuild

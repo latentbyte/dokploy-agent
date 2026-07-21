@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -6,6 +7,9 @@ import { describe, expect, it } from "vitest";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const CLI = path.join(ROOT, "dist", "index.js");
+const packageJson = JSON.parse(
+	fs.readFileSync(path.join(ROOT, "package.json"), "utf8"),
+) as { version: string };
 
 interface CommandResult {
 	stdout: string;
@@ -49,10 +53,12 @@ describe("CLI", () => {
 		expect(output).toContain("project");
 	});
 
-	it("should show version with build metadata", () => {
+	it("should show package version with build metadata", () => {
 		const output = run("--version").trim();
 		expect(output).toMatch(
-			/^\d+\.\d+\.\d+ \(commit ([0-9a-f]{7,12}|unknown), built .+, mode full\)$/,
+			new RegExp(
+				`^${packageJson.version.replaceAll(".", "\\.")} \\(commit ([0-9a-f]{7,12}|unknown), built .+, mode full\\)$`,
+			),
 		);
 	});
 

@@ -20,9 +20,13 @@ interface BuildInfo {
 	mode: string;
 }
 
+const packageJson = JSON.parse(
+	fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { version: string };
+
 const pkg = {
 	name: "dokploy",
-	version: "0.29.2",
+	version: packageJson.version,
 	description: "Dokploy CLI - Manage your Dokploy server",
 };
 
