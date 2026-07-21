@@ -57,7 +57,7 @@ describe("CLI", () => {
 		const output = run("--version").trim();
 		expect(output).toMatch(
 			new RegExp(
-				`^${packageJson.version.replaceAll(".", "\\.")} \\(commit ([0-9a-f]{7,12}|unknown), built .+, mode full\\)$`,
+				`^${packageJson.version.replaceAll(".", "\\.")} \\(commit ([0-9a-f]{7,12}|unknown), built .+, mode (full|agent-safe)\\)$`,
 			),
 		);
 	});

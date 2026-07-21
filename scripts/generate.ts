@@ -39,6 +39,7 @@ const LEGACY_USER_AGENT_BLACKLIST_PATH = path.join(
 
 const AGENT_SAFE_ARG = "--agent-safe";
 const OUT_ARG = "--out";
+const IMPORTS_ROOT_ARG = "--imports-root";
 const AGENT_SAFE_TAG = "agent-safe";
 const CUSTOM_OVERLAY_ENDPOINTS = new Set(["deployment.readLogs"]);
 const isAgentSafeBuild =
@@ -60,7 +61,11 @@ function readArgValue(name: string): string | undefined {
 }
 
 const outArg = readArgValue(OUT_ARG);
+const importsRootArg = readArgValue(IMPORTS_ROOT_ARG);
 const OUT_PATH = outArg ? path.resolve(ROOT, outArg) : DEFAULT_OUT_PATH;
+const IMPORTS_ROOT = importsRootArg
+	? path.resolve(ROOT, importsRootArg)
+	: path.join(ROOT, "src");
 
 interface OpenAPISpec {
 	paths: Record<string, Record<string, OperationObject>>;
@@ -179,6 +184,17 @@ interface AgentCommandBlacklist {
 const MUTATING_GET_ENDPOINTS = new Set([
 	"cluster.addManager",
 	"cluster.addWorker",
+]);
+
+const AGENT_PROTECTED_APPLICATION_UPDATE_FIELDS = new Set([
+	"env",
+	"previewEnv",
+	"buildArgs",
+	"previewBuildArgs",
+	"buildSecrets",
+	"previewBuildSecrets",
+	"password",
+	"refreshToken",
 ]);
 
 const SAFE_POST_ENDPOINTS = new Set([
@@ -583,6 +599,13 @@ function generateCoercion(opt: OptionInfo): string {
 
 function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 	const actionName = camelToKebab(cmd.action);
+	const commandOptions =
+		isAgentSafeBuild && cmd.endpoint === "application.update"
+			? cmd.options.filter(
+					(option) =>
+						!AGENT_PROTECTED_APPLICATION_UPDATE_FIELDS.has(option.name),
+				)
+			: cmd.options;
 	const agentLogOptionLines =
 		isAgentSafeBuild && isLogCommand(cmd)
 			? [
@@ -594,10 +617,10 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 				]
 			: [];
 	const optionLines = [
-		...cmd.options.map((opt) => generateOptionLine(cmd, opt)),
+		...commandOptions.map((opt) => generateOptionLine(cmd, opt)),
 		...agentLogOptionLines,
 	].join("\n\t\t");
-	const coercions = cmd.options
+	const coercions = commandOptions
 		.map(generateCoercion)
 		.filter(Boolean)
 		.map((c) => `\t\t\t${c}`)
@@ -676,16 +699,7 @@ const AGENT_DEPLOY_SERVICE_MUTATIONS = new Set([
 	'compose.update',
 ]);
 const AGENT_DEPLOY_DOMAIN_MUTATIONS = new Set(['domain.create', 'domain.update']);
-const AGENT_FORBIDDEN_APPLICATION_UPDATE_FIELDS = new Set([
-	'env',
-	'previewEnv',
-	'buildArgs',
-	'previewBuildArgs',
-	'buildSecrets',
-	'previewBuildSecrets',
-	'password',
-	'refreshToken',
-]);
+const AGENT_FORBIDDEN_APPLICATION_UPDATE_FIELDS = new Set(${JSON.stringify([...AGENT_PROTECTED_APPLICATION_UPDATE_FIELDS])});
 
 function stringValue(value: unknown): string | undefined {
 	return typeof value === 'string' && value.trim() ? value : undefined;
@@ -1112,10 +1126,10 @@ function generateFile(
 		: "apiPost, apiGet";
 
 	const clientImport = path
-		.relative(path.dirname(OUT_PATH), path.join(ROOT, "src", "client.js"))
+		.relative(path.dirname(OUT_PATH), path.join(IMPORTS_ROOT, "client.js"))
 		.replaceAll(path.sep, "/");
 	const redactImport = path
-		.relative(path.dirname(OUT_PATH), path.join(ROOT, "src", "redact.js"))
+		.relative(path.dirname(OUT_PATH), path.join(IMPORTS_ROOT, "redact.js"))
 		.replaceAll(path.sep, "/");
 
 	const normalizedClientImport = clientImport.startsWith(".")

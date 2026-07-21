@@ -69,6 +69,42 @@ Returns compose metadata and service summary:
 }
 ```
 
+## `application env` commands
+
+Blind environment mutation for existing applications. Raw existing values stay inside the CLI.
+
+```bash
+# names and masked previews only
+dokploy-agent application env list --applicationId APP_ID --json
+
+# fails when NEW_KEY already exists
+dokploy-agent application env add \
+  --applicationId APP_ID \
+  --name NEW_KEY \
+  --value "new value" \
+  --comment "Added for worker startup" \
+  --json
+
+# inserts comment lines before one unambiguous existing key
+dokploy-agent application env comment \
+  --applicationId APP_ID \
+  --name EXISTING_KEY \
+  --text "Managed by deployment automation" \
+  --json
+```
+
+Safety behavior:
+
+- all existing values get fixed masked previews, regardless of key name
+- existing comment bodies remain hidden
+- add fails on existing keys; no overwrite mode
+- comment fails on missing or duplicated keys
+- multiline comment input is prefixed line-by-line to prevent assignment injection
+- agent-safe builds enforce configured project and server policy before writes
+- generic `application update` hides env, build-secret, password, and refresh-token fields
+
+Dokploy exposes replacement-style environment writes. These commands perform read-modify-write internally and preserve `buildArgs`, `buildSecrets`, and `createEnvFile`. Concurrent panel edits can still race because Dokploy does not expose compare-and-swap for this operation.
+
 ## JSON errors
 
 When `--json` is present, CLI errors use:

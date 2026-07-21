@@ -55,6 +55,8 @@ try {
 		"--agent-safe",
 		"--out",
 		tempGeneratedPath,
+		"--imports-root",
+		tempSrcPath,
 	]);
 	run("pnpm", ["exec", "tsc", "-p", writeBuildTsconfig(tempDir, tempSrcPath)]);
 	run("pnpm", ["exec", "tsx", "scripts/write-build-info.ts"], {

@@ -98,7 +98,15 @@ Example config shape:
 }
 ```
 
-No other `apiPost` commands are safe for now.
+Custom blind environment mutations are also exposed for applications inside configured projects:
+
+- `application env list` returns names and masked previews
+- `application env add` appends only when the key does not exist
+- `application env comment` inserts sanitized comment lines before one existing key
+
+These are CLI overlays around `application.one` and `application.saveEnvironment`. Existing values never appear in output. Generic agent-safe `application.update` omits replacement-style env, build-secret, password, and refresh-token fields.
+
+No other generated `apiPost` commands are safe for now.
 
 ## Build process
 
@@ -253,7 +261,10 @@ Log exposure rules:
 
 When forwarding output to the agent, apply a scrubber that masks secret-like values.
 
-- strip env values to first 4 characters
+- mask every env assignment regardless of key name
+- expose at most the first 4 characters for values longer than 4 characters
+- fully mask values of 4 characters or fewer
+- hide existing env comment bodies
 - never emit full `DOKPLOY_API_KEY`, service tokens, credentials, or private keys
 - keep public resource IDs visible, for example `applicationId`, `serverId`, and inventory `id`
 

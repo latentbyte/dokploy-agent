@@ -341,29 +341,23 @@ describe("generator", () => {
 		expect(payload?.healthCheckSwarm).toBe(null);
 	});
 
-	it("rejects protected fields in agent-safe application.update", async () => {
+	it("hides protected fields from agent-safe application.update", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
 		try {
 			const program = new Command();
-			const apiGetSpy = vi.spyOn(client, "apiGet");
-			const apiPostSpy = vi.spyOn(client, "apiPost");
-
 			registerGeneratedCommands(program);
-			await expect(
-				program.parseAsync([
-					"node",
-					"cli",
-					"application",
-					"update",
-					"--applicationId",
-					"app-1",
-					"--env",
-					"NEW=value",
-				]),
-			).rejects.toThrow("protected fields: env");
-			expect(apiGetSpy).not.toHaveBeenCalled();
-			expect(apiPostSpy).not.toHaveBeenCalled();
+			const application = program.commands.find(
+				(command) => command.name() === "application",
+			);
+			const update = application?.commands.find(
+				(command) => command.name() === "update",
+			);
+			const optionNames = update?.options.map((option) => option.long);
+
+			expect(optionNames).not.toContain("--env");
+			expect(optionNames).not.toContain("--buildSecrets");
+			expect(optionNames).not.toContain("--password");
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
