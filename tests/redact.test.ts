@@ -6,6 +6,7 @@ import {
 	isSensitiveKey,
 	limitLogString,
 	maskSecret,
+	redactEnvDocument,
 	redactString,
 	sanitizeForAgent,
 } from "../src/redact.js";
@@ -39,8 +40,34 @@ describe("agent redaction", () => {
 		});
 	});
 
-	it("keeps very short secret values unchanged", () => {
-		expect(maskSecret("abc")).toBe("abc");
+	it("fully masks very short secret values", () => {
+		expect(maskSecret("abc")).toBe("***");
+	});
+
+	it("masks every value and comment in environment documents", () => {
+		const input = [
+			"# internal hostname follows",
+			"FOO=valuable-secret",
+			"export PORT=3000",
+			'EMPTY=""',
+		].join("\n");
+
+		expect(redactEnvDocument(input)).toBe(
+			[
+				"# [comment hidden]",
+				"FOO=valu***",
+				"export PORT=***",
+				"EMPTY=***",
+			].join("\n"),
+		);
+		expect(sanitizeForAgent({ env: input })).toEqual({
+			env: [
+				"# [comment hidden]",
+				"FOO=valu***",
+				"export PORT=***",
+				"EMPTY=***",
+			].join("\n"),
+		});
 	});
 
 	it("detects sensitive env key parts", () => {
@@ -111,7 +138,7 @@ describe("agent redaction", () => {
 		expect(output).toEqual({
 			deployment: {
 				password: "1234***",
-				token: "abc",
+				token: "***",
 			},
 			services: [{ apiToken: "6543***" }, "TOKEN=shou***"],
 		});

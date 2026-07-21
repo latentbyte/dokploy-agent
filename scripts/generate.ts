@@ -676,6 +676,16 @@ const AGENT_DEPLOY_SERVICE_MUTATIONS = new Set([
 	'compose.update',
 ]);
 const AGENT_DEPLOY_DOMAIN_MUTATIONS = new Set(['domain.create', 'domain.update']);
+const AGENT_FORBIDDEN_APPLICATION_UPDATE_FIELDS = new Set([
+	'env',
+	'previewEnv',
+	'buildArgs',
+	'previewBuildArgs',
+	'buildSecrets',
+	'previewBuildSecrets',
+	'password',
+	'refreshToken',
+]);
 
 function stringValue(value: unknown): string | undefined {
 	return typeof value === 'string' && value.trim() ? value : undefined;
@@ -845,6 +855,12 @@ async function assertAgentDomainInDeployProject(policy: ReturnType<typeof readAg
 }
 
 async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
+	if (endpoint === 'application.update') {
+		const forbiddenFields = Object.keys(opts).filter((field) => AGENT_FORBIDDEN_APPLICATION_UPDATE_FIELDS.has(field));
+		if (forbiddenFields.length > 0) {
+			throw new Error('agent-safe application.update rejects protected fields: ' + forbiddenFields.join(', ') + '; use constrained environment commands');
+		}
+	}
 	const policy = readAgentDeployPolicyConfig();
 	if (endpoint === 'application.create' || endpoint === 'compose.create') {
 		normalizeAgentDeployCreate(policy, opts);

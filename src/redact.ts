@@ -50,6 +50,9 @@ const PUBLIC_IDENTIFIER_KEYS = new Set([
 ]);
 const ENV_KEY_PATTERN =
 	/(?:api|key|token|secret|password|passworkd|passwd|pass|pwd|credential|private|authorization|webhook|dsn|url|uri)/i;
+const ENV_DOCUMENT_KEYS = new Set(["env", "previewenv"]);
+const ENV_DOCUMENT_ASSIGNMENT_PATTERN =
+	/^(\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_.-]*\s*=\s*)(.*)$/;
 const ENV_ASSIGNMENT_PATTERN =
 	/(^|[\s([{,;'-])([A-Za-z_][A-Za-z0-9_.-]*)(\s*[:=]\s*)((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',}\]]+))/gm;
 
@@ -101,8 +104,22 @@ const STRING_SECRET_PATTERNS: Array<
 
 export function maskSecret(value: unknown): string {
 	const text = String(value);
-	if (text.length <= 4) return text;
+	if (text.length <= 4) return "***";
 	return `${text.slice(0, 4)}***`;
+}
+
+export function redactEnvDocument(input: string): string {
+	return input
+		.split(/(\r?\n)/)
+		.map((part) => {
+			if (/^\r?\n$/.test(part)) return part;
+			if (part.trimStart().startsWith("#")) return "# [comment hidden]";
+			const match = part.match(ENV_DOCUMENT_ASSIGNMENT_PATTERN);
+			if (!match) return part;
+			const [, prefix = "", rawValue = ""] = match;
+			return `${prefix}${maskSecret(stripQuotedValue(rawValue.trim()))}`;
+		})
+		.join("");
 }
 
 export function isSensitiveKey(key: string): boolean {
@@ -209,6 +226,12 @@ function sanitizeValue(
 	if (data === null || data === undefined) return data;
 
 	if (typeof data === "string") {
+		if (
+			key &&
+			ENV_DOCUMENT_KEYS.has(key.toLowerCase().replace(/[^a-z0-9]+/g, ""))
+		) {
+			return redactEnvDocument(data);
+		}
 		if (key && isSensitiveKey(key) && !isPublicIdentifierKey(key)) {
 			return maskSecret(data);
 		}

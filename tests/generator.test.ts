@@ -341,6 +341,34 @@ describe("generator", () => {
 		expect(payload?.healthCheckSwarm).toBe(null);
 	});
 
+	it("rejects protected fields in agent-safe application.update", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			const apiGetSpy = vi.spyOn(client, "apiGet");
+			const apiPostSpy = vi.spyOn(client, "apiPost");
+
+			registerGeneratedCommands(program);
+			await expect(
+				program.parseAsync([
+					"node",
+					"cli",
+					"application",
+					"update",
+					"--applicationId",
+					"app-1",
+					"--env",
+					"NEW=value",
+				]),
+			).rejects.toThrow("protected fields: env");
+			expect(apiGetSpy).not.toHaveBeenCalled();
+			expect(apiPostSpy).not.toHaveBeenCalled();
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
 	it("rejects disallowed buildServerId option in agent-safe application.update", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
