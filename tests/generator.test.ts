@@ -403,11 +403,7 @@ describe("generator", () => {
 				domainSuffixes: [".example.com"],
 				expandedApplicationIds: ["app-allowed"],
 			});
-			vi.spyOn(client, "apiGet").mockResolvedValue({
-				environmentId: "env-1",
-				environment: { project: { name: "agent-project" } },
-				serverId: "srv-allowed",
-			});
+			const getSpy = vi.spyOn(client, "apiGet");
 			const postSpy = vi
 				.spyOn(client, "apiPost")
 				.mockResolvedValue({ ok: true });
@@ -436,6 +432,7 @@ describe("generator", () => {
 			expect(postSpy).toHaveBeenCalledWith("application.stop", {
 				applicationId: "app-allowed",
 			});
+			expect(getSpy).not.toHaveBeenCalled();
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}

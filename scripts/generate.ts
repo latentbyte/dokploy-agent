@@ -875,7 +875,7 @@ async function assertAgentServiceInDeployProject(
 	return service;
 }
 
-async function assertExpandedApplicationAllowed(
+function assertExpandedApplicationAllowed(
 	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
 	applicationId: string | undefined,
 ) {
@@ -884,7 +884,6 @@ async function assertExpandedApplicationAllowed(
 			'agent-safe deploy policy requires applicationId in expandedApplicationIds for this operation',
 		);
 	}
-	return assertAgentServiceInDeployProject(policy, 'application', applicationId);
 }
 
 function databaseKindForEndpoint(endpoint: string) {
@@ -957,18 +956,18 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 		return;
 	}
 	if (AGENT_EXPANDED_APPLICATION_MUTATIONS.has(endpoint)) {
-		await assertExpandedApplicationAllowed(policy, opts.applicationId);
+		assertExpandedApplicationAllowed(policy, opts.applicationId);
 		return;
 	}
 	if (endpoint === 'mounts.create') {
 		if (opts.serviceType !== 'application') {
 			throw new Error('agent-safe mounts.create allows only allowlisted applications');
 		}
-		await assertExpandedApplicationAllowed(policy, opts.serviceId);
+		assertExpandedApplicationAllowed(policy, opts.serviceId);
 		return;
 	}
 	if (endpoint === 'port.create') {
-		await assertExpandedApplicationAllowed(policy, opts.applicationId);
+		assertExpandedApplicationAllowed(policy, opts.applicationId);
 		return;
 	}
 	if (AGENT_DEPLOY_SERVICE_MUTATIONS.has(endpoint)) {

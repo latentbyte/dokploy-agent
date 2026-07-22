@@ -75,7 +75,7 @@ Runtime policy:
 - updates, deploys, and domain writes first resolve the target service and require it to belong to one configured project/environment
 - database deploys resolve the database and enforce the same project and server policy
 - `agentDeployPolicy.expandedApplicationIds` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations only for listed IDs
-- expanded application operations still resolve the application and enforce configured project and server policy
+- IDs in `expandedApplicationIds` are explicit exceptions to configured project and server restrictions, so existing applications outside agent deployment projects can be managed
 - mount and port creation requires an application in `expandedApplicationIds`; mounts for other service types stay blocked
 - expanded operations include start, stop, reload, delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.agent.srv1.example.net` for `*.agent.srv1.example.net`
