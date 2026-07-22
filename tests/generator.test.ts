@@ -247,6 +247,9 @@ describe("generator", () => {
 			expect(generatedContent).toContain("policy.servers");
 			expect(generatedContent).toContain("policy.domainSuffixes");
 			expect(generatedContent).toContain("policy.domainNameSuffix");
+			expect(generatedContent).toContain("policy.expandedApplicationNames");
+			expect(generatedContent).toContain("expandedApplications");
+			expect(generatedContent).toContain("resolveExpandedApplications");
 			expect(generatedContent).toContain("server.domainSuffixes");
 			expect(generatedContent).toContain("matchingAgentDomainSuffix");
 			expect(generatedContent).toContain("allowed wildcard domains");

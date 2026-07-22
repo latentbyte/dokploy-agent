@@ -999,10 +999,38 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 	throw new Error('agent-safe deploy policy does not allow write endpoint ' + endpoint);
 }
 
-function agentDeployPolicy() {
+async function resolveExpandedApplications(policy: ReturnType<typeof readAgentDeployPolicyConfig>) {
+	if (policy.expandedApplicationNames.length === 0) return [];
+	const allowedNames = new Set(policy.expandedApplicationNames.map((name) => name.toLowerCase()));
+	const data = await apiGet('project.all', {});
+	const projects = Array.isArray(data) ? data : Array.isArray(data?.projects) ? data.projects : [];
+	const matches: Array<Record<string, string | undefined>> = [];
+	for (const project of projects) {
+		const environments = Array.isArray(project?.environments) ? project.environments : [];
+		for (const environment of environments) {
+			const applications = Array.isArray(environment?.applications) ? environment.applications : [];
+			for (const application of applications) {
+				const names = [stringValue(application?.name), stringValue(application?.appName)]
+					.filter((name): name is string => Boolean(name));
+				if (!names.some((name) => allowedNames.has(name.toLowerCase()))) continue;
+				matches.push({
+					name: stringValue(application?.name),
+					appName: stringValue(application?.appName),
+					applicationId: stringValue(application?.applicationId),
+					projectName: stringValue(project?.name),
+					environmentName: stringValue(environment?.name),
+				});
+			}
+		}
+	}
+	return matches;
+}
+
+async function agentDeployPolicy() {
 	const policy = readAgentDeployPolicyConfig();
 	return {
 		...policy,
+		expandedApplications: await resolveExpandedApplications(policy),
 		examples: [
 			'dokploy-agent compose create --name demo --composeType docker-compose --composeFile <compose.yaml>',
 			'dokploy-agent application create --name demo --serverId ' + policy.servers[0]?.serverId,
@@ -1011,8 +1039,8 @@ function agentDeployPolicy() {
 	};
 }
 
-function printAgentDeployPolicy(jsonOutput: boolean) {
-	const policy = agentDeployPolicy();
+async function printAgentDeployPolicy(jsonOutput: boolean) {
+	const policy = await agentDeployPolicy();
 	if (jsonOutput) {
 		console.log(JSON.stringify(policy, null, 2));
 		return;
@@ -1029,6 +1057,10 @@ function printAgentDeployPolicy(jsonOutput: boolean) {
 	console.log('domain name suffix: ' + (policy.domainNameSuffix ?? '(none)'));
 	console.log('expanded application IDs: ' + (policy.expandedApplicationIds.join(', ') || '(none)'));
 	console.log('expanded application names: ' + (policy.expandedApplicationNames.join(', ') || '(none)'));
+	console.log('resolved expanded applications:');
+	for (const application of policy.expandedApplications) {
+		console.log('- ' + application.name + ' (' + application.applicationId + ') in ' + application.projectName + '/' + application.environmentName);
+	}
 	console.log('examples:');
 	for (const example of policy.examples) console.log(example);
 }
@@ -1164,7 +1196,7 @@ function registerAgentSafetyCommands(program: Command) {
 		.command('deploy-policy')
 		.description('show agent-safe write limits for deploys')
 		.option('--json', 'Output raw JSON')
-		.action((opts: Record<string, any>) => printAgentDeployPolicy(opts.json));
+		.action(async (opts: Record<string, any>) => printAgentDeployPolicy(opts.json));
 }
 `;
 }
