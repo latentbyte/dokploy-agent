@@ -103,20 +103,26 @@ describe("readAuthConfig", () => {
 		});
 	});
 
-	it("should describe supported env vars when config is missing", async () => {
+	it("should throw a typed error when config is missing", async () => {
 		process.env.XDG_CONFIG_HOME = fs.mkdtempSync(
 			path.join(os.tmpdir(), "dokploy-config-"),
 		);
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-		vi.spyOn(process, "exit").mockImplementation(((code) => {
-			throw new Error(`exit ${code}`);
-		}) as typeof process.exit);
 
 		const { readAuthConfig } = await import("../src/client.js");
 
-		expect(() => readAuthConfig()).toThrow("exit 1");
-		expect(errorSpy.mock.calls.join("\n")).toContain("DOKPLOY_API_KEY");
-		expect(errorSpy.mock.calls.join("\n")).toContain("DOKPLOY_AUTH_TOKEN");
+		let error: unknown;
+		try {
+			readAuthConfig();
+		} catch (caught) {
+			error = caught;
+		}
+
+		expect(error).toMatchObject({
+			code: "AUTH_CONFIG_MISSING",
+			exitCode: 1,
+		});
+		expect(String(error)).toContain("DOKPLOY_API_KEY");
+		expect(String(error)).toContain("DOKPLOY_AUTH_TOKEN");
 	});
 });
 

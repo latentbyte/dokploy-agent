@@ -1,0 +1,28 @@
+name: agent-safe
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  COREPACK_ENABLE_STRICT: 0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
+        with:
+          version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - run: pnpm install --ignore-scripts
+      - run: pnpm run build:agent-safe
+      - run: node dist/index.js application delete --json 2> blocked.json; test $? -eq 2
+        shell: bash {0}
+      - run: node -e 'const result = require("./blocked.json"); if (result.error?.code !== "AGENT_POLICY_BLOCKED") process.exit(1)'

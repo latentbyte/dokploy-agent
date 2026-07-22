@@ -3,6 +3,7 @@
 
 import type { Command } from "commander";
 import chalk from "chalk";
+import { CliError } from "../agent/errors.js";
 import { apiPost, apiGet } from "../client.js";
 import { sanitizeForAgent } from "../redact.js";
 
@@ -15,7 +16,7 @@ interface SafetyEntry {
 	risk?: string;
 }
 
-const AGENT_SAFE_BUILD = false;
+export const AGENT_SAFE_BUILD = false;
 
 function parseJsonOption(value: unknown, name: string, kind: "array" | "object") {
 	if (value === null || value === undefined || value === "") return value;
@@ -79,11 +80,12 @@ function printOutput(data: unknown, jsonOutput: boolean, logOutput: boolean, age
 	console.log(JSON.stringify(output, null, 2));
 }
 
-function printBlockedCommand(endpoint: string, reason: string) {
-	console.error(chalk.red(`Blocked by agent-safe policy: ${endpoint}`));
-	console.error(reason);
-	console.error("Ask the user for approval or use the full CLI outside agent-safe mode.");
-	process.exitCode = 2;
+function printBlockedCommand(endpoint: string, reason: string): never {
+	throw new CliError(
+		"AGENT_POLICY_BLOCKED",
+		`Blocked by agent-safe policy: ${endpoint}. ${reason} Ask the user for approval or use the full CLI outside agent-safe mode.`,
+		2,
+	);
 }
 
 export function registerGeneratedCommands(program: Command) {

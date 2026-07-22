@@ -3,7 +3,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import axios, { type AxiosInstance } from "axios";
-import chalk from "chalk";
+import { CliError } from "./agent/errors.js";
 import { redactString, sanitizeForAgent } from "./redact.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -106,24 +106,20 @@ export function readAuthConfig(): AuthConfig {
 	const readableConfigPath = getReadableConfigPath();
 
 	if (!readableConfigPath) {
-		console.error(
-			chalk.red(
-				"No configuration found. Please run 'dokploy auth' first or set DOKPLOY_URL and DOKPLOY_API_KEY (or DOKPLOY_AUTH_TOKEN) environment variables.",
-			),
+		throw new CliError(
+			"AUTH_CONFIG_MISSING",
+			"No configuration found. Please run 'dokploy auth' first or set DOKPLOY_URL and DOKPLOY_API_KEY (or DOKPLOY_AUTH_TOKEN) environment variables.",
 		);
-		process.exit(1);
 	}
 
 	const config = JSON.parse(fs.readFileSync(readableConfigPath, "utf8"));
 	const { token, url } = config;
 
 	if (!url || !token) {
-		console.error(
-			chalk.red(
-				"Incomplete auth config. Run 'dokploy auth' or set environment variables.",
-			),
+		throw new CliError(
+			"AUTH_CONFIG_INCOMPLETE",
+			"Incomplete auth config. Run 'dokploy auth' or set environment variables.",
 		);
-		process.exit(1);
 	}
 
 	return { token, url: normalizeUrl(url) };

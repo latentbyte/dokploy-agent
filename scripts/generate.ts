@@ -186,15 +186,21 @@ const MUTATING_GET_ENDPOINTS = new Set([
 	"cluster.addWorker",
 ]);
 
-const AGENT_PROTECTED_APPLICATION_UPDATE_FIELDS = new Set([
-	"env",
-	"previewEnv",
-	"buildArgs",
-	"previewBuildArgs",
-	"buildSecrets",
-	"previewBuildSecrets",
-	"password",
-	"refreshToken",
+const AGENT_PROTECTED_UPDATE_FIELDS = new Map<string, Set<string>>([
+	[
+		"application.update",
+		new Set([
+			"env",
+			"previewEnv",
+			"buildArgs",
+			"previewBuildArgs",
+			"buildSecrets",
+			"previewBuildSecrets",
+			"password",
+			"refreshToken",
+		]),
+	],
+	["compose.update", new Set(["env", "refreshToken"])],
 ]);
 
 const SAFE_POST_ENDPOINTS = new Set([
@@ -599,12 +605,10 @@ function generateCoercion(opt: OptionInfo): string {
 
 function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 	const actionName = camelToKebab(cmd.action);
+	const protectedFields = AGENT_PROTECTED_UPDATE_FIELDS.get(cmd.endpoint);
 	const commandOptions =
-		isAgentSafeBuild && cmd.endpoint === "application.update"
-			? cmd.options.filter(
-					(option) =>
-						!AGENT_PROTECTED_APPLICATION_UPDATE_FIELDS.has(option.name),
-				)
+		isAgentSafeBuild && protectedFields
+			? cmd.options.filter((option) => !protectedFields.has(option.name))
 			: cmd.options;
 	const agentLogOptionLines =
 		isAgentSafeBuild && isLogCommand(cmd)
@@ -677,6 +681,7 @@ function generateBlockedCommandCode(
 	${groupVar}
 		.command('${actionName}', { hidden: true })
 		.description('[blocked] ${escapeSingleQuoted(cmd.description)}')
+		.option('--json', 'Output JSON error')
 		.allowUnknownOption(true)
 		.allowExcessArguments(true)
 		.action(() => {
@@ -699,7 +704,7 @@ const AGENT_DEPLOY_SERVICE_MUTATIONS = new Set([
 	'compose.update',
 ]);
 const AGENT_DEPLOY_DOMAIN_MUTATIONS = new Set(['domain.create', 'domain.update']);
-const AGENT_FORBIDDEN_APPLICATION_UPDATE_FIELDS = new Set(${JSON.stringify([...AGENT_PROTECTED_APPLICATION_UPDATE_FIELDS])});
+const AGENT_FORBIDDEN_UPDATE_FIELDS: Record<string, readonly string[]> = ${JSON.stringify(Object.fromEntries([...AGENT_PROTECTED_UPDATE_FIELDS].map(([endpoint, fields]) => [endpoint, [...fields]])))};
 
 function stringValue(value: unknown): string | undefined {
 	return typeof value === 'string' && value.trim() ? value : undefined;
@@ -869,11 +874,10 @@ async function assertAgentDomainInDeployProject(policy: ReturnType<typeof readAg
 }
 
 async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
-	if (endpoint === 'application.update') {
-		const forbiddenFields = Object.keys(opts).filter((field) => AGENT_FORBIDDEN_APPLICATION_UPDATE_FIELDS.has(field));
-		if (forbiddenFields.length > 0) {
-			throw new Error('agent-safe application.update rejects protected fields: ' + forbiddenFields.join(', ') + '; use constrained environment commands');
-		}
+	const forbiddenUpdateFields = AGENT_FORBIDDEN_UPDATE_FIELDS[endpoint] ?? [];
+	const forbiddenFields = Object.keys(opts).filter((field) => forbiddenUpdateFields.includes(field));
+	if (forbiddenFields.length > 0) {
+		throw new Error('agent-safe ' + endpoint + ' rejects protected fields: ' + forbiddenFields.join(', ') + '; use constrained commands');
 	}
 	const policy = readAgentDeployPolicyConfig();
 	if (endpoint === 'application.create' || endpoint === 'compose.create') {
@@ -1131,6 +1135,12 @@ function generateFile(
 	const redactImport = path
 		.relative(path.dirname(OUT_PATH), path.join(IMPORTS_ROOT, "redact.js"))
 		.replaceAll(path.sep, "/");
+	const errorsImport = path
+		.relative(
+			path.dirname(OUT_PATH),
+			path.join(IMPORTS_ROOT, "agent", "errors.js"),
+		)
+		.replaceAll(path.sep, "/");
 
 	const normalizedClientImport = clientImport.startsWith(".")
 		? clientImport
@@ -1138,12 +1148,16 @@ function generateFile(
 	const normalizedRedactImport = redactImport.startsWith(".")
 		? redactImport
 		: `./${redactImport}`;
+	const normalizedErrorsImport = errorsImport.startsWith(".")
+		? errorsImport
+		: `./${errorsImport}`;
 
 	return `// Auto-generated from openapi.json, do not edit manually.
 // Run: npx tsx scripts/generate.ts
 
 import type { Command } from "commander";
 import chalk from "chalk";
+import { CliError } from "${normalizedErrorsImport}";
 import { ${clientImports} } from "${normalizedClientImport}";
 import { sanitizeForAgent } from "${normalizedRedactImport}";
 
@@ -1156,7 +1170,7 @@ interface SafetyEntry {
 	risk?: string;
 }
 
-const AGENT_SAFE_BUILD = ${isAgentSafeBuild ? "true" : "false"};
+export const AGENT_SAFE_BUILD = ${isAgentSafeBuild ? "true" : "false"};
 ${safetyCommands}
 function parseJsonOption(value: unknown, name: string, kind: "array" | "object") {
 	if (value === null || value === undefined || value === "") return value;
@@ -1220,11 +1234,12 @@ function printOutput(data: unknown, jsonOutput: boolean, logOutput: boolean, age
 	console.log(JSON.stringify(output, null, 2));
 }
 
-function printBlockedCommand(endpoint: string, reason: string) {
-	console.error(chalk.red(\`Blocked by agent-safe policy: \${endpoint}\`));
-	console.error(reason);
-	console.error("Ask the user for approval or use the full CLI outside agent-safe mode.");
-	process.exitCode = 2;
+function printBlockedCommand(endpoint: string, reason: string): never {
+	throw new CliError(
+		"AGENT_POLICY_BLOCKED",
+		\`Blocked by agent-safe policy: \${endpoint}. \${reason} Ask the user for approval or use the full CLI outside agent-safe mode.\`,
+		2,
+	);
 }
 
 export function registerGeneratedCommands(program: Command) {

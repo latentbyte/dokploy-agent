@@ -9,6 +9,7 @@ const socketFactory = {
 };
 
 import type { Command } from "commander";
+import { CliError } from "../agent/errors.js";
 import { apiGet, formatCliError, readAuthConfig } from "../client.js";
 import { filterLogString, limitLogString, redactString } from "../redact.js";
 
@@ -517,9 +518,8 @@ export function registerDeploymentLogsCommand(program: Command): void {
 				}
 
 				console.log(output || chalk.green("OK"));
-			} catch (err) {
-				console.error(chalk.red(formatCliError(err)));
-				process.exitCode = 1;
+			} catch (error) {
+				throw new CliError("DEPLOYMENT_LOG_ERROR", formatCliError(error));
 			}
 		});
 }

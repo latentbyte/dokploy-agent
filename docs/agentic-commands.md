@@ -102,6 +102,7 @@ Safety behavior:
 - multiline comment input is prefixed line-by-line to prevent assignment injection
 - agent-safe builds enforce configured project and server policy before writes
 - generic `application update` hides env, build-secret, password, and refresh-token fields
+- generic `compose update` hides env and refresh-token fields
 
 Dokploy exposes replacement-style environment writes. These commands perform read-modify-write internally and preserve `buildArgs`, `buildSecrets`, and `createEnvFile`. Concurrent panel edits can still race because Dokploy does not expose compare-and-swap for this operation.
 

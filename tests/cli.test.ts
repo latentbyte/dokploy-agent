@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -17,10 +18,13 @@ interface CommandResult {
 	status: number;
 }
 
-function runCommand(...args: string[]): CommandResult {
+function runCommandWithEnv(
+	args: string[],
+	env: NodeJS.ProcessEnv,
+): CommandResult {
 	const result = spawnSync("node", [CLI, ...args], {
 		encoding: "utf8",
-		env: { ...process.env, NO_COLOR: "1" },
+		env: { ...env, NO_COLOR: "1" },
 	});
 	if (result.error) throw result.error;
 	return {
@@ -28,6 +32,10 @@ function runCommand(...args: string[]): CommandResult {
 		stderr: result.stderr,
 		status: result.status ?? 1,
 	};
+}
+
+function runCommand(...args: string[]): CommandResult {
+	return runCommandWithEnv(args, process.env);
 }
 
 function run(...args: string[]): string {
@@ -169,5 +177,39 @@ describe("CLI", () => {
 				message: "error: unknown command 'not-a-command'",
 			},
 		});
+	});
+
+	it("should report missing options as JSON when requested", () => {
+		const result = runFail("application", "env", "add", "--json");
+		expect(result.stdout).toBe("");
+		expect(JSON.parse(result.stderr)).toMatchObject({
+			ok: false,
+			error: {
+				code: "commander.missingMandatoryOptionValue",
+			},
+		});
+	});
+
+	it("should report missing auth config as JSON", () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-cli-auth-"));
+		const env = { ...process.env };
+		delete env.DOKPLOY_URL;
+		delete env.DOKPLOY_API_KEY;
+		delete env.DOKPLOY_AUTH_TOKEN;
+		env.DOKPLOY_CONFIG_PATH = path.join(tempDir, "missing.json");
+
+		try {
+			const result = runCommandWithEnv(["project", "all", "--json"], env);
+			expect(result.status).toBe(1);
+			expect(result.stdout).toBe("");
+			expect(JSON.parse(result.stderr)).toMatchObject({
+				ok: false,
+				error: {
+					code: "AUTH_CONFIG_MISSING",
+				},
+			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
 	});
 });

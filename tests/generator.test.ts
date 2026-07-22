@@ -30,8 +30,10 @@ async function loadAgentSafeGeneratedCommands() {
 		);
 
 		const modulePath = pathToFileURL(outPath).href;
-		const { registerGeneratedCommands } = await import(modulePath);
-		return { registerGeneratedCommands, tempDir };
+		const { AGENT_SAFE_BUILD, registerGeneratedCommands } = await import(
+			modulePath
+		);
+		return { AGENT_SAFE_BUILD, registerGeneratedCommands, tempDir };
 	} catch (error) {
 		fs.rmSync(tempDir, { recursive: true, force: true });
 		throw error;
@@ -53,6 +55,7 @@ describe("generator", () => {
 	it("generated file should export registerGeneratedCommands", () => {
 		const content = fs.readFileSync(generatedPath, "utf8");
 		expect(content).toContain("export function registerGeneratedCommands");
+		expect(content).toContain("export const AGENT_SAFE_BUILD = false");
 	});
 
 	it("generated file should import from client", () => {
@@ -341,27 +344,60 @@ describe("generator", () => {
 		expect(payload?.healthCheckSwarm).toBe(null);
 	});
 
-	it("hides protected fields from agent-safe application.update", async () => {
-		const { registerGeneratedCommands, tempDir } =
+	it("hides protected update fields from agent-safe commands", async () => {
+		const { AGENT_SAFE_BUILD, registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
 		try {
+			expect(AGENT_SAFE_BUILD).toBe(true);
 			const program = new Command();
 			registerGeneratedCommands(program);
 			const application = program.commands.find(
 				(command) => command.name() === "application",
 			);
-			const update = application?.commands.find(
+			const applicationUpdate = application?.commands.find(
 				(command) => command.name() === "update",
 			);
-			const optionNames = update?.options.map((option) => option.long);
+			const applicationOptions = applicationUpdate?.options.map(
+				(option) => option.long,
+			);
+			expect(applicationOptions).not.toContain("--env");
+			expect(applicationOptions).not.toContain("--buildSecrets");
+			expect(applicationOptions).not.toContain("--password");
 
-			expect(optionNames).not.toContain("--env");
-			expect(optionNames).not.toContain("--buildSecrets");
-			expect(optionNames).not.toContain("--password");
+			const compose = program.commands.find(
+				(command) => command.name() === "compose",
+			);
+			const composeUpdate = compose?.commands.find(
+				(command) => command.name() === "update",
+			);
+			const composeOptions = composeUpdate?.options.map(
+				(option) => option.long,
+			);
+			expect(composeOptions).not.toContain("--env");
+			expect(composeOptions).not.toContain("--refreshToken");
+			expect(composeOptions).toContain("--composeFile");
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
-	});
+	}, 15_000);
+
+	it("throws a typed error for blocked agent-safe commands", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			registerGeneratedCommands(program);
+
+			await expect(
+				program.parseAsync(["node", "cli", "application", "delete", "--json"]),
+			).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				exitCode: 2,
+			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
 
 	it("rejects disallowed buildServerId option in agent-safe application.update", async () => {
 		const { registerGeneratedCommands, tempDir } =

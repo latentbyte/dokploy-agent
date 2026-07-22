@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import { CommanderError, program } from "commander";
+import { cliExitCode, formatJsonError } from "./agent/errors.js";
 import { formatCliError } from "./client.js";
 import { registerApplicationEnvCommands } from "./commands/application-env.js";
 import { registerApplicationLogCommands } from "./commands/application-logs.js";
@@ -12,7 +13,10 @@ import { registerAuthCommand } from "./commands/auth.js";
 import { registerComposeToolCommands } from "./commands/compose-tools.js";
 import { registerDeploymentLogsCommand } from "./commands/deployment-logs.js";
 import { registerServiceInventoryCommands } from "./commands/service-inventory.js";
-import { registerGeneratedCommands } from "./generated/commands.js";
+import {
+	AGENT_SAFE_BUILD,
+	registerGeneratedCommands,
+} from "./generated/commands.js";
 
 interface BuildInfo {
 	version: string;
@@ -54,12 +58,13 @@ program
 	.version(formatVersion())
 	.description(pkg.description)
 	.showHelpAfterError()
-	.showSuggestionAfterError();
+	.showSuggestionAfterError()
+	.exitOverride();
 
 registerAuthCommand(program);
 registerGeneratedCommands(program);
 registerApplicationEnvCommands(program, {
-	agentSafe: readBuildInfo()?.mode === "agent-safe",
+	agentSafe: AGENT_SAFE_BUILD,
 });
 registerApplicationLogCommands(program);
 registerDeploymentLogsCommand(program);
@@ -68,7 +73,9 @@ registerComposeToolCommands(program);
 
 const argv = process.argv.filter((arg) => arg !== "--");
 
-if (argv.includes("--json")) {
+const jsonOutput = argv.includes("--json");
+
+if (jsonOutput) {
 	program.configureOutput({
 		writeErr: () => {},
 		outputError: () => {},
@@ -80,33 +87,27 @@ if (argv.length <= 2) {
 	process.exit(0);
 }
 
-program.exitOverride();
+async function run(): Promise<void> {
+	try {
+		await program.parseAsync(argv);
+	} catch (error) {
+		if (
+			error instanceof CommanderError &&
+			(error.code === "commander.helpDisplayed" ||
+				error.code === "commander.version")
+		) {
+			process.exitCode = 0;
+			return;
+		}
 
-program.parseAsync(argv).catch((err) => {
-	if (
-		err instanceof CommanderError &&
-		(err.code === "commander.helpDisplayed" || err.code === "commander.version")
-	) {
-		process.exit(0);
+		const message = formatCliError(error);
+		if (jsonOutput) {
+			console.error(formatJsonError(error, message));
+		} else if (!(error instanceof CommanderError)) {
+			console.error(chalk.red(message));
+		}
+		process.exitCode = cliExitCode(error);
 	}
+}
 
-	if (argv.includes("--json")) {
-		const code = err instanceof CommanderError ? err.code : "CLI_ERROR";
-		console.error(
-			JSON.stringify(
-				{
-					ok: false,
-					error: {
-						code,
-						message: formatCliError(err),
-					},
-				},
-				null,
-				2,
-			),
-		);
-	} else if (!(err instanceof CommanderError)) {
-		console.error(chalk.red(formatCliError(err)));
-	}
-	process.exit(1);
-});
+void run();

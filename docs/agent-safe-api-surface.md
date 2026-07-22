@@ -108,7 +108,7 @@ Custom blind environment mutations are also exposed for applications inside conf
 - `application env add` appends only when the key does not exist
 - `application env comment` inserts sanitized comment lines before one existing key
 
-These are CLI overlays around `application.one` and `application.saveEnvironment`. Existing values never appear in output. Generic agent-safe `application.update` omits replacement-style env, build-secret, password, and refresh-token fields.
+These are CLI overlays around `application.one` and `application.saveEnvironment`. Existing values never appear in output. Generic agent-safe `application.update` omits replacement-style env, build-secret, password, and refresh-token fields. Generic agent-safe `compose.update` omits env and refresh-token fields.
 
 No other generated `apiPost` commands are safe for now.
 

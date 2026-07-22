@@ -13,7 +13,7 @@ get-deps: deps
 
 # run static checks without changing files
 check:
-	pnpm exec biome check scripts src/client.ts src/commands src/index.ts src/redact.ts tests
+	pnpm exec biome check scripts src/agent src/client.ts src/commands src/index.ts src/redact.ts tests
 	pnpm exec tsc -b --pretty false
 
 # alias for check
@@ -21,7 +21,7 @@ lint: check
 
 # format touched source files
 fmt:
-	pnpm exec biome check --write scripts src/client.ts src/commands src/index.ts src/redact.ts tests
+	pnpm exec biome check --write scripts src/agent src/client.ts src/commands src/index.ts src/redact.ts tests
 
 # alias for fmt
 format: fmt
