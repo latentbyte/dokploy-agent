@@ -70,6 +70,11 @@ describe("CLI", () => {
 		);
 	});
 
+	it("should install runtime package metadata for the agent CLI", () => {
+		const justfile = fs.readFileSync(path.join(ROOT, "Justfile"), "utf8");
+		expect(justfile).toMatch(/cp package\.json "\$install_dir\/package\.json"/);
+	});
+
 	it("should show subcommands for application", () => {
 		const output = run("application", "--help");
 		expect(output).toContain("create");
