@@ -218,6 +218,7 @@ describe("readAgentDeployPolicyConfig", () => {
 		expect(readAgentDeployPolicyConfig()).toMatchObject({
 			domainNameSuffix: "-agent",
 			expandedApplicationIds: [],
+			expandedApplicationNames: [],
 		});
 	});
 
@@ -232,6 +233,20 @@ describe("readAgentDeployPolicyConfig", () => {
 		expect(readAgentDeployPolicyConfig().expandedApplicationIds).toEqual([
 			"app-1",
 			"app-2",
+		]);
+	});
+
+	it("should read expanded application name allowlist", async () => {
+		writePolicyConfig({
+			...basePolicy,
+			expandedApplicationNames: ["my-app", " future-app "],
+		});
+
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+
+		expect(readAgentDeployPolicyConfig().expandedApplicationNames).toEqual([
+			"my-app",
+			"future-app",
 		]);
 	});
 

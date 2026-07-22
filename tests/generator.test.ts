@@ -386,7 +386,7 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
-	it("guards expanded operations with the per-application allowlist", async () => {
+	it("guards expanded operations with the application name allowlist", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
 		try {
@@ -401,9 +401,14 @@ describe("generator", () => {
 				],
 				servers: [{ serverId: "srv-allowed" }],
 				domainSuffixes: [".example.com"],
-				expandedApplicationIds: ["app-allowed"],
+				expandedApplicationIds: [],
+				expandedApplicationNames: ["my-app"],
 			});
-			const getSpy = vi.spyOn(client, "apiGet");
+			const getSpy = vi
+				.spyOn(client, "apiGet")
+				.mockImplementation(async (_endpoint, opts) => ({
+					name: opts?.applicationId === "app-allowed" ? "my-app" : "blocked",
+				}));
 			const postSpy = vi
 				.spyOn(client, "apiPost")
 				.mockResolvedValue({ ok: true });
@@ -418,7 +423,7 @@ describe("generator", () => {
 					"--applicationId",
 					"app-blocked",
 				]),
-			).rejects.toThrow("expandedApplicationIds");
+			).rejects.toThrow("expandedApplicationNames");
 			expect(postSpy).not.toHaveBeenCalled();
 
 			await program.parseAsync([
@@ -432,7 +437,9 @@ describe("generator", () => {
 			expect(postSpy).toHaveBeenCalledWith("application.stop", {
 				applicationId: "app-allowed",
 			});
-			expect(getSpy).not.toHaveBeenCalled();
+			expect(getSpy).toHaveBeenCalledWith("application.one", {
+				applicationId: "app-allowed",
+			});
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
@@ -472,6 +479,7 @@ describe("generator", () => {
 				servers: [{ serverId: "srv-allowed" }],
 				domainSuffixes: [".example.com"],
 				expandedApplicationIds: [],
+				expandedApplicationNames: [],
 			};
 
 			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue(policy);
@@ -523,6 +531,7 @@ describe("generator", () => {
 				servers: [{ serverId: "srv-allowed" }],
 				domainSuffixes: [".example.com"],
 				expandedApplicationIds: [],
+				expandedApplicationNames: [],
 			};
 
 			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue(policy);

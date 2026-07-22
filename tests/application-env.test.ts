@@ -143,6 +143,7 @@ describe("application environment mutations", () => {
 			servers: [{ serverId: "server-1" }],
 			domainSuffixes: [".example.com"],
 			expandedApplicationIds: [],
+			expandedApplicationNames: [],
 		});
 		const postSpy = vi.spyOn(client, "apiPost");
 		registerApplicationEnvCommands(program, { agentSafe: true });

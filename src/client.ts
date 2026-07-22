@@ -33,6 +33,7 @@ export interface AgentDeployPolicyConfig {
 	domainSuffixes: string[];
 	domainNameSuffix?: string;
 	expandedApplicationIds: string[];
+	expandedApplicationNames: string[];
 }
 
 export interface AuthConfig {
@@ -218,6 +219,13 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 				assertString(applicationId, "expandedApplicationIds[]"),
 			)
 		: [];
+	const expandedApplicationNames = Array.isArray(
+		policy.expandedApplicationNames,
+	)
+		? policy.expandedApplicationNames.map((applicationName: unknown) =>
+				assertString(applicationName, "expandedApplicationNames[]"),
+			)
+		: [];
 
 	const rawProjects = Array.isArray(policy.projects)
 		? policy.projects
@@ -256,6 +264,7 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 		domainSuffixes,
 		domainNameSuffix,
 		expandedApplicationIds,
+		expandedApplicationNames,
 	};
 }
 

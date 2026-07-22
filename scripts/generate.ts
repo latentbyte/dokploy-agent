@@ -875,15 +875,25 @@ async function assertAgentServiceInDeployProject(
 	return service;
 }
 
-function assertExpandedApplicationAllowed(
+async function assertExpandedApplicationAllowed(
 	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
 	applicationId: string | undefined,
 ) {
-	if (!applicationId || !policy.expandedApplicationIds.includes(applicationId)) {
-		throw new Error(
-			'agent-safe deploy policy requires applicationId in expandedApplicationIds for this operation',
-		);
+	if (!applicationId) {
+		throw new Error('agent-safe deploy policy requires applicationId for this operation');
 	}
+	if (policy.expandedApplicationIds.includes(applicationId)) return;
+	const allowedNames = new Set(policy.expandedApplicationNames.map((name) => name.toLowerCase()));
+	if (allowedNames.size > 0) {
+		const application = await apiGet('application.one', { applicationId });
+		const names = [stringValue(application?.name), stringValue(application?.appName)]
+			.filter((name): name is string => Boolean(name))
+			.map((name) => name.toLowerCase());
+		if (names.some((name) => allowedNames.has(name))) return;
+	}
+	throw new Error(
+		'agent-safe deploy policy requires application in expandedApplicationIds or expandedApplicationNames for this operation',
+	);
 }
 
 function databaseKindForEndpoint(endpoint: string) {
@@ -956,18 +966,18 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 		return;
 	}
 	if (AGENT_EXPANDED_APPLICATION_MUTATIONS.has(endpoint)) {
-		assertExpandedApplicationAllowed(policy, opts.applicationId);
+		await assertExpandedApplicationAllowed(policy, opts.applicationId);
 		return;
 	}
 	if (endpoint === 'mounts.create') {
 		if (opts.serviceType !== 'application') {
 			throw new Error('agent-safe mounts.create allows only allowlisted applications');
 		}
-		assertExpandedApplicationAllowed(policy, opts.serviceId);
+		await assertExpandedApplicationAllowed(policy, opts.serviceId);
 		return;
 	}
 	if (endpoint === 'port.create') {
-		assertExpandedApplicationAllowed(policy, opts.applicationId);
+		await assertExpandedApplicationAllowed(policy, opts.applicationId);
 		return;
 	}
 	if (AGENT_DEPLOY_SERVICE_MUTATIONS.has(endpoint)) {
@@ -1018,6 +1028,7 @@ function printAgentDeployPolicy(jsonOutput: boolean) {
 	}
 	console.log('domain name suffix: ' + (policy.domainNameSuffix ?? '(none)'));
 	console.log('expanded application IDs: ' + (policy.expandedApplicationIds.join(', ') || '(none)'));
+	console.log('expanded application names: ' + (policy.expandedApplicationNames.join(', ') || '(none)'));
 	console.log('examples:');
 	for (const example of policy.examples) console.log(example);
 }

@@ -74,9 +74,11 @@ Runtime policy:
 - omitted `serverId` on create defaults to the first configured server
 - updates, deploys, and domain writes first resolve the target service and require it to belong to one configured project/environment
 - database deploys resolve the database and enforce the same project and server policy
-- `agentDeployPolicy.expandedApplicationIds` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations only for listed IDs
-- IDs in `expandedApplicationIds` are explicit exceptions to configured project and server restrictions, so existing applications outside agent deployment projects can be managed
-- mount and port creation requires an application in `expandedApplicationIds`; mounts for other service types stay blocked
+- `agentDeployPolicy.expandedApplicationNames` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations for applications matching Dokploy `name` or `appName`, case-insensitively
+- `expandedApplicationIds` remains available when an immutable ID is preferred
+- named or ID allowlist entries are explicit exceptions to configured project and server restrictions, so existing applications outside agent deployment projects can be managed
+- application reads and searches are not limited to configured deployment projects; the project list controls baseline writes and new resource placement
+- mount and port creation requires a named or ID-allowlisted application; mounts for other service types stay blocked
 - expanded operations include start, stop, reload, delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.agent.srv1.example.net` for `*.agent.srv1.example.net`
 - server entries can set `domainSuffixes` to bind a deploy server to a narrower domain set
@@ -106,7 +108,7 @@ Example config shape:
       }
     ],
     "domainSuffixes": ["*.agent.srv1.example.net"],
-    "expandedApplicationIds": ["application-id-approved-for-expanded-ops"]
+    "expandedApplicationNames": ["my-app"]
   }
 }
 ```
