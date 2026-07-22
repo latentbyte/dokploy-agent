@@ -217,7 +217,22 @@ describe("readAgentDeployPolicyConfig", () => {
 
 		expect(readAgentDeployPolicyConfig()).toMatchObject({
 			domainNameSuffix: "-agent",
+			expandedApplicationIds: [],
 		});
+	});
+
+	it("should read expanded application allowlist", async () => {
+		writePolicyConfig({
+			...basePolicy,
+			expandedApplicationIds: ["app-1", " app-2 "],
+		});
+
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+
+		expect(readAgentDeployPolicyConfig().expandedApplicationIds).toEqual([
+			"app-1",
+			"app-2",
+		]);
 	});
 
 	it("should normalize wildcard and bare domain suffixes", async () => {

@@ -203,17 +203,57 @@ const AGENT_PROTECTED_UPDATE_FIELDS = new Map<string, Set<string>>([
 	["compose.update", new Set(["env", "refreshToken"])],
 ]);
 
+const AGENT_EXPANDED_APPLICATION_ENDPOINTS = [
+	"application.cancelDeployment",
+	"application.cleanQueues",
+	"application.clearDeployments",
+	"application.delete",
+	"application.disconnectGitProvider",
+	"application.killBuild",
+	"application.markRunning",
+	"application.move",
+	"application.refreshToken",
+	"application.reload",
+	"application.saveBitbucketProvider",
+	"application.saveBuildType",
+	"application.saveDockerProvider",
+	"application.saveEnvironment",
+	"application.saveGiteaProvider",
+	"application.saveGithubProvider",
+	"application.saveGitProvider",
+	"application.saveGitlabProvider",
+	"application.start",
+	"application.stop",
+	"application.updateTraefikConfig",
+] as const;
+
+const AGENT_DATABASE_KINDS = [
+	"libsql",
+	"mariadb",
+	"mongo",
+	"mysql",
+	"postgres",
+	"redis",
+] as const;
+
 const SAFE_POST_ENDPOINTS = new Set([
 	"application.create",
 	"application.deploy",
 	"application.redeploy",
 	"application.update",
+	...AGENT_EXPANDED_APPLICATION_ENDPOINTS,
 	"compose.create",
 	"compose.deploy",
 	"compose.isolatedDeployment",
 	"compose.update",
 	"domain.create",
 	"domain.update",
+	"mounts.create",
+	"port.create",
+	...AGENT_DATABASE_KINDS.flatMap((kind) => [
+		`${kind}.create`,
+		`${kind}.deploy`,
+	]),
 ]);
 
 const AGENT_HELP_GROUPS = new Set([
@@ -451,7 +491,7 @@ function classifyCommand(cmd: CommandInfo): {
 	if (SAFE_POST_ENDPOINTS.has(cmd.endpoint)) {
 		return {
 			allowed: true,
-			reason: "side-effect endpoint allowlisted for deploy",
+			reason: "side-effect endpoint guarded by agent deploy policy",
 		};
 	}
 
@@ -572,7 +612,8 @@ function generateOptionLine(cmd: CommandInfo, opt: OptionInfo): string {
 	const policyDesc =
 		isAgentSafeBuild &&
 		(cmd.endpoint === "application.create" ||
-			cmd.endpoint === "compose.create") &&
+			cmd.endpoint === "compose.create" ||
+			AGENT_DATABASE_KINDS.some((kind) => cmd.endpoint === `${kind}.create`)) &&
 		opt.name === "environmentId"
 			? `${opt.description}; optional in agent-safe builds, forced to configured agentDeployPolicy project`
 			: opt.description;
@@ -582,7 +623,10 @@ function generateOptionLine(cmd: CommandInfo, opt: OptionInfo): string {
 		!(
 			isAgentSafeBuild &&
 			(cmd.endpoint === "application.create" ||
-				cmd.endpoint === "compose.create") &&
+				cmd.endpoint === "compose.create" ||
+				AGENT_DATABASE_KINDS.some(
+					(kind) => cmd.endpoint === `${kind}.create`,
+				)) &&
 			opt.name === "environmentId"
 		);
 	return required
@@ -704,6 +748,8 @@ const AGENT_DEPLOY_SERVICE_MUTATIONS = new Set([
 	'compose.update',
 ]);
 const AGENT_DEPLOY_DOMAIN_MUTATIONS = new Set(['domain.create', 'domain.update']);
+const AGENT_EXPANDED_APPLICATION_MUTATIONS = new Set(${JSON.stringify(AGENT_EXPANDED_APPLICATION_ENDPOINTS)});
+const AGENT_DATABASE_KINDS = new Set(${JSON.stringify(AGENT_DATABASE_KINDS)});
 const AGENT_FORBIDDEN_UPDATE_FIELDS: Record<string, readonly string[]> = ${JSON.stringify(Object.fromEntries([...AGENT_PROTECTED_UPDATE_FIELDS].map(([endpoint, fields]) => [endpoint, [...fields]])))};
 
 function stringValue(value: unknown): string | undefined {
@@ -798,10 +844,14 @@ function assertServiceServersAllowed(
 	]);
 }
 
-async function assertAgentServiceInDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, kind: 'application' | 'compose', id: string | undefined) {
+async function assertAgentServiceInDeployProject(
+	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
+	kind: 'application' | 'compose' | 'libsql' | 'mariadb' | 'mongo' | 'mysql' | 'postgres' | 'redis',
+	id: string | undefined,
+) {
 	if (!id) throw new Error('agent-safe deploy policy requires ' + kind + ' id');
-	const endpoint = kind === 'application' ? 'application.one' : 'compose.one';
-	const key = kind === 'application' ? 'applicationId' : 'composeId';
+	const endpoint = kind + '.one';
+	const key = kind + 'Id';
 	const service = await apiGet(endpoint, { [key]: id });
 	if (!policy.projects.some((project) => serviceMatchesAgentDeployProject(project, service))) {
 		const serviceProject =
@@ -823,6 +873,23 @@ async function assertAgentServiceInDeployProject(policy: ReturnType<typeof readA
 	}
 	assertServiceServersAllowed(policy, service);
 	return service;
+}
+
+async function assertExpandedApplicationAllowed(
+	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
+	applicationId: string | undefined,
+) {
+	if (!applicationId || !policy.expandedApplicationIds.includes(applicationId)) {
+		throw new Error(
+			'agent-safe deploy policy requires applicationId in expandedApplicationIds for this operation',
+		);
+	}
+	return assertAgentServiceInDeployProject(policy, 'application', applicationId);
+}
+
+function databaseKindForEndpoint(endpoint: string) {
+	const kind = endpoint.split('.')[0];
+	return AGENT_DATABASE_KINDS.has(kind) ? kind as 'libsql' | 'mariadb' | 'mongo' | 'mysql' | 'postgres' | 'redis' : undefined;
 }
 
 function agentDeployDomainSuffixesForServer(policy: ReturnType<typeof readAgentDeployPolicyConfig>, serverId: string | undefined) {
@@ -880,8 +947,28 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 		throw new Error('agent-safe ' + endpoint + ' rejects protected fields: ' + forbiddenFields.join(', ') + '; use constrained commands');
 	}
 	const policy = readAgentDeployPolicyConfig();
-	if (endpoint === 'application.create' || endpoint === 'compose.create') {
+	const databaseKind = databaseKindForEndpoint(endpoint);
+	if (endpoint === 'application.create' || endpoint === 'compose.create' || (databaseKind && endpoint.endsWith('.create'))) {
 		normalizeAgentDeployCreate(policy, opts);
+		return;
+	}
+	if (databaseKind && endpoint.endsWith('.deploy')) {
+		await assertAgentServiceInDeployProject(policy, databaseKind, opts[databaseKind + 'Id']);
+		return;
+	}
+	if (AGENT_EXPANDED_APPLICATION_MUTATIONS.has(endpoint)) {
+		await assertExpandedApplicationAllowed(policy, opts.applicationId);
+		return;
+	}
+	if (endpoint === 'mounts.create') {
+		if (opts.serviceType !== 'application') {
+			throw new Error('agent-safe mounts.create allows only allowlisted applications');
+		}
+		await assertExpandedApplicationAllowed(policy, opts.serviceId);
+		return;
+	}
+	if (endpoint === 'port.create') {
+		await assertExpandedApplicationAllowed(policy, opts.applicationId);
 		return;
 	}
 	if (AGENT_DEPLOY_SERVICE_MUTATIONS.has(endpoint)) {
@@ -931,6 +1018,7 @@ function printAgentDeployPolicy(jsonOutput: boolean) {
 		if (server.domainSuffixes?.length) console.log('domain suffixes for ' + agentDeployServerLabel(server) + ': ' + server.domainSuffixes.join(', '));
 	}
 	console.log('domain name suffix: ' + (policy.domainNameSuffix ?? '(none)'));
+	console.log('expanded application IDs: ' + (policy.expandedApplicationIds.join(', ') || '(none)'));
 	console.log('examples:');
 	for (const example of policy.examples) console.log(example);
 }

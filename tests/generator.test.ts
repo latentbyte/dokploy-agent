@@ -228,10 +228,15 @@ describe("generator", () => {
 			expect(generatedContent).toContain('apiPost("application.create"');
 			expect(generatedContent).toContain('apiPost("compose.create"');
 			expect(generatedContent).toContain('apiPost("domain.create"');
-			expect(generatedContent).not.toContain(
+			expect(generatedContent).toContain('apiPost("postgres.create"');
+			expect(generatedContent).toContain('apiPost("postgres.deploy"');
+			expect(generatedContent).toContain(
 				'apiPost("application.saveDockerProvider"',
 			);
-			expect(generatedContent).not.toContain(
+			expect(generatedContent).toContain('apiPost("application.stop"');
+			expect(generatedContent).toContain('apiPost("mounts.create"');
+			expect(generatedContent).toContain('apiPost("port.create"');
+			expect(generatedContent).toContain(
 				'apiPost("application.saveGitProvider"',
 			);
 			expect(generatedContent).not.toContain('apiPost("domain.delete"');
@@ -381,6 +386,61 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
+	it("guards expanded operations with the per-application allowlist", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [{ serverId: "srv-allowed" }],
+				domainSuffixes: [".example.com"],
+				expandedApplicationIds: ["app-allowed"],
+			});
+			vi.spyOn(client, "apiGet").mockResolvedValue({
+				environmentId: "env-1",
+				environment: { project: { name: "agent-project" } },
+				serverId: "srv-allowed",
+			});
+			const postSpy = vi
+				.spyOn(client, "apiPost")
+				.mockResolvedValue({ ok: true });
+
+			registerGeneratedCommands(program);
+			await expect(
+				program.parseAsync([
+					"node",
+					"cli",
+					"application",
+					"stop",
+					"--applicationId",
+					"app-blocked",
+				]),
+			).rejects.toThrow("expandedApplicationIds");
+			expect(postSpy).not.toHaveBeenCalled();
+
+			await program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"stop",
+				"--applicationId",
+				"app-allowed",
+			]);
+			expect(postSpy).toHaveBeenCalledWith("application.stop", {
+				applicationId: "app-allowed",
+			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
 	it("throws a typed error for blocked agent-safe commands", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
@@ -389,7 +449,7 @@ describe("generator", () => {
 			registerGeneratedCommands(program);
 
 			await expect(
-				program.parseAsync(["node", "cli", "application", "delete", "--json"]),
+				program.parseAsync(["node", "cli", "domain", "delete", "--json"]),
 			).rejects.toMatchObject({
 				code: "AGENT_POLICY_BLOCKED",
 				exitCode: 2,
@@ -414,6 +474,7 @@ describe("generator", () => {
 				],
 				servers: [{ serverId: "srv-allowed" }],
 				domainSuffixes: [".example.com"],
+				expandedApplicationIds: [],
 			};
 
 			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue(policy);
@@ -464,6 +525,7 @@ describe("generator", () => {
 				],
 				servers: [{ serverId: "srv-allowed" }],
 				domainSuffixes: [".example.com"],
+				expandedApplicationIds: [],
 			};
 
 			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue(policy);

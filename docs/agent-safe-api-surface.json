@@ -1,8 +1,8 @@
 {
 	"generated": {
 		"total": 545,
-		"safe_count": 156,
-		"disallowed_count": 222,
+		"safe_count": 191,
+		"disallowed_count": 187,
 		"hidden_count": 167,
 		"safe": {
 			"ai": [
@@ -16,11 +16,43 @@
 			],
 			"application": [
 				{
+					"endpoint": "application.cancelDeployment",
+					"group": "application",
+					"action": "cancel-deployment",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.cleanQueues",
+					"group": "application",
+					"action": "clean-queues",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.clearDeployments",
+					"group": "application",
+					"action": "clear-deployments",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "application.create",
 					"group": "application",
 					"action": "create",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.delete",
+					"group": "application",
+					"action": "delete",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				},
 				{
@@ -28,7 +60,39 @@
 					"group": "application",
 					"action": "deploy",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.disconnectGitProvider",
+					"group": "application",
+					"action": "disconnect-git-provider",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.killBuild",
+					"group": "application",
+					"action": "kill-build",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.markRunning",
+					"group": "application",
+					"action": "mark-running",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.move",
+					"group": "application",
+					"action": "move",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				},
 				{
@@ -65,7 +129,87 @@
 					"group": "application",
 					"action": "redeploy",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.refreshToken",
+					"group": "application",
+					"action": "refresh-token",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.reload",
+					"group": "application",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.saveBitbucketProvider",
+					"group": "application",
+					"action": "save-bitbucket-provider",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.saveBuildType",
+					"group": "application",
+					"action": "save-build-type",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.saveDockerProvider",
+					"group": "application",
+					"action": "save-docker-provider",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.saveEnvironment",
+					"group": "application",
+					"action": "save-environment",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.saveGiteaProvider",
+					"group": "application",
+					"action": "save-gitea-provider",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.saveGithubProvider",
+					"group": "application",
+					"action": "save-github-provider",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.saveGitlabProvider",
+					"group": "application",
+					"action": "save-gitlab-provider",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.saveGitProvider",
+					"group": "application",
+					"action": "save-git-provider",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				},
 				{
@@ -76,11 +220,35 @@
 					"reason": "read-only endpoint"
 				},
 				{
+					"endpoint": "application.start",
+					"group": "application",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.stop",
+					"group": "application",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "application.update",
 					"group": "application",
 					"action": "update",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "application.updateTraefikConfig",
+					"group": "application",
+					"action": "update-traefik-config",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				}
 			],
@@ -171,7 +339,7 @@
 					"group": "compose",
 					"action": "create",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				},
 				{
@@ -179,7 +347,7 @@
 					"group": "compose",
 					"action": "deploy",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				},
 				{
@@ -208,7 +376,7 @@
 					"group": "compose",
 					"action": "isolated-deployment",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				},
 				{
@@ -259,7 +427,7 @@
 					"group": "compose",
 					"action": "update",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				}
 			],
@@ -394,7 +562,7 @@
 					"group": "domain",
 					"action": "create",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				},
 				{
@@ -409,7 +577,7 @@
 					"group": "domain",
 					"action": "update",
 					"method": "post",
-					"reason": "side-effect endpoint allowlisted for deploy",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
 				}
 			],
@@ -581,6 +749,22 @@
 			],
 			"libsql": [
 				{
+					"endpoint": "libsql.create",
+					"group": "libsql",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.deploy",
+					"group": "libsql",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "libsql.one",
 					"group": "libsql",
 					"action": "one",
@@ -597,6 +781,22 @@
 				}
 			],
 			"mariadb": [
+				{
+					"endpoint": "mariadb.create",
+					"group": "mariadb",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.deploy",
+					"group": "mariadb",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
 				{
 					"endpoint": "mariadb.one",
 					"group": "mariadb",
@@ -621,6 +821,22 @@
 				}
 			],
 			"mongo": [
+				{
+					"endpoint": "mongo.create",
+					"group": "mongo",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.deploy",
+					"group": "mongo",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
 				{
 					"endpoint": "mongo.one",
 					"group": "mongo",
@@ -653,6 +869,14 @@
 					"reason": "read-only endpoint"
 				},
 				{
+					"endpoint": "mounts.create",
+					"group": "mounts",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "mounts.listByServiceId",
 					"group": "mounts",
 					"action": "list-by-service-id",
@@ -668,6 +892,22 @@
 				}
 			],
 			"mysql": [
+				{
+					"endpoint": "mysql.create",
+					"group": "mysql",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.deploy",
+					"group": "mysql",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
 				{
 					"endpoint": "mysql.one",
 					"group": "mysql",
@@ -723,6 +963,14 @@
 			],
 			"port": [
 				{
+					"endpoint": "port.create",
+					"group": "port",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "port.one",
 					"group": "port",
 					"action": "one",
@@ -731,6 +979,22 @@
 				}
 			],
 			"postgres": [
+				{
+					"endpoint": "postgres.create",
+					"group": "postgres",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "postgres.deploy",
+					"group": "postgres",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
 				{
 					"endpoint": "postgres.one",
 					"group": "postgres",
@@ -817,6 +1081,22 @@
 				}
 			],
 			"redis": [
+				{
+					"endpoint": "redis.create",
+					"group": "redis",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.deploy",
+					"group": "redis",
+					"action": "deploy",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
 				{
 					"endpoint": "redis.one",
 					"group": "redis",
@@ -1210,177 +1490,9 @@
 			],
 			"application": [
 				{
-					"endpoint": "application.cancelDeployment",
-					"group": "application",
-					"action": "cancel-deployment",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.cleanQueues",
-					"group": "application",
-					"action": "clean-queues",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.clearDeployments",
-					"group": "application",
-					"action": "clear-deployments",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.delete",
-					"group": "application",
-					"action": "delete",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.disconnectGitProvider",
-					"group": "application",
-					"action": "disconnect-git-provider",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "application.dropDeployment",
 					"group": "application",
 					"action": "drop-deployment",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.killBuild",
-					"group": "application",
-					"action": "kill-build",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.markRunning",
-					"group": "application",
-					"action": "mark-running",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.move",
-					"group": "application",
-					"action": "move",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.refreshToken",
-					"group": "application",
-					"action": "refresh-token",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.reload",
-					"group": "application",
-					"action": "reload",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveBitbucketProvider",
-					"group": "application",
-					"action": "save-bitbucket-provider",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveBuildType",
-					"group": "application",
-					"action": "save-build-type",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveDockerProvider",
-					"group": "application",
-					"action": "save-docker-provider",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveEnvironment",
-					"group": "application",
-					"action": "save-environment",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveGiteaProvider",
-					"group": "application",
-					"action": "save-gitea-provider",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveGithubProvider",
-					"group": "application",
-					"action": "save-github-provider",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveGitlabProvider",
-					"group": "application",
-					"action": "save-gitlab-provider",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.saveGitProvider",
-					"group": "application",
-					"action": "save-git-provider",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.start",
-					"group": "application",
-					"action": "start",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.stop",
-					"group": "application",
-					"action": "stop",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "application.updateTraefikConfig",
-					"group": "application",
-					"action": "update-traefik-config",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -1862,22 +1974,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "libsql.create",
-					"group": "libsql",
-					"action": "create",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.deploy",
-					"group": "libsql",
-					"action": "deploy",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "libsql.move",
 					"group": "libsql",
 					"action": "move",
@@ -1963,22 +2059,6 @@
 					"endpoint": "mariadb.changeStatus",
 					"group": "mariadb",
 					"action": "change-status",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.create",
-					"group": "mariadb",
-					"action": "create",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.deploy",
-					"group": "mariadb",
-					"action": "deploy",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2074,22 +2154,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "mongo.create",
-					"group": "mongo",
-					"action": "create",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.deploy",
-					"group": "mongo",
-					"action": "deploy",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "mongo.move",
 					"group": "mongo",
 					"action": "move",
@@ -2164,14 +2228,6 @@
 			],
 			"mounts": [
 				{
-					"endpoint": "mounts.create",
-					"group": "mounts",
-					"action": "create",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "mounts.remove",
 					"group": "mounts",
 					"action": "remove",
@@ -2201,22 +2257,6 @@
 					"endpoint": "mysql.changeStatus",
 					"group": "mysql",
 					"action": "change-status",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.create",
-					"group": "mysql",
-					"action": "create",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.deploy",
-					"group": "mysql",
-					"action": "deploy",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2362,14 +2402,6 @@
 			],
 			"port": [
 				{
-					"endpoint": "port.create",
-					"group": "port",
-					"action": "create",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "port.delete",
 					"group": "port",
 					"action": "delete",
@@ -2399,22 +2431,6 @@
 					"endpoint": "postgres.changeStatus",
 					"group": "postgres",
 					"action": "change-status",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "postgres.create",
-					"group": "postgres",
-					"action": "create",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "postgres.deploy",
-					"group": "postgres",
-					"action": "deploy",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2583,22 +2599,6 @@
 					"endpoint": "redis.changeStatus",
 					"group": "redis",
 					"action": "change-status",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.create",
-					"group": "redis",
-					"action": "create",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.deploy",
-					"group": "redis",
-					"action": "deploy",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -4476,9 +4476,7 @@
 	"openapi": {
 		"total": 546,
 		"unavailable_count": 0,
-		"unavailable": [],
-		"logs": {
-			"unavailable": []
-		}
+		"unavailable": {},
+		"logs": []
 	}
 }

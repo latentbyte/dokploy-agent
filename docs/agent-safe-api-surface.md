@@ -62,14 +62,22 @@ These commands are exposed only in agent-safe builds and are guarded at runtime:
 - `application`: create, deploy, redeploy, update
 - `compose`: create, deploy, isolated-deployment, update
 - `domain`: create, update
+- `libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`: create, deploy
+- `application` expanded operations for explicitly allowlisted application IDs
+- `mounts create` and `port create` for explicitly allowlisted applications
 
 Runtime policy:
 
-- creation is forced into an allowed `agentDeployPolicy.projects[].environmentId` from the Dokploy config file
+- application, compose, and database creation is forced into an allowed `agentDeployPolicy.projects[].environmentId` from the Dokploy config file
 - if create omits `environmentId`, the first configured project is used
 - allowed deploy servers come from `agentDeployPolicy.servers`
 - omitted `serverId` on create defaults to the first configured server
 - updates, deploys, and domain writes first resolve the target service and require it to belong to one configured project/environment
+- database deploys resolve the database and enforce the same project and server policy
+- `agentDeployPolicy.expandedApplicationIds` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations only for listed IDs
+- expanded application operations still resolve the application and enforce configured project and server policy
+- mount and port creation requires an application in `expandedApplicationIds`; mounts for other service types stay blocked
+- expanded operations include start, stop, reload, delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.agent.srv1.example.net` for `*.agent.srv1.example.net`
 - server entries can set `domainSuffixes` to bind a deploy server to a narrower domain set
 - when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value
@@ -97,7 +105,8 @@ Example config shape:
         "domainSuffixes": ["*.agent.srv1.example.net"]
       }
     ],
-    "domainSuffixes": ["*.agent.srv1.example.net"]
+    "domainSuffixes": ["*.agent.srv1.example.net"],
+    "expandedApplicationIds": ["application-id-approved-for-expanded-ops"]
   }
 }
 ```
@@ -141,8 +150,8 @@ Disallowed means command exists in the generated CLI surface but policy blocks i
 Unavailable means command exists in `openapi.json` but is not generated into `src/generated/commands.ts`, so the current CLI cannot expose it without generator/client work.
 
 - generated total: 545
-- safe total: 156
-- disallowed total: 222
+- safe total: 191
+- disallowed total: 187
 - hidden total: 167
 - not available total (in `openapi.json` but not generated): 0
 
