@@ -39,6 +39,8 @@ const PUBLIC_IDENTIFIER_KEYS = new Set([
 	"deploymentid",
 	"domainid",
 	"environmentid",
+	"githubid",
+	"gitproviderid",
 	"projectid",
 	"serverid",
 	"postgresid",
