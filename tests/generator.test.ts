@@ -228,6 +228,7 @@ describe("generator", () => {
 			expect(generatedContent).toContain('apiPost("application.create"');
 			expect(generatedContent).toContain('apiPost("compose.create"');
 			expect(generatedContent).toContain('apiPost("domain.create"');
+			expect(generatedContent).not.toContain('apiPost("domain.update"');
 			expect(generatedContent).toContain('apiPost("postgres.create"');
 			expect(generatedContent).toContain('apiPost("postgres.deploy"');
 			expect(generatedContent).toContain(
@@ -252,6 +253,8 @@ describe("generator", () => {
 			expect(generatedContent).toContain("resolveExpandedApplications");
 			expect(generatedContent).toContain("server.domainSuffixes");
 			expect(generatedContent).toContain("matchingAgentDomainSuffix");
+			expect(generatedContent).toContain("assertAgentDomainHostUnused");
+			expect(generatedContent).toContain("domain is already in use in Dokploy");
 			expect(generatedContent).toContain("allowed wildcard domains");
 			expect(generatedContent).toContain("must end with");
 			expect(fs.readFileSync(generatedPath, "utf8")).toBe(before);
@@ -442,6 +445,89 @@ describe("generator", () => {
 			});
 			expect(getSpy).toHaveBeenCalledWith("application.one", {
 				applicationId: "app-allowed",
+			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
+	it("allows only unused domain hosts from the configured wildcard", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [{ serverId: "srv-allowed" }],
+				domainSuffixes: [".apps.example.net"],
+				expandedApplicationIds: [],
+				expandedApplicationNames: [],
+			});
+			vi.spyOn(client, "apiGet").mockImplementation(async (endpoint) => {
+				if (endpoint === "application.one") {
+					return {
+						environmentId: "env-1",
+						environment: {
+							project: { name: "agent-project" },
+						},
+						serverId: "srv-allowed",
+					};
+				}
+				if (endpoint === "project.all") {
+					return [
+						{
+							environments: [
+								{
+									applications: [
+										{
+											domains: [{ host: "USED.apps.example.net." }],
+										},
+									],
+								},
+							],
+						},
+					];
+				}
+				throw new Error(`unexpected endpoint ${endpoint}`);
+			});
+			const postSpy = vi
+				.spyOn(client, "apiPost")
+				.mockResolvedValue({ ok: true });
+
+			registerGeneratedCommands(program);
+			await expect(
+				program.parseAsync([
+					"node",
+					"cli",
+					"domain",
+					"create",
+					"--applicationId",
+					"app-1",
+					"--host",
+					"used.apps.example.net",
+				]),
+			).rejects.toThrow("domain is already in use in Dokploy");
+			expect(postSpy).not.toHaveBeenCalled();
+
+			await program.parseAsync([
+				"node",
+				"cli",
+				"domain",
+				"create",
+				"--applicationId",
+				"app-1",
+				"--host",
+				"new.apps.example.net",
+			]);
+			expect(postSpy).toHaveBeenCalledWith("domain.create", {
+				applicationId: "app-1",
+				host: "new.apps.example.net",
 			});
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });

@@ -247,7 +247,6 @@ const SAFE_POST_ENDPOINTS = new Set([
 	"compose.isolatedDeployment",
 	"compose.update",
 	"domain.create",
-	"domain.update",
 	"mounts.create",
 	"port.create",
 	...AGENT_DATABASE_KINDS.flatMap((kind) => [
@@ -747,7 +746,7 @@ const AGENT_DEPLOY_SERVICE_MUTATIONS = new Set([
 	'compose.isolatedDeployment',
 	'compose.update',
 ]);
-const AGENT_DEPLOY_DOMAIN_MUTATIONS = new Set(['domain.create', 'domain.update']);
+const AGENT_DEPLOY_DOMAIN_MUTATIONS = new Set(['domain.create']);
 const AGENT_EXPANDED_APPLICATION_MUTATIONS = new Set(${JSON.stringify(AGENT_EXPANDED_APPLICATION_ENDPOINTS)});
 const AGENT_DATABASE_KINDS = new Set(${JSON.stringify(AGENT_DATABASE_KINDS)});
 const AGENT_FORBIDDEN_UPDATE_FIELDS: Record<string, readonly string[]> = ${JSON.stringify(Object.fromEntries([...AGENT_PROTECTED_UPDATE_FIELDS].map(([endpoint, fields]) => [endpoint, [...fields]])))};
@@ -907,6 +906,16 @@ function agentDeployDomainSuffixesForServer(policy: ReturnType<typeof readAgentD
 	return server?.domainSuffixes?.length ? server.domainSuffixes : policy.domainSuffixes;
 }
 
+function normalizeAgentDomainHost(value: unknown): string | undefined {
+	const host = stringValue(value);
+	if (!host) return undefined;
+	try {
+		return new URL(host.includes('://') ? host : 'https://' + host).hostname.toLowerCase().replace(/\\.$/, '');
+	} catch {
+		return undefined;
+	}
+}
+
 function matchingAgentDomainSuffix(host: string, suffixes: string[]) {
 	return suffixes
 		.filter((suffix) => host.endsWith(suffix))
@@ -919,16 +928,43 @@ function matchingAgentDomainSuffix(host: string, suffixes: string[]) {
 
 function assertAgentDomainHost(policy: ReturnType<typeof readAgentDeployPolicyConfig>, host: string | undefined, serverId: string | undefined) {
 	if (!host) return;
-	const normalizedHost = host.toLowerCase();
+	const normalizedHost = normalizeAgentDomainHost(host);
 	const allowedSuffixes = agentDeployDomainSuffixesForServer(policy, serverId);
-	const domainSuffix = matchingAgentDomainSuffix(normalizedHost, allowedSuffixes);
-	if (!domainSuffix) {
+	const domainSuffix = normalizedHost
+		? matchingAgentDomainSuffix(normalizedHost, allowedSuffixes)
+		: undefined;
+	if (!normalizedHost || !domainSuffix) {
 		throw new Error('agent-safe deploy policy rejects host ' + host + '; allowed wildcard domains: *' + allowedSuffixes.join(', *'));
 	}
 	if (!policy.domainNameSuffix) return;
 	const domainName = normalizedHost.slice(0, -domainSuffix.length);
 	if (domainName.endsWith(policy.domainNameSuffix)) return;
 	throw new Error('agent-safe deploy policy rejects host ' + host + '; domain name before ' + domainSuffix + ' must end with: ' + policy.domainNameSuffix);
+}
+
+function collectDokployDomainHosts(value: unknown, hosts = new Set<string>()): Set<string> {
+	if (Array.isArray(value)) {
+		for (const item of value) collectDokployDomainHosts(item, hosts);
+		return hosts;
+	}
+	if (!value || typeof value !== 'object') return hosts;
+	for (const [key, item] of Object.entries(value)) {
+		if (key === 'host' || key === 'hostname' || key === 'domain' || key === 'url') {
+			const host = normalizeAgentDomainHost(item);
+			if (host) hosts.add(host);
+		}
+		collectDokployDomainHosts(item, hosts);
+	}
+	return hosts;
+}
+
+async function assertAgentDomainHostUnused(host: string | undefined) {
+	const normalizedHost = normalizeAgentDomainHost(host);
+	if (!normalizedHost) throw new Error('agent-safe domain.create requires a valid host');
+	const inventory = await apiGet('project.all', {});
+	if (collectDokployDomainHosts(inventory).has(normalizedHost)) {
+		throw new Error('agent-safe domain.create rejects host ' + normalizedHost + '; domain is already in use in Dokploy');
+	}
 }
 
 async function assertAgentDomainInDeployProject(policy: ReturnType<typeof readAgentDeployPolicyConfig>, opts: Record<string, any>) {
@@ -994,6 +1030,7 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 	if (AGENT_DEPLOY_DOMAIN_MUTATIONS.has(endpoint)) {
 		const service = await assertAgentDomainInDeployProject(policy, opts);
 		assertAgentDomainHost(policy, opts.host, serviceServerId(service));
+		await assertAgentDomainHostUnused(opts.host);
 		return;
 	}
 	throw new Error('agent-safe deploy policy does not allow write endpoint ' + endpoint);

@@ -61,7 +61,7 @@ These commands are exposed only in agent-safe builds and are guarded at runtime:
 
 - `application`: create, deploy, redeploy, update
 - `compose`: create, deploy, isolated-deployment, update
-- `domain`: create, update
+- `domain`: create
 - `libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`: create, deploy
 - `application` expanded operations for explicitly allowlisted application IDs
 - `mounts create` and `port create` for explicitly allowlisted applications
@@ -72,7 +72,7 @@ Runtime policy:
 - if create omits `environmentId`, the first configured project is used
 - allowed deploy servers come from `agentDeployPolicy.servers`
 - omitted `serverId` on create defaults to the first configured server
-- updates, deploys, and domain writes first resolve the target service and require it to belong to one configured project/environment
+- updates, deploys, and domain creation first resolve the target service and require it to belong to one configured project/environment
 - database deploys resolve the database and enforce the same project and server policy
 - `agentDeployPolicy.expandedApplicationNames` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations for applications matching Dokploy `name` or `appName`, case-insensitively
 - `expandedApplicationIds` remains available when an immutable ID is preferred
@@ -81,9 +81,12 @@ Runtime policy:
 - `agent-safety deploy-policy --json` resolves configured names across all projects and returns matching names, IDs, projects, and environments in `expandedApplications`
 - mount and port creation requires a named or ID-allowlisted application; mounts for other service types stay blocked
 - expanded operations include start, stop, reload, delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
-- domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.agent.srv1.example.net` for `*.agent.srv1.example.net`
+- domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.apps.example.net` for `*.apps.example.net`
+- before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects
+- domain update and delete stay blocked, so agents cannot move or remove existing domains
+- Dokploy's create operation remains the final uniqueness check if two clients race after the inventory check
 - server entries can set `domainSuffixes` to bind a deploy server to a narrower domain set
-- when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value
+- when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value; omit it to allow any unused single-label name
 
 Example config shape:
 
@@ -104,11 +107,11 @@ Example config shape:
       {
         "name": "server-a",
         "serverId": "srvA0000000000000000a",
-        "hint": "srv1.example.net",
-        "domainSuffixes": ["*.agent.srv1.example.net"]
+        "hint": "apps.example.net",
+        "domainSuffixes": ["*.apps.example.net"]
       }
     ],
-    "domainSuffixes": ["*.agent.srv1.example.net"],
+    "domainSuffixes": ["*.apps.example.net"],
     "expandedApplicationNames": ["my-app"]
   }
 }
