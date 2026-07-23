@@ -30,6 +30,7 @@ export interface AgentDeployProjectConfig {
 export interface AgentDeployPolicyConfig {
 	projects: AgentDeployProjectConfig[];
 	servers: AgentDeployServerConfig[];
+	allowAnyServer?: boolean;
 	domainSuffixes: string[];
 	domainNameSuffix?: string;
 	expandedApplicationIds: string[];
@@ -177,6 +178,7 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 		);
 	}
 
+	const allowAnyServer = policy.servers === "*";
 	const servers = Array.isArray(policy.servers)
 		? policy.servers.map((server: Record<string, unknown>) => ({
 				serverId: assertString(server.serverId, "servers[].serverId"),
@@ -194,9 +196,9 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 				),
 			}))
 		: [];
-	if (servers.length === 0) {
+	if (!allowAnyServer && servers.length === 0) {
 		throw new Error(
-			"agentDeployPolicy.servers must include at least one server.",
+			'agentDeployPolicy.servers must be "*" or include at least one server.',
 		);
 	}
 
@@ -261,6 +263,7 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 	return {
 		projects,
 		servers,
+		allowAnyServer,
 		domainSuffixes,
 		domainNameSuffix,
 		expandedApplicationIds,

@@ -764,7 +764,7 @@ function ensureAgentDeployServer(
 	serverId: string | undefined,
 	label = "serverId",
 ) {
-	if (!serverId) return undefined;
+	if (!serverId || policy.allowAnyServer) return undefined;
 	const server = policy.servers.find((candidate) => candidate.serverId === serverId);
 	if (server) return server;
 	throw new Error(
@@ -796,7 +796,7 @@ function normalizeAgentDeployCreate(policy: ReturnType<typeof readAgentDeployPol
 	const project = ensureAgentDeployEnvironment(policy, opts);
 	opts.environmentId = project.environmentId;
 	ensureAgentDeployServer(policy, stringValue(opts.serverId), 'serverId');
-	if (!opts.serverId) opts.serverId = policy.servers[0]?.serverId;
+	if (!opts.serverId && !policy.allowAnyServer) opts.serverId = policy.servers[0]?.serverId;
 }
 
 function serviceProjectName(service: any): string | undefined {
@@ -1070,7 +1070,7 @@ async function agentDeployPolicy() {
 		expandedApplications: await resolveExpandedApplications(policy),
 		examples: [
 			'dokploy-agent compose create --name demo --composeType docker-compose --composeFile <compose.yaml>',
-			'dokploy-agent application create --name demo --serverId ' + policy.servers[0]?.serverId,
+			'dokploy-agent application create --name demo' + (policy.allowAnyServer ? '' : ' --serverId ' + policy.servers[0]?.serverId),
 			'dokploy-agent domain create --composeId <id> --host demo' + (policy.domainNameSuffix ?? '') + policy.domainSuffixes[0] + ' --https --certificateType letsencrypt --domainType compose',
 		],
 	};
@@ -1086,6 +1086,7 @@ async function printAgentDeployPolicy(jsonOutput: boolean) {
 	console.log('projects:');
 	for (const project of policy.projects) console.log('- ' + agentDeployProjectLabel(project));
 	console.log('servers:');
+	if (policy.allowAnyServer) console.log('- * (all servers, including the local Dokploy server)');
 	for (const server of policy.servers) console.log('- ' + agentDeployServerLabel(server) + (server.hint ? ' ' + server.hint : ''));
 	console.log('domain suffixes: ' + policy.domainSuffixes.join(', '));
 	for (const server of policy.servers) {

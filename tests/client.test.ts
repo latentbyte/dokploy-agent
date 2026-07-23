@@ -199,6 +199,17 @@ describe("readAgentDeployPolicyConfig", () => {
 		domainSuffixes: [".apps.example.com"],
 	};
 
+	it("should allow every server with a wildcard", async () => {
+		writePolicyConfig({ ...basePolicy, servers: "*" });
+
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+
+		expect(readAgentDeployPolicyConfig()).toMatchObject({
+			servers: [],
+			allowAnyServer: true,
+		});
+	});
+
 	it("should default domain name suffix to no requirement", async () => {
 		writePolicyConfig(basePolicy);
 

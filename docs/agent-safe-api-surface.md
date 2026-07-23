@@ -70,8 +70,8 @@ Runtime policy:
 
 - application, compose, and database creation is forced into an allowed `agentDeployPolicy.projects[].environmentId` from the Dokploy config file
 - if create omits `environmentId`, the first configured project is used
-- allowed deploy servers come from `agentDeployPolicy.servers`
-- omitted `serverId` on create defaults to the first configured server
+- allowed deploy servers come from `agentDeployPolicy.servers`; set `servers` to `"*"` to allow every remote server plus the local Dokploy server
+- omitted `serverId` on create defaults to the first configured server; with `servers: "*"`, it remains omitted so Dokploy selects its local server
 - updates, deploys, and domain creation first resolve the target service and require it to belong to one configured project/environment
 - database deploys resolve the database and enforce the same project and server policy
 - `agentDeployPolicy.expandedApplicationNames` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations for applications matching Dokploy `name` or `appName`, case-insensitively
@@ -88,7 +88,7 @@ Runtime policy:
 - server entries can set `domainSuffixes` to bind a deploy server to a narrower domain set
 - when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value; omit it to allow any unused single-label name
 
-Example config shape:
+Example config shape. Use `"servers": "*"` instead of the array when agents may deploy to any server:
 
 ```json
 {

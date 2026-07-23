@@ -552,6 +552,63 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
+	it("allows explicit or local servers with wildcard policy", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [],
+				allowAnyServer: true,
+				domainSuffixes: [".example.com"],
+				expandedApplicationIds: [],
+				expandedApplicationNames: [],
+			});
+			const postSpy = vi
+				.spyOn(client, "apiPost")
+				.mockResolvedValue({ ok: true });
+
+			registerGeneratedCommands(program);
+			await program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"create",
+				"--name",
+				"remote-app",
+				"--serverId",
+				"srv-any",
+			]);
+			expect(postSpy).toHaveBeenCalledWith("application.create", {
+				name: "remote-app",
+				environmentId: "env-1",
+				serverId: "srv-any",
+			});
+
+			await program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"create",
+				"--name",
+				"local-app",
+			]);
+			expect(postSpy).toHaveBeenCalledWith("application.create", {
+				name: "local-app",
+				environmentId: "env-1",
+			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
 	it("rejects disallowed buildServerId option in agent-safe application.update", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();

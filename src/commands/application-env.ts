@@ -151,6 +151,8 @@ function assertAgentApplicationAllowed(application: ApplicationRecord): void {
 		);
 	}
 
+	if (policy.allowAnyServer) return;
+
 	const allowedServers = new Set(
 		policy.servers.map((server) => server.serverId),
 	);

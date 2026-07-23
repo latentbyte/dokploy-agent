@@ -120,6 +120,53 @@ describe("application environment mutations", () => {
 		expect(output).not.toContain("3000");
 	});
 
+	it("allows environment changes on any server with wildcard policy", async () => {
+		const program = new Command();
+		program.exitOverride();
+		program.command("application");
+		vi.spyOn(client, "apiGet").mockResolvedValue({
+			env: "SECRET=old-value\n",
+			buildArgs: null,
+			buildSecrets: null,
+			createEnvFile: false,
+			environmentId: "allowed-env",
+			environment: { project: { name: "allowed-project" } },
+			serverId: "any-server",
+		});
+		vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+			projects: [
+				{
+					projectName: "allowed-project",
+					environmentName: "production",
+					environmentId: "allowed-env",
+				},
+			],
+			servers: [],
+			allowAnyServer: true,
+			domainSuffixes: [".example.com"],
+			expandedApplicationIds: [],
+			expandedApplicationNames: [],
+		});
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue({ ok: true });
+		registerApplicationEnvCommands(program, { agentSafe: true });
+
+		await program.parseAsync([
+			"node",
+			"cli",
+			"application",
+			"env",
+			"add",
+			"--applicationId",
+			"app-1",
+			"--name",
+			"NEW_KEY",
+			"--value",
+			"new-value",
+		]);
+
+		expect(postSpy).toHaveBeenCalledOnce();
+	});
+
 	it("checks agent deploy policy before saving", async () => {
 		const program = new Command();
 		program.exitOverride();
