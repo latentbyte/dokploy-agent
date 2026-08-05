@@ -881,18 +881,39 @@ async function assertExpandedApplicationAllowed(
 	if (!applicationId) {
 		throw new Error('agent-safe deploy policy requires applicationId for this operation');
 	}
-	if (policy.expandedApplicationIds.includes(applicationId)) return;
-	const allowedNames = new Set(policy.expandedApplicationNames.map((name) => name.toLowerCase()));
-	if (allowedNames.size > 0) {
-		const application = await apiGet('application.one', { applicationId });
-		const names = [stringValue(application?.name), stringValue(application?.appName)]
-			.filter((name): name is string => Boolean(name))
-			.map((name) => name.toLowerCase());
-		if (names.some((name) => allowedNames.has(name))) return;
+	const application = await apiGet('application.one', { applicationId });
+	if (
+		isApplicationExpandedAllowed(
+			policy,
+			applicationCandidateFromService(application, applicationId),
+		)
+	) {
+		assertServiceServersAllowed(policy, application);
+		return application;
 	}
 	throw new Error(
-		'agent-safe deploy policy requires application in expandedApplicationIds or expandedApplicationNames for this operation',
+		'agent-safe deploy policy requires application in ' +
+			expandedApplicationAllowlistReason() +
+			' for this operation',
 	);
+}
+
+async function assertApplicationWritable(
+	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
+	applicationId: string | undefined,
+) {
+	if (!applicationId) throw new Error('agent-safe deploy policy requires applicationId');
+	try {
+		return await assertExpandedApplicationAllowed(policy, applicationId);
+	} catch (error) {
+		if (
+			!(error instanceof Error) ||
+			!error.message.includes(expandedApplicationAllowlistReason())
+		) {
+			throw error;
+		}
+	}
+	return assertAgentServiceInDeployProject(policy, 'application', applicationId);
 }
 
 function databaseKindForEndpoint(endpoint: string) {
@@ -1021,7 +1042,7 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 		ensureAgentDeployServer(policy, stringValue(opts.serverId), 'serverId');
 		ensureAgentDeployServer(policy, stringValue(opts.buildServerId), 'buildServerId');
 		if (endpoint.startsWith('application.')) {
-			await assertAgentServiceInDeployProject(policy, 'application', opts.applicationId);
+			await assertApplicationWritable(policy, opts.applicationId);
 		} else {
 			await assertAgentServiceInDeployProject(policy, 'compose', opts.composeId);
 		}
@@ -1037,25 +1058,36 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 }
 
 async function resolveExpandedApplications(policy: ReturnType<typeof readAgentDeployPolicyConfig>) {
-	if (policy.expandedApplicationNames.length === 0) return [];
-	const allowedNames = new Set(policy.expandedApplicationNames.map((name) => name.toLowerCase()));
+	if (!hasExpandedApplicationAllowlist(policy)) return [];
 	const data = await apiGet('project.all', {});
 	const projects = Array.isArray(data) ? data : Array.isArray(data?.projects) ? data.projects : [];
 	const matches: Array<Record<string, string | undefined>> = [];
+	const seen = new Set<string>();
 	for (const project of projects) {
 		const environments = Array.isArray(project?.environments) ? project.environments : [];
 		for (const environment of environments) {
 			const applications = Array.isArray(environment?.applications) ? environment.applications : [];
 			for (const application of applications) {
-				const names = [stringValue(application?.name), stringValue(application?.appName)]
-					.filter((name): name is string => Boolean(name));
-				if (!names.some((name) => allowedNames.has(name.toLowerCase()))) continue;
-				matches.push({
+				const applicationId = stringValue(application?.applicationId);
+				const candidate = {
+					applicationId,
 					name: stringValue(application?.name),
 					appName: stringValue(application?.appName),
-					applicationId: stringValue(application?.applicationId),
 					projectName: stringValue(project?.name),
+					projectId: stringValue(project?.projectId),
 					environmentName: stringValue(environment?.name),
+					environmentId: stringValue(environment?.environmentId) ?? stringValue(application?.environmentId),
+				};
+				if (!isApplicationExpandedAllowed(policy, candidate)) continue;
+				const key = applicationId ?? [candidate.projectName, candidate.environmentName, candidate.name].join('/');
+				if (seen.has(key)) continue;
+				seen.add(key);
+				matches.push({
+					name: candidate.name,
+					appName: candidate.appName,
+					applicationId: candidate.applicationId,
+					projectName: candidate.projectName,
+					environmentName: candidate.environmentName,
 				});
 			}
 		}
@@ -1094,7 +1126,27 @@ async function printAgentDeployPolicy(jsonOutput: boolean) {
 	}
 	console.log('domain name suffix: ' + (policy.domainNameSuffix ?? '(none)'));
 	console.log('expanded application IDs: ' + (policy.expandedApplicationIds.join(', ') || '(none)'));
-	console.log('expanded application names: ' + (policy.expandedApplicationNames.join(', ') || '(none)'));
+	console.log('expanded projects:');
+	if (policy.expandedProjects.length === 0) console.log('- (none)');
+	for (const project of policy.expandedProjects) {
+		const parts = [project.projectName];
+		if (project.projectId) parts.push('id=' + project.projectId);
+		if (project.environmentNames) parts.push('envs=' + (project.environmentNames.join('|') || '(none)'));
+		parts.push(
+			project.applicationNames === undefined
+				? 'apps=*'
+				: project.applicationNames.length === 0
+					? 'apps=(none)'
+					: 'apps=' + project.applicationNames.join('|'),
+		);
+		console.log('- ' + parts.join(' '));
+	}
+	if (policy.expandedApplicationNames.length > 0) {
+		console.log(
+			'legacy expanded application names (prefer expandedProjects): ' +
+				policy.expandedApplicationNames.join(', '),
+		);
+	}
 	console.log('resolved expanded applications:');
 	for (const application of policy.expandedApplications) {
 		console.log('- ' + application.name + ' (' + application.applicationId + ') in ' + application.projectName + '/' + application.environmentName);
@@ -1294,7 +1346,7 @@ function generateFile(
 		? generateSafetyCommandCode(report)
 		: "";
 	const clientImports = isAgentSafeBuild
-		? "apiPost, apiGet, readAgentDeployPolicyConfig"
+		? "apiPost, apiGet, readAgentDeployPolicyConfig, isApplicationExpandedAllowed, hasExpandedApplicationAllowlist, expandedApplicationAllowlistReason, applicationCandidateFromService"
 		: "apiPost, apiGet";
 
 	const clientImport = path

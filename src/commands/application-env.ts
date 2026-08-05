@@ -1,5 +1,10 @@
 import type { Command } from "commander";
-import { apiGet, apiPost, readAgentDeployPolicyConfig } from "../client.js";
+import {
+	apiGet,
+	apiPost,
+	isApplicationExpandedAllowed,
+	readAgentDeployPolicyConfig,
+} from "../client.js";
 import { maskSecret } from "../redact.js";
 
 interface ApplicationEnvCommandOptions {
@@ -12,6 +17,8 @@ interface EnvironmentEntry {
 }
 
 interface ApplicationRecord {
+	name?: unknown;
+	appName?: unknown;
 	env?: unknown;
 	buildArgs?: unknown;
 	buildSecrets?: unknown;
@@ -123,6 +130,36 @@ export function annotateEnvironmentVariable(
 	return `${document.slice(0, index)}${commentLines(comment, eol)}${eol}${document.slice(index)}`;
 }
 
+export function setEnvironmentVariable(
+	document: string,
+	name: string,
+	value: string,
+): string {
+	if (!ENV_NAME_PATTERN.test(name)) {
+		throw new Error(`Invalid environment variable name: ${name}`);
+	}
+	const matches = matchingAssignments(document, name);
+	if (matches.length === 0) {
+		return appendEnvironmentVariable(document, name, value);
+	}
+	if (matches.length > 1) {
+		throw new Error(
+			`Environment variable ${name} is duplicated; refusing ambiguous set.`,
+		);
+	}
+
+	const match = matches[0];
+	const index = match?.index;
+	if (index === undefined || match === undefined) {
+		throw new Error(`Could not locate environment variable ${name}.`);
+	}
+	const eol = lineEnding(document);
+	const prefix = match[1] ?? "";
+	const separator = match[3] ?? "=";
+	const assignment = `${prefix}${name}${separator}${JSON.stringify(value)}`;
+	return `${document.slice(0, index)}${assignment}${document.slice(index + match[0].length)}`;
+}
+
 function applicationProjectName(
 	application: ApplicationRecord,
 ): string | undefined {
@@ -132,7 +169,10 @@ function applicationProjectName(
 	);
 }
 
-function assertAgentApplicationAllowed(application: ApplicationRecord): void {
+function assertAgentApplicationAllowed(
+	applicationId: string,
+	application: ApplicationRecord,
+): void {
 	const policy = readAgentDeployPolicyConfig();
 	const projectName = applicationProjectName(application);
 	const projectId =
@@ -145,7 +185,16 @@ function assertAgentApplicationAllowed(application: ApplicationRecord): void {
 				? projectId === project.projectId
 				: projectName === project.projectName),
 	);
-	if (!allowedProject) {
+	const allowedExpanded = isApplicationExpandedAllowed(policy, {
+		applicationId,
+		name: stringValue(application.name),
+		appName: stringValue(application.appName),
+		projectName,
+		projectId,
+		environmentName: stringValue(application.environment?.name),
+		environmentId: stringValue(application.environmentId),
+	});
+	if (!allowedProject && !allowedExpanded) {
 		throw new Error(
 			"agent-safe deploy policy rejects application environment mutation.",
 		);
@@ -179,7 +228,7 @@ async function readApplication(
 	const application = (await apiGet("application.one", {
 		applicationId,
 	})) as ApplicationRecord;
-	if (agentSafe) assertAgentApplicationAllowed(application);
+	if (agentSafe) assertAgentApplicationAllowed(applicationId, application);
 	return application;
 }
 
@@ -267,6 +316,31 @@ export function registerApplicationEnvCommands(
 			);
 			await saveEnvironment(applicationId, applicationRecord, nextEnv);
 			printResult({ applicationId, name, added: true }, opts.json === true);
+		});
+
+	env
+		.command("set")
+		.description(
+			"create or replace an environment variable without exposing other values",
+		)
+		.requiredOption("--applicationId <value>", "applicationId")
+		.requiredOption("--name <value>", "environment variable name")
+		.requiredOption("--value <value>", "environment variable value")
+		.option("--json", "Output JSON")
+		.action(async (opts: Record<string, unknown>) => {
+			const applicationId = String(opts.applicationId);
+			const applicationRecord = await readApplication(
+				applicationId,
+				options.agentSafe,
+			);
+			const name = String(opts.name);
+			const nextEnv = setEnvironmentVariable(
+				environmentDocument(applicationRecord),
+				name,
+				String(opts.value),
+			);
+			await saveEnvironment(applicationId, applicationRecord, nextEnv);
+			printResult({ applicationId, name, set: true }, opts.json === true);
 		});
 
 	env

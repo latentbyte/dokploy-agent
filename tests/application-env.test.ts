@@ -144,6 +144,7 @@ describe("application environment mutations", () => {
 			servers: [],
 			allowAnyServer: true,
 			domainSuffixes: [".example.com"],
+			expandedProjects: [],
 			expandedApplicationIds: [],
 			expandedApplicationNames: [],
 		});
@@ -189,6 +190,7 @@ describe("application environment mutations", () => {
 			],
 			servers: [{ serverId: "server-1" }],
 			domainSuffixes: [".example.com"],
+			expandedProjects: [],
 			expandedApplicationIds: [],
 			expandedApplicationNames: [],
 		});
@@ -211,5 +213,63 @@ describe("application environment mutations", () => {
 			]),
 		).rejects.toThrow("rejects application environment mutation");
 		expect(postSpy).not.toHaveBeenCalled();
+	});
+
+	it("allows expanded projects for environment set", async () => {
+		const program = new Command();
+		program.exitOverride();
+		program.command("application");
+		vi.spyOn(client, "apiGet").mockResolvedValue({
+			name: "catalog",
+			appName: "storefront-catalog-x1y2z3",
+			env: 'APP_BASE_URL="https://old.example"\nSECRET=old-value\n',
+			buildArgs: null,
+			buildSecrets: null,
+			createEnvFile: false,
+			environmentId: "other-env",
+			environment: { name: "production", project: { name: "storefront" } },
+		});
+		vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+			projects: [
+				{
+					projectName: "allowed-project",
+					environmentName: "production",
+					environmentId: "allowed-env",
+				},
+			],
+			servers: [],
+			allowAnyServer: true,
+			domainSuffixes: [".example.com"],
+			expandedProjects: [
+				{ projectName: "storefront", applicationNames: ["catalog"] },
+			],
+			expandedApplicationIds: [],
+			expandedApplicationNames: [],
+		});
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue({ ok: true });
+		registerApplicationEnvCommands(program, { agentSafe: true });
+
+		await program.parseAsync([
+			"node",
+			"cli",
+			"application",
+			"env",
+			"set",
+			"--applicationId",
+			"app-1",
+			"--name",
+			"APP_BASE_URL",
+			"--value",
+			"https://new.example",
+			"--json",
+		]);
+
+		expect(postSpy).toHaveBeenCalledWith("application.saveEnvironment", {
+			applicationId: "app-1",
+			env: 'APP_BASE_URL="https://new.example"\nSECRET=old-value\n',
+			buildArgs: null,
+			buildSecrets: null,
+			createEnvFile: false,
+		});
 	});
 });

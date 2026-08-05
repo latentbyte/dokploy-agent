@@ -228,6 +228,7 @@ describe("readAgentDeployPolicyConfig", () => {
 
 		expect(readAgentDeployPolicyConfig()).toMatchObject({
 			domainNameSuffix: "-agent",
+			expandedProjects: [],
 			expandedApplicationIds: [],
 			expandedApplicationNames: [],
 		});
@@ -259,6 +260,121 @@ describe("readAgentDeployPolicyConfig", () => {
 			"my-app",
 			"future-app",
 		]);
+	});
+
+	it("should read expanded projects allowlist", async () => {
+		writePolicyConfig({
+			...basePolicy,
+			expandedProjects: [
+				{ projectName: " my-app " },
+				{
+					projectName: "storefront",
+					projectId: "proj-storefront",
+					environmentNames: [" Production "],
+					applicationNames: [" catalog ", "web"],
+				},
+				{
+					projectName: "empty-apps",
+					applicationNames: [],
+				},
+			],
+		});
+
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+
+		expect(readAgentDeployPolicyConfig().expandedProjects).toEqual([
+			{
+				projectName: "my-app",
+				projectId: undefined,
+				environmentNames: undefined,
+				applicationNames: undefined,
+			},
+			{
+				projectName: "storefront",
+				projectId: "proj-storefront",
+				environmentNames: ["Production"],
+				applicationNames: ["catalog", "web"],
+			},
+			{
+				projectName: "empty-apps",
+				projectId: undefined,
+				environmentNames: undefined,
+				applicationNames: [],
+			},
+		]);
+	});
+
+	it("matches expanded projects by whole project or scoped apps", async () => {
+		const { isApplicationExpandedAllowed } = await import("../src/client.js");
+		const policy = {
+			projects: basePolicy.projects,
+			servers: basePolicy.servers,
+			allowAnyServer: false,
+			domainSuffixes: [".apps.example.com"],
+			expandedProjects: [
+				{ projectName: "toolbox" },
+				{
+					projectName: "storefront",
+					applicationNames: ["catalog"],
+				},
+				{
+					projectName: "agent_sandbox",
+					projectId: "proj-agent",
+					environmentNames: ["production"],
+					applicationNames: ["journal"],
+				},
+			],
+			expandedApplicationIds: [],
+			expandedApplicationNames: [],
+		};
+
+		expect(
+			isApplicationExpandedAllowed(policy, {
+				applicationId: "api-1",
+				name: "api",
+				projectName: "toolbox",
+				environmentName: "production",
+			}),
+		).toBe(true);
+		expect(
+			isApplicationExpandedAllowed(policy, {
+				applicationId: "catalog-1",
+				name: "catalog",
+				projectName: "storefront",
+			}),
+		).toBe(true);
+		expect(
+			isApplicationExpandedAllowed(policy, {
+				applicationId: "other-1",
+				name: "other",
+				projectName: "storefront",
+			}),
+		).toBe(false);
+		expect(
+			isApplicationExpandedAllowed(policy, {
+				applicationId: "web-1",
+				name: "web",
+				projectName: "unrelated",
+			}),
+		).toBe(false);
+		expect(
+			isApplicationExpandedAllowed(policy, {
+				applicationId: "journal-1",
+				name: "journal",
+				projectName: "renamed-agent",
+				projectId: "proj-agent",
+				environmentName: "production",
+			}),
+		).toBe(true);
+		expect(
+			isApplicationExpandedAllowed(policy, {
+				applicationId: "journal-2",
+				name: "journal",
+				projectName: "renamed-agent",
+				projectId: "proj-agent",
+				environmentName: "staging",
+			}),
+		).toBe(false);
 	});
 
 	it("should normalize wildcard and bare domain suffixes", async () => {

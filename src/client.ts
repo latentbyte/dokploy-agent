@@ -27,13 +27,38 @@ export interface AgentDeployProjectConfig {
 	environmentId: string;
 }
 
+export interface ExpandedProjectConfig {
+	projectName: string;
+	projectId?: string;
+	/** when set, only these environment names match (case-insensitive) */
+	environmentNames?: string[];
+	/**
+	 * omitted: all applications in the project
+	 * []: no applications from this entry
+	 * non-empty: only matching application name/appName (case-insensitive)
+	 */
+	applicationNames?: string[];
+}
+
+export interface ExpandedApplicationCandidate {
+	applicationId?: string;
+	name?: string;
+	appName?: string;
+	projectName?: string;
+	projectId?: string;
+	environmentName?: string;
+	environmentId?: string;
+}
+
 export interface AgentDeployPolicyConfig {
 	projects: AgentDeployProjectConfig[];
 	servers: AgentDeployServerConfig[];
 	allowAnyServer?: boolean;
 	domainSuffixes: string[];
 	domainNameSuffix?: string;
+	expandedProjects: ExpandedProjectConfig[];
 	expandedApplicationIds: string[];
+	/** @deprecated prefer expandedProjects; kept as legacy global name fallback */
 	expandedApplicationNames: string[];
 }
 
@@ -228,6 +253,12 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 				assertString(applicationName, "expandedApplicationNames[]"),
 			)
 		: [];
+	const expandedProjects = Array.isArray(policy.expandedProjects)
+		? policy.expandedProjects.map(
+				(project: Record<string, unknown>, index: number) =>
+					parseExpandedProject(project, `expandedProjects[${index}]`),
+			)
+		: [];
 
 	const rawProjects = Array.isArray(policy.projects)
 		? policy.projects
@@ -266,8 +297,182 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 		allowAnyServer,
 		domainSuffixes,
 		domainNameSuffix,
+		expandedProjects,
 		expandedApplicationIds,
 		expandedApplicationNames,
+	};
+}
+
+function parseOptionalStringList(
+	value: unknown,
+	name: string,
+): string[] | undefined {
+	if (value === undefined) return undefined;
+	if (!Array.isArray(value)) {
+		throw new Error(`Missing ${name} in agentDeployPolicy config.`);
+	}
+	return value.map((entry) => assertString(entry, `${name}[]`));
+}
+
+function parseExpandedProject(
+	project: Record<string, unknown>,
+	pathLabel: string,
+): ExpandedProjectConfig {
+	const applicationNames = parseOptionalStringList(
+		project.applicationNames,
+		`${pathLabel}.applicationNames`,
+	);
+	const environmentNames = parseOptionalStringList(
+		project.environmentNames,
+		`${pathLabel}.environmentNames`,
+	);
+	return {
+		projectName: assertString(project.projectName, `${pathLabel}.projectName`),
+		projectId:
+			typeof project.projectId === "string" && project.projectId.trim()
+				? project.projectId.trim()
+				: undefined,
+		environmentNames,
+		applicationNames,
+	};
+}
+
+function normalizeComparableName(
+	value: string | undefined,
+): string | undefined {
+	const trimmed = value?.trim();
+	return trimmed ? trimmed.toLowerCase() : undefined;
+}
+
+function applicationCandidateNames(
+	application: ExpandedApplicationCandidate,
+): string[] {
+	return [application.name, application.appName]
+		.map((name) => normalizeComparableName(name))
+		.filter((name): name is string => Boolean(name));
+}
+
+function expandedProjectMatches(
+	project: ExpandedProjectConfig,
+	application: ExpandedApplicationCandidate,
+): boolean {
+	const projectMatches = project.projectId
+		? application.projectId === project.projectId
+		: normalizeComparableName(application.projectName) ===
+			normalizeComparableName(project.projectName);
+	if (!projectMatches) return false;
+
+	if (project.environmentNames !== undefined) {
+		if (project.environmentNames.length === 0) return false;
+		const environmentName = normalizeComparableName(
+			application.environmentName,
+		);
+		if (!environmentName) return false;
+		const allowedEnvironments = new Set(
+			project.environmentNames
+				.map((name) => normalizeComparableName(name))
+				.filter((name): name is string => Boolean(name)),
+		);
+		if (!allowedEnvironments.has(environmentName)) return false;
+	}
+
+	if (project.applicationNames === undefined) return true;
+	if (project.applicationNames.length === 0) return false;
+
+	const allowedNames = new Set(
+		project.applicationNames
+			.map((name) => normalizeComparableName(name))
+			.filter((name): name is string => Boolean(name)),
+	);
+	return applicationCandidateNames(application).some((name) =>
+		allowedNames.has(name),
+	);
+}
+
+function legacyExpandedNameMatches(
+	policy: AgentDeployPolicyConfig,
+	application: ExpandedApplicationCandidate,
+): boolean {
+	if (policy.expandedApplicationNames.length === 0) return false;
+	const allowedNames = new Set(
+		policy.expandedApplicationNames
+			.map((name) => normalizeComparableName(name))
+			.filter((name): name is string => Boolean(name)),
+	);
+	return applicationCandidateNames(application).some((name) =>
+		allowedNames.has(name),
+	);
+}
+
+/** true when application is on the expanded allowlist (ids, projects, or legacy names) */
+export function isApplicationExpandedAllowed(
+	policy: AgentDeployPolicyConfig,
+	application: ExpandedApplicationCandidate,
+): boolean {
+	if (
+		application.applicationId &&
+		policy.expandedApplicationIds.includes(application.applicationId)
+	) {
+		return true;
+	}
+	if (
+		policy.expandedProjects.some((project) =>
+			expandedProjectMatches(project, application),
+		)
+	) {
+		return true;
+	}
+	return legacyExpandedNameMatches(policy, application);
+}
+
+export function hasExpandedApplicationAllowlist(
+	policy: AgentDeployPolicyConfig,
+): boolean {
+	return (
+		policy.expandedApplicationIds.length > 0 ||
+		policy.expandedProjects.length > 0 ||
+		policy.expandedApplicationNames.length > 0
+	);
+}
+
+export function expandedApplicationAllowlistReason(): string {
+	return "expandedApplicationIds, expandedProjects, or expandedApplicationNames";
+}
+
+export function applicationCandidateFromService(
+	service: Record<string, unknown> | null | undefined,
+	applicationId?: string,
+): ExpandedApplicationCandidate {
+	const environment =
+		service?.environment && typeof service.environment === "object"
+			? (service.environment as Record<string, unknown>)
+			: undefined;
+	const project =
+		(environment?.project && typeof environment.project === "object"
+			? (environment.project as Record<string, unknown>)
+			: undefined) ??
+		(service?.project && typeof service.project === "object"
+			? (service.project as Record<string, unknown>)
+			: undefined);
+	return {
+		applicationId:
+			applicationId ??
+			(typeof service?.applicationId === "string"
+				? service.applicationId
+				: undefined),
+		name: typeof service?.name === "string" ? service.name : undefined,
+		appName: typeof service?.appName === "string" ? service.appName : undefined,
+		projectName: typeof project?.name === "string" ? project.name : undefined,
+		projectId:
+			typeof project?.projectId === "string" ? project.projectId : undefined,
+		environmentName:
+			typeof environment?.name === "string" ? environment.name : undefined,
+		environmentId:
+			typeof service?.environmentId === "string"
+				? service.environmentId
+				: typeof environment?.environmentId === "string"
+					? environment.environmentId
+					: undefined,
 	};
 }
 

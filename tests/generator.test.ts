@@ -248,6 +248,9 @@ describe("generator", () => {
 			expect(generatedContent).toContain("policy.servers");
 			expect(generatedContent).toContain("policy.domainSuffixes");
 			expect(generatedContent).toContain("policy.domainNameSuffix");
+			expect(generatedContent).toContain("isApplicationExpandedAllowed");
+			expect(generatedContent).toContain("hasExpandedApplicationAllowlist");
+			expect(generatedContent).toContain("policy.expandedProjects");
 			expect(generatedContent).toContain("policy.expandedApplicationNames");
 			expect(generatedContent).toContain("expandedApplications");
 			expect(generatedContent).toContain("resolveExpandedApplications");
@@ -392,7 +395,7 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
-	it("guards expanded operations with the application name allowlist", async () => {
+	it("guards expanded operations with the expanded projects allowlist", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
 		try {
@@ -407,14 +410,42 @@ describe("generator", () => {
 				],
 				servers: [{ serverId: "srv-allowed" }],
 				domainSuffixes: [".example.com"],
+				expandedProjects: [
+					{ projectName: "my-app" },
+					{ projectName: "storefront", applicationNames: ["catalog"] },
+				],
 				expandedApplicationIds: [],
-				expandedApplicationNames: ["my-app"],
+				expandedApplicationNames: [],
 			});
 			const getSpy = vi
 				.spyOn(client, "apiGet")
-				.mockImplementation(async (_endpoint, opts) => ({
-					name: opts?.applicationId === "app-allowed" ? "my-app" : "blocked",
-				}));
+				.mockImplementation(async (_endpoint, opts) => {
+					if (opts?.applicationId === "app-allowed") {
+						return {
+							name: "api",
+							environment: { name: "production", project: { name: "my-app" } },
+							serverId: "srv-allowed",
+						};
+					}
+					if (opts?.applicationId === "app-catalog") {
+						return {
+							name: "catalog",
+							environment: {
+								name: "production",
+								project: { name: "storefront" },
+							},
+							serverId: "srv-allowed",
+						};
+					}
+					return {
+						name: "web",
+						environment: {
+							name: "production",
+							project: { name: "unrelated" },
+						},
+						serverId: "srv-allowed",
+					};
+				});
 			const postSpy = vi
 				.spyOn(client, "apiPost")
 				.mockResolvedValue({ ok: true });
@@ -429,7 +460,7 @@ describe("generator", () => {
 					"--applicationId",
 					"app-blocked",
 				]),
-			).rejects.toThrow("expandedApplicationNames");
+			).rejects.toThrow("expandedProjects");
 			expect(postSpy).not.toHaveBeenCalled();
 
 			await program.parseAsync([
@@ -445,6 +476,18 @@ describe("generator", () => {
 			});
 			expect(getSpy).toHaveBeenCalledWith("application.one", {
 				applicationId: "app-allowed",
+			});
+
+			await program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"stop",
+				"--applicationId",
+				"app-catalog",
+			]);
+			expect(postSpy).toHaveBeenCalledWith("application.stop", {
+				applicationId: "app-catalog",
 			});
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
@@ -466,6 +509,7 @@ describe("generator", () => {
 				],
 				servers: [{ serverId: "srv-allowed" }],
 				domainSuffixes: [".apps.example.net"],
+				expandedProjects: [],
 				expandedApplicationIds: [],
 				expandedApplicationNames: [],
 			});
@@ -568,6 +612,7 @@ describe("generator", () => {
 				servers: [],
 				allowAnyServer: true,
 				domainSuffixes: [".example.com"],
+				expandedProjects: [],
 				expandedApplicationIds: [],
 				expandedApplicationNames: [],
 			});
@@ -624,6 +669,7 @@ describe("generator", () => {
 				],
 				servers: [{ serverId: "srv-allowed" }],
 				domainSuffixes: [".example.com"],
+				expandedProjects: [],
 				expandedApplicationIds: [],
 				expandedApplicationNames: [],
 			};
@@ -676,6 +722,7 @@ describe("generator", () => {
 				],
 				servers: [{ serverId: "srv-allowed" }],
 				domainSuffixes: [".example.com"],
+				expandedProjects: [],
 				expandedApplicationIds: [],
 				expandedApplicationNames: [],
 			};

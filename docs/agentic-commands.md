@@ -77,6 +77,13 @@ Blind environment mutation for existing applications. Raw existing values stay i
 # names and masked previews only
 dokploy-agent application env list --applicationId APP_ID --json
 
+# create or replace without exposing other values
+dokploy-agent application env set \
+  --applicationId APP_ID \
+  --name APP_BASE_URL \
+  --value https://app.example.app \
+  --json
+
 # fails when NEW_KEY already exists
 dokploy-agent application env add \
   --applicationId APP_ID \
@@ -97,7 +104,8 @@ Safety behavior:
 
 - all existing values get fixed masked previews, regardless of key name
 - existing comment bodies remain hidden
-- add fails on existing keys; no overwrite mode
+- add fails on existing keys; set creates or replaces a single key
+- no overwrite mode for add
 - comment fails on missing or duplicated keys
 - multiline comment input is prefixed line-by-line to prevent assignment injection
 - agent-safe builds enforce configured project and server policy before writes

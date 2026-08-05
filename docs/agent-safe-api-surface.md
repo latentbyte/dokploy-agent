@@ -74,12 +74,17 @@ Runtime policy:
 - omitted `serverId` on create defaults to the first configured server; with `servers: "*"`, it remains omitted so Dokploy selects its local server
 - updates, deploys, and domain creation first resolve the target service and require it to belong to one configured project/environment
 - database deploys resolve the database and enforce the same project and server policy
-- `agentDeployPolicy.expandedApplicationNames` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations for applications matching Dokploy `name` or `appName`, case-insensitively
+- `agentDeployPolicy.expandedProjects` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations for applications inside named projects
+- omit `applicationNames` on an expanded project to allow every application in that project; set `applicationNames` to restrict to matching Dokploy `name` or `appName` (case-insensitive) inside that project only
+- optional `projectId` matches first when present; optional `environmentNames` further restricts by environment name
+- empty `applicationNames: []` matches no applications for that entry
 - `expandedApplicationIds` remains available when an immutable ID is preferred
-- named or ID allowlist entries are explicit exceptions to configured project and server restrictions, so existing applications outside agent deployment projects can be managed
+- legacy `expandedApplicationNames` still works as a global name fallback; prefer `expandedProjects` so generic names cannot cross projects
+- expanded allowlist entries are explicit exceptions to configured project and server restrictions, so existing applications outside agent deployment projects can be managed
+- expanded rights apply to applications only; compose and database writes stay governed by `projects[]`
 - application reads and inventory are not limited to configured deployment projects; the project list controls baseline writes and new resource placement
-- `agent-safety deploy-policy --json` resolves configured names across all projects and returns matching names, IDs, projects, and environments in `expandedApplications`
-- mount and port creation requires a named or ID-allowlisted application; mounts for other service types stay blocked
+- `agent-safety deploy-policy --json` resolves expanded projects/ids/legacy names and returns matching applications in `expandedApplications`
+- mount and port creation requires an expanded-allowlisted application; mounts for other service types stay blocked
 - expanded operations include start, stop, reload, delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.apps.example.net` for `*.apps.example.net`
 - before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects
@@ -112,7 +117,10 @@ Example config shape. Use `"servers": "*"` instead of the array when agents may 
       }
     ],
     "domainSuffixes": ["*.apps.example.net"],
-    "expandedApplicationNames": ["my-app"]
+    "expandedProjects": [
+      { "projectName": "my-app" },
+      { "projectName": "storefront", "applicationNames": ["catalog"] }
+    ]
   }
 }
 ```
