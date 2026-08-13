@@ -237,6 +237,10 @@ describe("generator", () => {
 			expect(generatedContent).toContain('apiPost("application.stop"');
 			expect(generatedContent).toContain('apiPost("mounts.create"');
 			expect(generatedContent).toContain('apiPost("port.create"');
+			expect(generatedContent).toContain('apiPost("volumeBackups.create"');
+			expect(generatedContent).toContain('apiPost("volumeBackups.runManually"');
+			expect(generatedContent).not.toContain('apiPost("volumeBackups.delete"');
+			expect(generatedContent).not.toContain('apiPost("volumeBackups.update"');
 			expect(generatedContent).toContain(
 				'apiPost("application.saveGitProvider"',
 			);
@@ -488,6 +492,251 @@ describe("generator", () => {
 			]);
 			expect(postSpy).toHaveBeenCalledWith("application.stop", {
 				applicationId: "app-catalog",
+			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
+	it("guards volume backup writes with the parent service policy", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [{ serverId: "srv-allowed" }],
+				domainSuffixes: [".example.com"],
+				expandedProjects: [{ projectName: "my-app" }],
+				expandedApplicationIds: [],
+				expandedApplicationNames: [],
+			});
+			vi.spyOn(client, "apiGet").mockImplementation(async (endpoint, opts) => {
+				if (endpoint === "application.one") {
+					if (opts?.applicationId === "app-allowed") {
+						return {
+							environmentId: "env-1",
+							environment: {
+								name: "production",
+								project: { name: "agent-project" },
+							},
+							serverId: "srv-allowed",
+						};
+					}
+					if (opts?.applicationId === "app-expanded") {
+						return {
+							name: "api",
+							environmentId: "env-other",
+							environment: {
+								name: "production",
+								project: { name: "my-app" },
+							},
+							serverId: "srv-allowed",
+						};
+					}
+					return {
+						name: "web",
+						environmentId: "env-other",
+						environment: {
+							name: "production",
+							project: { name: "unrelated" },
+						},
+						serverId: "srv-allowed",
+					};
+				}
+				if (endpoint === "postgres.one") {
+					if (opts?.postgresId === "pg-allowed") {
+						return {
+							environmentId: "env-1",
+							environment: {
+								name: "production",
+								project: { name: "agent-project" },
+							},
+							serverId: "srv-allowed",
+						};
+					}
+					return {
+						environmentId: "env-other",
+						environment: {
+							name: "production",
+							project: { name: "unrelated" },
+						},
+						serverId: "srv-allowed",
+					};
+				}
+				if (endpoint === "volumeBackups.one") {
+					if (opts?.volumeBackupId === "vb-allowed") {
+						return {
+							applicationId: "app-allowed",
+							serviceType: "application",
+						};
+					}
+					return {
+						applicationId: "app-blocked",
+						serviceType: "application",
+					};
+				}
+				throw new Error(`unexpected endpoint ${endpoint}`);
+			});
+			const postSpy = vi
+				.spyOn(client, "apiPost")
+				.mockResolvedValue({ ok: true });
+
+			registerGeneratedCommands(program);
+
+			await expect(
+				program.parseAsync([
+					"node",
+					"cli",
+					"volume-backups",
+					"create",
+					"--name",
+					"sqlite",
+					"--volumeName",
+					"app-data",
+					"--prefix",
+					"sqlite",
+					"--cronExpression",
+					"0 3 * * *",
+					"--destinationId",
+					"dest-1",
+				]),
+			).rejects.toThrow("requires a parent service id");
+			expect(postSpy).not.toHaveBeenCalled();
+
+			await expect(
+				program.parseAsync([
+					"node",
+					"cli",
+					"volume-backups",
+					"create",
+					"--name",
+					"sqlite",
+					"--volumeName",
+					"app-data",
+					"--prefix",
+					"sqlite",
+					"--cronExpression",
+					"0 3 * * *",
+					"--destinationId",
+					"dest-1",
+					"--applicationId",
+					"app-blocked",
+				]),
+			).rejects.toThrow("allowed projects");
+			expect(postSpy).not.toHaveBeenCalled();
+
+			await program.parseAsync([
+				"node",
+				"cli",
+				"volume-backups",
+				"create",
+				"--name",
+				"sqlite",
+				"--volumeName",
+				"app-data",
+				"--prefix",
+				"sqlite",
+				"--cronExpression",
+				"0 3 * * *",
+				"--destinationId",
+				"dest-1",
+				"--applicationId",
+				"app-allowed",
+			]);
+			expect(postSpy).toHaveBeenCalledWith("volumeBackups.create", {
+				name: "sqlite",
+				volumeName: "app-data",
+				prefix: "sqlite",
+				cronExpression: "0 3 * * *",
+				destinationId: "dest-1",
+				applicationId: "app-allowed",
+			});
+
+			await program.parseAsync([
+				"node",
+				"cli",
+				"volume-backups",
+				"create",
+				"--name",
+				"sqlite",
+				"--volumeName",
+				"app-data",
+				"--prefix",
+				"sqlite",
+				"--cronExpression",
+				"0 3 * * *",
+				"--destinationId",
+				"dest-1",
+				"--applicationId",
+				"app-expanded",
+			]);
+			expect(postSpy).toHaveBeenCalledWith("volumeBackups.create", {
+				name: "sqlite",
+				volumeName: "app-data",
+				prefix: "sqlite",
+				cronExpression: "0 3 * * *",
+				destinationId: "dest-1",
+				applicationId: "app-expanded",
+			});
+
+			await program.parseAsync([
+				"node",
+				"cli",
+				"volume-backups",
+				"create",
+				"--name",
+				"pg-data",
+				"--volumeName",
+				"pg-data",
+				"--prefix",
+				"pg",
+				"--cronExpression",
+				"0 3 * * *",
+				"--destinationId",
+				"dest-1",
+				"--serviceType",
+				"postgres",
+				"--postgresId",
+				"pg-allowed",
+			]);
+			expect(postSpy).toHaveBeenCalledWith("volumeBackups.create", {
+				name: "pg-data",
+				volumeName: "pg-data",
+				prefix: "pg",
+				cronExpression: "0 3 * * *",
+				destinationId: "dest-1",
+				serviceType: "postgres",
+				postgresId: "pg-allowed",
+			});
+
+			await expect(
+				program.parseAsync([
+					"node",
+					"cli",
+					"volume-backups",
+					"run-manually",
+					"--volumeBackupId",
+					"vb-blocked",
+				]),
+			).rejects.toThrow("allowed projects");
+
+			await program.parseAsync([
+				"node",
+				"cli",
+				"volume-backups",
+				"run-manually",
+				"--volumeBackupId",
+				"vb-allowed",
+			]);
+			expect(postSpy).toHaveBeenCalledWith("volumeBackups.runManually", {
+				volumeBackupId: "vb-allowed",
 			});
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });

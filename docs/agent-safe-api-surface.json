@@ -1,8 +1,8 @@
 {
 	"generated": {
 		"total": 545,
-		"safe_count": 191,
-		"disallowed_count": 187,
+		"safe_count": 193,
+		"disallowed_count": 185,
 		"hidden_count": 167,
 		"safe": {
 			"ai": [
@@ -1462,6 +1462,14 @@
 			],
 			"volume-backups": [
 				{
+					"endpoint": "volumeBackups.create",
+					"group": "volume-backups",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "volumeBackups.list",
 					"group": "volume-backups",
 					"action": "list",
@@ -1474,6 +1482,14 @@
 					"action": "one",
 					"method": "get",
 					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "volumeBackups.runManually",
+					"group": "volume-backups",
+					"action": "run-manually",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
 				}
 			]
 		},
@@ -3004,25 +3020,9 @@
 			],
 			"volume-backups": [
 				{
-					"endpoint": "volumeBackups.create",
-					"group": "volume-backups",
-					"action": "create",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "volumeBackups.delete",
 					"group": "volume-backups",
 					"action": "delete",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "volumeBackups.runManually",
-					"group": "volume-backups",
-					"action": "run-manually",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"

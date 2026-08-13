@@ -249,6 +249,8 @@ const SAFE_POST_ENDPOINTS = new Set([
 	"domain.create",
 	"mounts.create",
 	"port.create",
+	"volumeBackups.create",
+	"volumeBackups.runManually",
 	...AGENT_DATABASE_KINDS.flatMap((kind) => [
 		`${kind}.create`,
 		`${kind}.deploy`,
@@ -259,6 +261,7 @@ const AGENT_HELP_GROUPS = new Set([
 	"application",
 	"compose",
 	"deployment",
+	"destination",
 	"docker",
 	"domain",
 	"environment",
@@ -271,6 +274,7 @@ const AGENT_HELP_GROUPS = new Set([
 	"project",
 	"redis",
 	"server",
+	"volumeBackups",
 ]);
 
 const AGENT_STATE_ENDPOINTS = [
@@ -1006,6 +1010,46 @@ async function assertAgentDomainInDeployProject(policy: ReturnType<typeof readAg
 	throw new Error('agent-safe deploy policy could not resolve domain parent service');
 }
 
+const AGENT_VOLUME_BACKUP_SERVICE_KINDS = new Set(['application', 'compose', ...AGENT_DATABASE_KINDS]);
+
+function volumeBackupParentFromOpts(opts: Record<string, any>) {
+	const serviceType = stringValue(opts.serviceType);
+	if (serviceType && AGENT_VOLUME_BACKUP_SERVICE_KINDS.has(serviceType)) {
+		return { kind: serviceType, id: stringValue(opts[serviceType + 'Id']) };
+	}
+	for (const kind of AGENT_VOLUME_BACKUP_SERVICE_KINDS) {
+		const id = stringValue(opts[kind + 'Id']);
+		if (id) return { kind, id };
+	}
+	return undefined;
+}
+
+async function assertAgentVolumeBackupParentWritable(
+	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
+	opts: Record<string, any>,
+	endpoint: string,
+) {
+	const parent = volumeBackupParentFromOpts(opts);
+	if (!parent?.id) {
+		throw new Error('agent-safe ' + endpoint + ' requires a parent service id');
+	}
+	const kind = parent.kind as 'application' | 'compose' | 'libsql' | 'mariadb' | 'mongo' | 'mysql' | 'postgres' | 'redis';
+	if (kind === 'application') {
+		return assertApplicationWritable(policy, parent.id);
+	}
+	return assertAgentServiceInDeployProject(policy, kind, parent.id);
+}
+
+async function assertAgentVolumeBackupWritable(
+	policy: ReturnType<typeof readAgentDeployPolicyConfig>,
+	volumeBackupId: string | undefined,
+	endpoint: string,
+) {
+	if (!volumeBackupId) throw new Error('agent-safe ' + endpoint + ' requires volumeBackupId');
+	const backup = await apiGet('volumeBackups.one', { volumeBackupId });
+	return assertAgentVolumeBackupParentWritable(policy, backup ?? {}, endpoint);
+}
+
 async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 	const forbiddenUpdateFields = AGENT_FORBIDDEN_UPDATE_FIELDS[endpoint] ?? [];
 	const forbiddenFields = Object.keys(opts).filter((field) => forbiddenUpdateFields.includes(field));
@@ -1035,6 +1079,14 @@ async function guardAgentSafePost(endpoint: string, opts: Record<string, any>) {
 	}
 	if (endpoint === 'port.create') {
 		await assertExpandedApplicationAllowed(policy, opts.applicationId);
+		return;
+	}
+	if (endpoint === 'volumeBackups.create') {
+		await assertAgentVolumeBackupParentWritable(policy, opts, endpoint);
+		return;
+	}
+	if (endpoint === 'volumeBackups.runManually') {
+		await assertAgentVolumeBackupWritable(policy, opts.volumeBackupId, endpoint);
 		return;
 	}
 	if (AGENT_DEPLOY_SERVICE_MUTATIONS.has(endpoint)) {

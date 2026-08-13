@@ -65,6 +65,7 @@ These commands are exposed only in agent-safe builds and are guarded at runtime:
 - `libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`: create, deploy
 - `application` expanded operations for explicitly allowlisted application IDs
 - `mounts create` and `port create` for explicitly allowlisted applications
+- `volume-backups`: create, run-manually
 
 Runtime policy:
 
@@ -85,6 +86,8 @@ Runtime policy:
 - application reads and inventory are not limited to configured deployment projects; the project list controls baseline writes and new resource placement
 - `agent-safety deploy-policy --json` resolves expanded projects/ids/legacy names and returns matching applications in `expandedApplications`
 - mount and port creation requires an expanded-allowlisted application; mounts for other service types stay blocked
+- volume backup create and run-manually resolve the parent service first; applications may be in a configured project or the expanded allowlist, while compose and database parents stay governed by `projects[]`
+- volume backup update and delete stay blocked
 - expanded operations include start, stop, reload, delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.apps.example.net` for `*.apps.example.net`
 - before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects
@@ -164,8 +167,8 @@ Disallowed means command exists in the generated CLI surface but policy blocks i
 Unavailable means command exists in `openapi.json` but is not generated into `src/generated/commands.ts`, so the current CLI cannot expose it without generator/client work.
 
 - generated total: 545
-- safe total: 191
-- disallowed total: 187
+- safe total: 193
+- disallowed total: 185
 - hidden total: 167
 - not available total (in `openapi.json` but not generated): 0
 
