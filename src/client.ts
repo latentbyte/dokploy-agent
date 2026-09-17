@@ -68,6 +68,105 @@ export interface AuthConfig {
 	agentDeployPolicy?: AgentDeployPolicyConfig;
 }
 
+/** Strip line and block comments plus trailing commas outside strings. */
+export function stripJsoncComments(input: string): string {
+	let output = "";
+	let i = 0;
+	let inString = false;
+	let quote = "";
+	let escaped = false;
+	while (i < input.length) {
+		const char = input[i];
+		const next = input[i + 1] ?? "";
+		if (inString) {
+			output += char;
+			if (escaped) {
+				escaped = false;
+			} else if (char === "\\") {
+				escaped = true;
+			} else if (char === quote) {
+				inString = false;
+			}
+			i++;
+			continue;
+		}
+		if (char === '"' || char === "'") {
+			inString = true;
+			quote = char;
+			output += char;
+			i++;
+			continue;
+		}
+		if (char === "/" && next === "/") {
+			while (i < input.length && input[i] !== "\n") i++;
+			continue;
+		}
+		if (char === "/" && next === "*") {
+			i += 2;
+			while (i < input.length && !(input[i] === "*" && input[i + 1] === "/")) {
+				if (input[i] === "\n") output += "\n";
+				i++;
+			}
+			i += 2;
+			continue;
+		}
+		output += char;
+		i++;
+	}
+	return output;
+}
+
+function stripTrailingCommas(input: string): string {
+	let output = "";
+	let i = 0;
+	let inString = false;
+	let quote = "";
+	let escaped = false;
+	while (i < input.length) {
+		const char = input[i];
+		if (inString) {
+			output += char;
+			if (escaped) {
+				escaped = false;
+			} else if (char === "\\") {
+				escaped = true;
+			} else if (char === quote) {
+				inString = false;
+			}
+			i++;
+			continue;
+		}
+		if (char === '"' || char === "'") {
+			inString = true;
+			quote = char;
+			output += char;
+			i++;
+			continue;
+		}
+		if (char === ",") {
+			let j = i + 1;
+			while (j < input.length && /\s/.test(input[j])) j++;
+			if (input[j] === "}" || input[j] === "]") {
+				i++;
+				continue;
+			}
+		}
+		output += char;
+		i++;
+	}
+	return output;
+}
+
+/** Parse JSON with comments (JSONC): line comments, block comments, trailing commas. */
+export function parseJsonc<T = unknown>(text: string): T {
+	const cleaned = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+	return JSON.parse(stripTrailingCommas(stripJsoncComments(cleaned))) as T;
+}
+
+export function readJsoncFile<T = unknown>(filePath: string): T {
+	return parseJsonc<T>(fs.readFileSync(filePath, "utf8"));
+}
+
 export function getAuthConfigPath(): string {
 	if (process.env.DOKPLOY_CONFIG_PATH) {
 		return path.resolve(process.env.DOKPLOY_CONFIG_PATH);
@@ -140,7 +239,7 @@ export function readAuthConfig(): AuthConfig {
 		);
 	}
 
-	const config = JSON.parse(fs.readFileSync(readableConfigPath, "utf8"));
+	const config = readJsoncFile<AuthConfig>(readableConfigPath);
 	const { token, url } = config;
 
 	if (!url || !token) {
@@ -156,7 +255,7 @@ export function readAuthConfig(): AuthConfig {
 export function saveAuthConfig(url: string, token: string): void {
 	const configPath = getAuthConfigPath();
 	const existing = fs.existsSync(configPath)
-		? JSON.parse(fs.readFileSync(configPath, "utf8"))
+		? readJsoncFile<Record<string, unknown>>(configPath)
 		: {};
 	fs.mkdirSync(path.dirname(configPath), { recursive: true });
 	fs.writeFileSync(
@@ -195,8 +294,8 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 		);
 	}
 
-	const config = JSON.parse(fs.readFileSync(readableConfigPath, "utf8"));
-	const policy = config.agentDeployPolicy;
+	const config = readJsoncFile<Record<string, any>>(readableConfigPath);
+	const policy = config.agentDeployPolicy as any;
 	if (!policy || typeof policy !== "object") {
 		throw new Error(
 			`Missing agentDeployPolicy in ${readableConfigPath}. Run dokploy-agent agent-safety deploy-policy --help for expected fields.`,

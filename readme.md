@@ -34,7 +34,7 @@ DOKPLOY_API_KEY="YOUR_API_KEY"
 
 The CLI loads it automatically. Shell environment variables take priority over the `.env` file.
 
-The `auth` command stores credentials in `$XDG_CONFIG_HOME/dokploy/config.json`, or `~/.config/dokploy/config.json` when `XDG_CONFIG_HOME` is unset. Set `DOKPLOY_CONFIG_PATH` to use another config file.
+The `auth` command stores credentials in `$XDG_CONFIG_HOME/dokploy/config.json`, or `~/.config/dokploy/config.json` when `XDG_CONFIG_HOME` is unset. Set `DOKPLOY_CONFIG_PATH` to use another config file. The config file accepts JSONC, so `//` and `/* */` comments plus trailing commas are allowed.
 
 ## Usage
 

@@ -126,6 +126,68 @@ describe("readAuthConfig", () => {
 	});
 });
 
+describe("parseJsonc", () => {
+	const originalEnv = { ...process.env };
+
+	beforeEach(() => {
+		delete process.env.DOKPLOY_URL;
+		delete process.env.DOKPLOY_API_KEY;
+		delete process.env.DOKPLOY_AUTH_TOKEN;
+		delete process.env.DOKPLOY_CONFIG_PATH;
+	});
+
+	afterEach(() => {
+		process.env = { ...originalEnv };
+		vi.restoreAllMocks();
+	});
+
+	it("should strip line comments, block comments, and trailing commas", async () => {
+		const { parseJsonc } = await import("../src/client.js");
+		expect(
+			parseJsonc(`{
+				// server url
+				"url": "https://test.dokploy.com", // trailing comment
+				/* multi-line
+				   comment */
+				"token": "test-token", // trailing comma
+				"list": [1, 2,],
+			}`),
+		).toEqual({
+			url: "https://test.dokploy.com",
+			token: "test-token",
+			list: [1, 2],
+		});
+	});
+
+	it("should keep comment markers inside strings", async () => {
+		const { parseJsonc } = await import("../src/client.js");
+		expect(
+			parseJsonc(`{"url": "https://panel.example.com//not-a-comment"}`),
+		).toEqual({ url: "https://panel.example.com//not-a-comment" });
+	});
+
+	it("should read auth config with comments", async () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-jsonc-"));
+		const configPath = path.join(tempDir, "config.json");
+		process.env.DOKPLOY_CONFIG_PATH = configPath;
+		fs.writeFileSync(
+			configPath,
+			`{
+				// Dokploy panel URL
+				"url": "https://test.dokploy.com", // trailing comment
+				/* api token */
+				"token": "test-token",
+			}`,
+		);
+
+		const { readAuthConfig } = await import("../src/client.js");
+		expect(readAuthConfig()).toEqual({
+			url: "https://test.dokploy.com",
+			token: "test-token",
+		});
+	});
+});
+
 describe("apiGet", () => {
 	it("should encode GET input with tRPC json wrapper", async () => {
 		const { buildGetInputQuery } = await import("../src/client.js");
