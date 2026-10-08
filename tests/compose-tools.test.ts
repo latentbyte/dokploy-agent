@@ -13,6 +13,52 @@ const composeObject = {
 };
 
 describe("compose tool helpers", () => {
+	it.each([
+		{
+			name: "service named services",
+			yaml: [
+				"services:",
+				"  services:",
+				"    image: nginx",
+				"  web:",
+				"    image: redis",
+				"volumes:",
+				"  data:",
+			],
+			services: [
+				{ name: "services", image: "nginx" },
+				{ name: "web", image: "redis" },
+			],
+		},
+		{
+			name: "nested services mapping",
+			yaml: [
+				"services:",
+				"  web:",
+				"    image: nginx",
+				"    build:",
+				"      args:",
+				"        services:",
+				"          image: nested-argument",
+				"    ports: [8080:80]",
+				"  db:",
+				"    image: postgres",
+				"volumes:",
+				"  data:",
+			],
+			services: [
+				{ name: "web", image: "nginx", build: true, ports: "[8080:80]" },
+				{ name: "db", image: "postgres" },
+			],
+		},
+	])("preserves first service section with $name", ({ yaml, services }) => {
+		expect(composeToolsInternals.summarizeComposeData(yaml.join("\n"))).toEqual(
+			{
+				services,
+			},
+		);
+	});
+
 	it("summarizes block-valued service properties", () => {
 		const yaml = [
 			"services:",

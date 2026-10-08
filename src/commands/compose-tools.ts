@@ -88,7 +88,7 @@ function parseServicesFromYaml(input: string): JsonObject[] {
 		if (!trimmed || trimmed.startsWith("#")) continue;
 		const indent = line.length - line.trimStart().length;
 
-		if (/^services\s*:\s*(?:#.*)?$/.test(trimmed)) {
+		if (!inServices && /^services\s*:\s*(?:#.*)?$/.test(trimmed)) {
 			inServices = true;
 			servicesIndent = indent;
 			serviceIndent = undefined;
