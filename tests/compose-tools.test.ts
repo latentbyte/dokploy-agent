@@ -13,6 +13,61 @@ const composeObject = {
 };
 
 describe("compose tool helpers", () => {
+	it("summarizes block-valued service properties", () => {
+		const yaml = [
+			"services:",
+			"  web:",
+			"    build:",
+			"      context: .",
+			"    ports:",
+			"      - 8080:80",
+			"    volumes:",
+			"      - data:/data",
+			"    env_file:",
+			"      - .env",
+			"    environment:",
+			"      MODE: synthetic",
+		].join("\n");
+
+		expect(composeToolsInternals.summarizeComposeData(yaml)).toEqual({
+			services: [
+				{
+					name: "web",
+					build: true,
+					ports: true,
+					volumes: true,
+					env_file: true,
+					env: "present",
+				},
+			],
+		});
+	});
+
+	it("does not treat nested keys as service properties", () => {
+		const yaml = [
+			"services:",
+			"  web:",
+			"      image: nginx",
+			"      build:",
+			"        context: .",
+			"        args:",
+			"          image: nested-argument",
+			"          ports: nested-argument",
+			"      ports: [8080:80]",
+			"  db:",
+			"    image: postgres",
+			"    healthcheck:",
+			"      environment: nested-command",
+		].join("\n");
+
+		expect(composeToolsInternals.summarizeComposeData(yaml)).toEqual({
+			services: [
+				{ name: "web", image: "nginx", build: true, ports: "[8080:80]" },
+				{ name: "db", image: "postgres" },
+			],
+		});
+	});
+
 	it("strips only requested object sections", () => {
 		expect(
 			composeToolsInternals.stripComposeNoise(composeObject, ["labels"]),

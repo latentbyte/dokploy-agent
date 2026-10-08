@@ -81,6 +81,7 @@ function parseServicesFromYaml(input: string): JsonObject[] {
 	let inServices = false;
 	let servicesIndent: number | undefined;
 	let serviceIndent: number | undefined;
+	let propertyIndent: number | undefined;
 	let current: JsonObject | undefined;
 	for (const line of lines) {
 		const trimmed = line.trim();
@@ -91,6 +92,7 @@ function parseServicesFromYaml(input: string): JsonObject[] {
 			inServices = true;
 			servicesIndent = indent;
 			serviceIndent = undefined;
+			propertyIndent = undefined;
 			current = undefined;
 			continue;
 		}
@@ -110,15 +112,18 @@ function parseServicesFromYaml(input: string): JsonObject[] {
 				current = {
 					name: serviceMatch[1] ?? serviceMatch[3],
 				};
+				propertyIndent = undefined;
 				services.push(current);
+				continue;
 			}
-			continue;
 		}
 
 		if (!current || serviceIndent === undefined || indent <= serviceIndent) {
 			current = undefined;
 			continue;
 		}
+		propertyIndent ??= indent;
+		if (indent !== propertyIndent) continue;
 
 		for (const key of ["image", "build", "ports", "volumes", "env_file"]) {
 			if (trimmed.startsWith(`${key}:`))
