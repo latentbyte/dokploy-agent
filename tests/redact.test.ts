@@ -83,6 +83,10 @@ describe("agent redaction", () => {
 		expect(isPublicIdentifierKey("applicationId")).toBe(true);
 		expect(isPublicIdentifierKey("githubId")).toBe(true);
 		expect(isPublicIdentifierKey("gitProviderId")).toBe(true);
+		expect(isPublicIdentifierKey("buildServerId")).toBe(true);
+		expect(isPublicIdentifierKey("registryId")).toBe(true);
+		expect(isPublicIdentifierKey("buildRegistryId")).toBe(true);
+		expect(isPublicIdentifierKey("rollbackRegistryId")).toBe(true);
 		expect(isPublicIdentifierKey("organizationId")).toBe(false);
 		expect(isSensitiveKey("dbPwd")).toBe(true);
 		expect(isSensitiveKey("valid")).toBe(false);
