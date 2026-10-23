@@ -1,9 +1,9 @@
 {
 	"generated": {
-		"total": 545,
-		"safe_count": 193,
-		"disallowed_count": 185,
-		"hidden_count": 167,
+		"total": 603,
+		"safe_count": 243,
+		"disallowed_count": 194,
+		"hidden_count": 166,
 		"safe": {
 			"ai": [
 				{
@@ -416,6 +416,22 @@
 					"reason": "read-only endpoint"
 				},
 				{
+					"endpoint": "compose.start",
+					"group": "compose",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "compose.stop",
+					"group": "compose",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "compose.templates",
 					"group": "compose",
 					"action": "templates",
@@ -491,6 +507,36 @@
 					"reason": "read-only endpoint"
 				}
 			],
+			"dns-provider": [
+				{
+					"endpoint": "dnsProvider.all",
+					"group": "dns-provider",
+					"action": "all",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "dnsProvider.listRecords",
+					"group": "dns-provider",
+					"action": "list-records",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "dnsProvider.listZones",
+					"group": "dns-provider",
+					"action": "list-zones",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "dnsProvider.one",
+					"group": "dns-provider",
+					"action": "one",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
 			"docker": [
 				{
 					"endpoint": "docker.getConfig",
@@ -521,6 +567,20 @@
 					"reason": "read-only endpoint"
 				},
 				{
+					"endpoint": "docker.getEvents",
+					"group": "docker",
+					"action": "get-events",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "docker.getServerHealth",
+					"group": "docker",
+					"action": "get-server-health",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
 					"endpoint": "docker.getServiceContainersByAppName",
 					"group": "docker",
 					"action": "get-service-containers-by-app-name",
@@ -531,6 +591,75 @@
 					"endpoint": "docker.getStackContainersByAppName",
 					"group": "docker",
 					"action": "get-stack-containers-by-app-name",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "docker.listContainerFiles",
+					"group": "docker",
+					"action": "list-container-files",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"docker-disk-usage": [
+				{
+					"endpoint": "dockerDiskUsage.getBuildCache",
+					"group": "docker-disk-usage",
+					"action": "get-build-cache",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "dockerDiskUsage.getDiskUsage",
+					"group": "docker-disk-usage",
+					"action": "get-disk-usage",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"docker-image": [
+				{
+					"endpoint": "dockerImage.getImageConfig",
+					"group": "docker-image",
+					"action": "get-image-config",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "dockerImage.getImages",
+					"group": "docker-image",
+					"action": "get-images",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"docker-volume": [
+				{
+					"endpoint": "dockerVolume.getVolumeConfig",
+					"group": "docker-volume",
+					"action": "get-volume-config",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "dockerVolume.getVolumes",
+					"group": "docker-volume",
+					"action": "get-volumes",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "dockerVolume.getVolumesSize",
+					"group": "docker-volume",
+					"action": "get-volumes-size",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "dockerVolume.listVolumeFiles",
+					"group": "docker-volume",
+					"action": "list-volume-files",
 					"method": "get",
 					"reason": "read-only endpoint"
 				}
@@ -566,19 +695,19 @@
 					"risk": "side-effect"
 				},
 				{
+					"endpoint": "domain.delete",
+					"group": "domain",
+					"action": "delete",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "domain.one",
 					"group": "domain",
 					"action": "one",
 					"method": "get",
 					"reason": "read-only endpoint"
-				},
-				{
-					"endpoint": "domain.update",
-					"group": "domain",
-					"action": "update",
-					"method": "post",
-					"reason": "side-effect endpoint guarded by agent deploy policy",
-					"risk": "side-effect"
 				}
 			],
 			"environment": [
@@ -630,22 +759,6 @@
 					"endpoint": "forwardAuth.status",
 					"group": "forward-auth",
 					"action": "status",
-					"method": "get",
-					"reason": "read-only endpoint"
-				}
-			],
-			"git-provider": [
-				{
-					"endpoint": "gitProvider.allForPermissions",
-					"group": "git-provider",
-					"action": "all-for-permissions",
-					"method": "get",
-					"reason": "read-only endpoint"
-				},
-				{
-					"endpoint": "gitProvider.getAll",
-					"group": "git-provider",
-					"action": "get-all",
 					"method": "get",
 					"reason": "read-only endpoint"
 				}
@@ -747,6 +860,22 @@
 					"reason": "read-only endpoint"
 				}
 			],
+			"git-provider": [
+				{
+					"endpoint": "gitProvider.allForPermissions",
+					"group": "git-provider",
+					"action": "all-for-permissions",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "gitProvider.getAll",
+					"group": "git-provider",
+					"action": "get-all",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
 			"libsql": [
 				{
 					"endpoint": "libsql.create",
@@ -778,6 +907,30 @@
 					"method": "get",
 					"reason": "read-only log endpoint with redaction",
 					"risk": "secret-leakage"
+				},
+				{
+					"endpoint": "libsql.reload",
+					"group": "libsql",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.start",
+					"group": "libsql",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "libsql.stop",
+					"group": "libsql",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
 				}
 			],
 			"mariadb": [
@@ -813,11 +966,35 @@
 					"risk": "secret-leakage"
 				},
 				{
+					"endpoint": "mariadb.reload",
+					"group": "mariadb",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "mariadb.search",
 					"group": "mariadb",
 					"action": "search",
 					"method": "get",
 					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "mariadb.start",
+					"group": "mariadb",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.stop",
+					"group": "mariadb",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
 				}
 			],
 			"mongo": [
@@ -853,11 +1030,35 @@
 					"risk": "secret-leakage"
 				},
 				{
+					"endpoint": "mongo.reload",
+					"group": "mongo",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "mongo.search",
 					"group": "mongo",
 					"action": "search",
 					"method": "get",
 					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "mongo.start",
+					"group": "mongo",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.stop",
+					"group": "mongo",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
 				}
 			],
 			"mounts": [
@@ -924,9 +1125,86 @@
 					"risk": "secret-leakage"
 				},
 				{
+					"endpoint": "mysql.reload",
+					"group": "mysql",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "mysql.search",
 					"group": "mysql",
 					"action": "search",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "mysql.start",
+					"group": "mysql",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.stop",
+					"group": "mysql",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				}
+			],
+			"network": [
+				{
+					"endpoint": "network.all",
+					"group": "network",
+					"action": "all",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "network.inspect",
+					"group": "network",
+					"action": "inspect",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "network.networksToSync",
+					"group": "network",
+					"action": "networks-to-sync",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "network.one",
+					"group": "network",
+					"action": "one",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"overview": [
+				{
+					"endpoint": "overview.backups",
+					"group": "overview",
+					"action": "backups",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "overview.domains",
+					"group": "overview",
+					"action": "domains",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "overview.services",
+					"group": "overview",
+					"action": "services",
 					"method": "get",
 					"reason": "read-only endpoint"
 				}
@@ -1011,11 +1289,35 @@
 					"risk": "secret-leakage"
 				},
 				{
+					"endpoint": "postgres.reload",
+					"group": "postgres",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "postgres.search",
 					"group": "postgres",
 					"action": "search",
 					"method": "get",
 					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "postgres.start",
+					"group": "postgres",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "postgres.stop",
+					"group": "postgres",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
 				}
 			],
 			"preview-deployment": [
@@ -1053,6 +1355,13 @@
 					"endpoint": "project.homeStats",
 					"group": "project",
 					"action": "home-stats",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "project.onboardingStatus",
+					"group": "project",
+					"action": "onboarding-status",
 					"method": "get",
 					"reason": "read-only endpoint"
 				},
@@ -1113,11 +1422,35 @@
 					"risk": "secret-leakage"
 				},
 				{
+					"endpoint": "redis.reload",
+					"group": "redis",
+					"action": "reload",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
 					"endpoint": "redis.search",
 					"group": "redis",
 					"action": "search",
 					"method": "get",
 					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "redis.start",
+					"group": "redis",
+					"action": "start",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.stop",
+					"group": "redis",
+					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
 				}
 			],
 			"registry": [
@@ -1217,6 +1550,13 @@
 					"endpoint": "server.getServerTime",
 					"group": "server",
 					"action": "get-server-time",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "server.getServices",
+					"group": "server",
+					"action": "get-services",
 					"method": "get",
 					"reason": "read-only endpoint"
 				},
@@ -1430,6 +1770,15 @@
 					"reason": "read-only endpoint"
 				}
 			],
+			"stripe": [
+				{
+					"endpoint": "stripe.getBillingStatus",
+					"group": "stripe",
+					"action": "get-billing-status",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
 			"swarm": [
 				{
 					"endpoint": "swarm.getContainerStats",
@@ -1456,6 +1805,45 @@
 					"endpoint": "swarm.getNodes",
 					"group": "swarm",
 					"action": "get-nodes",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"user": [
+				{
+					"endpoint": "user.listPasskeys",
+					"group": "user",
+					"action": "list-passkeys",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "user.listSessions",
+					"group": "user",
+					"action": "list-sessions",
+					"method": "get",
+					"reason": "read-only endpoint"
+				}
+			],
+			"vault-provider": [
+				{
+					"endpoint": "vaultProvider.all",
+					"group": "vault-provider",
+					"action": "all",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "vaultProvider.listSecretNames",
+					"group": "vault-provider",
+					"action": "list-secret-names",
+					"method": "get",
+					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "vaultProvider.one",
+					"group": "vault-provider",
+					"action": "one",
 					"method": "get",
 					"reason": "read-only endpoint"
 				}
@@ -1505,6 +1893,14 @@
 				}
 			],
 			"application": [
+				{
+					"endpoint": "application.deployNginxQuickstart",
+					"group": "application",
+					"action": "deploy-nginx-quickstart",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
 				{
 					"endpoint": "application.dropDeployment",
 					"group": "application",
@@ -1750,22 +2146,6 @@
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
-				},
-				{
-					"endpoint": "compose.start",
-					"group": "compose",
-					"action": "start",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "compose.stop",
-					"group": "compose",
-					"action": "stop",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
 				}
 			],
 			"deployment": [
@@ -1820,7 +2200,73 @@
 					"risk": "side-effect"
 				}
 			],
+			"dns-provider": [
+				{
+					"endpoint": "dnsProvider.create",
+					"group": "dns-provider",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "dnsProvider.createRecord",
+					"group": "dns-provider",
+					"action": "create-record",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "dnsProvider.deleteRecord",
+					"group": "dns-provider",
+					"action": "delete-record",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "dnsProvider.remove",
+					"group": "dns-provider",
+					"action": "remove",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "dnsProvider.testConnection",
+					"group": "dns-provider",
+					"action": "test-connection",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "dnsProvider.update",
+					"group": "dns-provider",
+					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "dnsProvider.updateRecord",
+					"group": "dns-provider",
+					"action": "update-record",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
 			"docker": [
+				{
+					"endpoint": "docker.deleteContainerFile",
+					"group": "docker",
+					"action": "delete-container-file",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
 				{
 					"endpoint": "docker.killContainer",
 					"group": "docker",
@@ -1828,6 +2274,13 @@
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
+				},
+				{
+					"endpoint": "docker.readContainerFile",
+					"group": "docker",
+					"action": "read-container-file",
+					"method": "get",
+					"reason": "get endpoint returns raw file contents that may hold secrets"
 				},
 				{
 					"endpoint": "docker.removeContainer",
@@ -1868,21 +2321,90 @@
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
+				},
+				{
+					"endpoint": "docker.writeContainerFile",
+					"group": "docker",
+					"action": "write-container-file",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
 				}
 			],
-			"domain": [
+			"docker-disk-usage": [
 				{
-					"endpoint": "domain.delete",
-					"group": "domain",
-					"action": "delete",
+					"endpoint": "dockerDiskUsage.pruneBuildCache",
+					"group": "docker-disk-usage",
+					"action": "prune-build-cache",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"docker-image": [
+				{
+					"endpoint": "dockerImage.removeImage",
+					"group": "docker-image",
+					"action": "remove-image",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"docker-volume": [
+				{
+					"endpoint": "dockerVolume.deleteVolumeFile",
+					"group": "docker-volume",
+					"action": "delete-volume-file",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
 				},
 				{
+					"endpoint": "dockerVolume.readVolumeFile",
+					"group": "docker-volume",
+					"action": "read-volume-file",
+					"method": "get",
+					"reason": "get endpoint returns raw file contents that may hold secrets"
+				},
+				{
+					"endpoint": "dockerVolume.removeVolume",
+					"group": "docker-volume",
+					"action": "remove-volume",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "dockerVolume.writeVolumeFile",
+					"group": "docker-volume",
+					"action": "write-volume-file",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"domain": [
+				{
 					"endpoint": "domain.generateDomain",
 					"group": "domain",
 					"action": "generate-domain",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "domain.toggleEnable",
+					"group": "domain",
+					"action": "toggle-enable",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "domain.update",
+					"group": "domain",
+					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2006,14 +2528,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "libsql.reload",
-					"group": "libsql",
-					"action": "reload",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "libsql.remove",
 					"group": "libsql",
 					"action": "remove",
@@ -2033,22 +2547,6 @@
 					"endpoint": "libsql.saveExternalPorts",
 					"group": "libsql",
 					"action": "save-external-ports",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.start",
-					"group": "libsql",
-					"action": "start",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "libsql.stop",
-					"group": "libsql",
-					"action": "stop",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2096,14 +2594,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "mariadb.reload",
-					"group": "mariadb",
-					"action": "reload",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "mariadb.remove",
 					"group": "mariadb",
 					"action": "remove",
@@ -2123,22 +2613,6 @@
 					"endpoint": "mariadb.saveExternalPort",
 					"group": "mariadb",
 					"action": "save-external-port",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.start",
-					"group": "mariadb",
-					"action": "start",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.stop",
-					"group": "mariadb",
-					"action": "stop",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2186,14 +2660,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "mongo.reload",
-					"group": "mongo",
-					"action": "reload",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "mongo.remove",
 					"group": "mongo",
 					"action": "remove",
@@ -2213,22 +2679,6 @@
 					"endpoint": "mongo.saveExternalPort",
 					"group": "mongo",
 					"action": "save-external-port",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.start",
-					"group": "mongo",
-					"action": "start",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.stop",
-					"group": "mongo",
-					"action": "stop",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2294,14 +2744,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "mysql.reload",
-					"group": "mysql",
-					"action": "reload",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "mysql.remove",
 					"group": "mysql",
 					"action": "remove",
@@ -2326,25 +2768,51 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "mysql.start",
-					"group": "mysql",
-					"action": "start",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.stop",
-					"group": "mysql",
-					"action": "stop",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "mysql.update",
 					"group": "mysql",
 					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"network": [
+				{
+					"endpoint": "network.create",
+					"group": "network",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "network.import",
+					"group": "network",
+					"action": "import",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "network.recreate",
+					"group": "network",
+					"action": "recreate",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "network.remove",
+					"group": "network",
+					"action": "remove",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "network.resync",
+					"group": "network",
+					"action": "resync",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2468,14 +2936,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "postgres.reload",
-					"group": "postgres",
-					"action": "reload",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "postgres.remove",
 					"group": "postgres",
 					"action": "remove",
@@ -2495,22 +2955,6 @@
 					"endpoint": "postgres.saveExternalPort",
 					"group": "postgres",
 					"action": "save-external-port",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "postgres.start",
-					"group": "postgres",
-					"action": "start",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "postgres.stop",
-					"group": "postgres",
-					"action": "stop",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2543,6 +2987,14 @@
 				}
 			],
 			"project": [
+				{
+					"endpoint": "project.completeOnboarding",
+					"group": "project",
+					"action": "complete-onboarding",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
 				{
 					"endpoint": "project.create",
 					"group": "project",
@@ -2636,14 +3088,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "redis.reload",
-					"group": "redis",
-					"action": "reload",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "redis.remove",
 					"group": "redis",
 					"action": "remove",
@@ -2663,22 +3107,6 @@
 					"endpoint": "redis.saveExternalPort",
 					"group": "redis",
 					"action": "save-external-port",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.start",
-					"group": "redis",
-					"action": "start",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.stop",
-					"group": "redis",
-					"action": "stop",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2890,14 +3318,6 @@
 					"risk": "side-effect"
 				},
 				{
-					"endpoint": "settings.reloadRedis",
-					"group": "settings",
-					"action": "reload-redis",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
 					"endpoint": "settings.reloadServer",
 					"group": "settings",
 					"action": "reload-server",
@@ -3013,6 +3433,60 @@
 					"endpoint": "settings.writeTraefikEnv",
 					"group": "settings",
 					"action": "write-traefik-env",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"stripe": [
+				{
+					"endpoint": "stripe.startFreeTrial",
+					"group": "stripe",
+					"action": "start-free-trial",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"user": [
+				{
+					"endpoint": "user.revokeSession",
+					"group": "user",
+					"action": "revoke-session",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				}
+			],
+			"vault-provider": [
+				{
+					"endpoint": "vaultProvider.create",
+					"group": "vault-provider",
+					"action": "create",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "vaultProvider.remove",
+					"group": "vault-provider",
+					"action": "remove",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "vaultProvider.testConnection",
+					"group": "vault-provider",
+					"action": "test-connection",
+					"method": "post",
+					"reason": "side-effect endpoint not allowlisted",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "vaultProvider.update",
+					"group": "vault-provider",
+					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -3238,24 +3712,6 @@
 					"risk": "side-effect"
 				}
 			],
-			"git-provider": [
-				{
-					"endpoint": "gitProvider.remove",
-					"group": "git-provider",
-					"action": "remove",
-					"method": "post",
-					"reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "gitProvider.toggleShare",
-					"group": "git-provider",
-					"action": "toggle-share",
-					"method": "post",
-					"reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
-					"risk": "side-effect"
-				}
-			],
 			"gitea": [
 				{
 					"endpoint": "gitea.create",
@@ -3321,6 +3777,24 @@
 					"endpoint": "gitlab.update",
 					"group": "gitlab",
 					"action": "update",
+					"method": "post",
+					"reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+					"risk": "side-effect"
+				}
+			],
+			"git-provider": [
+				{
+					"endpoint": "gitProvider.remove",
+					"group": "git-provider",
+					"action": "remove",
+					"method": "post",
+					"reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "gitProvider.toggleShare",
+					"group": "git-provider",
+					"action": "toggle-share",
 					"method": "post",
 					"reason": "git provider configuration mutation/test surface, not useful for normal deploy/debug agent work",
 					"risk": "side-effect"
@@ -3824,14 +4298,6 @@
 					"endpoint": "settings.cleanMonitoring",
 					"group": "settings",
 					"action": "clean-monitoring",
-					"method": "post",
-					"reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "settings.cleanRedis",
-					"group": "settings",
-					"action": "clean-redis",
 					"method": "post",
 					"reason": "cleanup helper surface, noisy and not useful for normal deploy/debug agent work",
 					"risk": "side-effect"
@@ -4469,12 +4935,11 @@
 					"reason": "log cleanup status is noisy and not useful for normal deploy/debug agent work",
 					"risk": "secret-leakage"
 				}
-			],
-			"unavailable": []
+			]
 		}
 	},
 	"openapi": {
-		"total": 546,
+		"total": 604,
 		"unavailable_count": 0,
 		"unavailable": {},
 		"logs": []

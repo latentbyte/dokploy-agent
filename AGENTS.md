@@ -24,7 +24,8 @@ Fork of `Dokploy/cli` (origin `hamidzr/dokploy-cli`). TypeScript ESM CLI on comm
 - `src/agent/safety-commands.ts`: `logs`, `state`, `agent-safety *` metadata commands
 - `scripts/build-agent-safe.ts`: copies `src` to `tmp/`, generates with `--agent-safe`, compiles into `dist/`. The committed `src/generated/commands.ts` is always the full build
 - `docs/agent-command-blacklist.json`: built-in hidden-command list, read by the generator (token reduction, not safety)
-- `docs/agent-safe-api-surface.{md,json}`, `docs/agentic-commands.md`: hand-maintained; update when policy or overlay commands change
+- `docs/agent-safe-api-surface.md`, `docs/agentic-commands.md`: hand-maintained; update when policy or overlay commands change
+- `docs/agent-safe-api-surface.json`: rewrite with `just api-surface` after policy changes or upstream merges (builds agent-safe with an empty config dir so personal blacklists stay out)
 
 ## Gotchas
 

@@ -33,6 +33,12 @@ fix: fmt
 test:
 	pnpm test
 
+# rewrite docs/agent-safe-api-surface.json from an agent-safe build
+# uses an empty config dir so personal blacklists do not leak into docs
+api-surface:
+	tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT; XDG_CONFIG_HOME="$tmp" DOKPLOY_AGENT_BLACKLIST_PATH= just build-agent-safe
+	pnpm exec tsx scripts/api-surface.ts
+
 # validate deployment log websocket behavior against live Dokploy
 live-deployment-logs:
 	bun --conditions=development scripts/live-deployment-logs.ts
