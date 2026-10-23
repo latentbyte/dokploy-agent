@@ -4,7 +4,6 @@ import {
 	apiGet,
 	applicationCandidateFromService,
 	expandedApplicationAllowlistReason,
-	hasExpandedApplicationAllowlist,
 	isApplicationExpandedAllowed,
 	readAgentDeployPolicyConfig,
 } from "../client.js";
@@ -64,6 +63,31 @@ export const AGENT_EXPANDED_APPLICATION_ENDPOINTS = [
 	"application.saveGitProvider",
 	"application.saveGitlabProvider",
 	"application.updateTraefikConfig",
+] as const;
+
+// expanded endpoints that deploy-project applications get too: each is a
+// narrower form of application.update, which those applications already have,
+// so agents can configure apps they create without allowlist edits. delete,
+// move, disconnect, env, token, and Traefik writes stay expanded-only
+export const AGENT_DEPLOY_PROJECT_APPLICATION_ENDPOINTS = [
+	"application.cancelDeployment",
+	"application.cleanQueues",
+	"application.killBuild",
+	"application.saveBitbucketProvider",
+	"application.saveBuildType",
+	"application.saveDockerProvider",
+	"application.saveGiteaProvider",
+	"application.saveGithubProvider",
+	"application.saveGitProvider",
+	"application.saveGitlabProvider",
+] as const satisfies readonly (typeof AGENT_EXPANDED_APPLICATION_ENDPOINTS)[number][];
+
+// git provider id fields and the Dokploy endpoint listing configured providers
+const AGENT_GIT_PROVIDER_LISTS = [
+	["githubId", "github.githubProviders"],
+	["gitlabId", "gitlab.gitlabProviders"],
+	["giteaId", "gitea.giteaProviders"],
+	["bitbucketId", "bitbucket.bitbucketProviders"],
 ] as const;
 
 export const AGENT_DATABASE_KINDS = [
@@ -135,6 +159,9 @@ const AGENT_SERVICE_LIFECYCLE_MUTATION_SET: ReadonlySet<string> = new Set(
 );
 const AGENT_EXPANDED_APPLICATION_MUTATIONS: ReadonlySet<string> = new Set(
 	AGENT_EXPANDED_APPLICATION_ENDPOINTS,
+);
+const AGENT_DEPLOY_PROJECT_APPLICATION_MUTATIONS: ReadonlySet<string> = new Set(
+	AGENT_DEPLOY_PROJECT_APPLICATION_ENDPOINTS,
 );
 const AGENT_DATABASE_KIND_SET: ReadonlySet<string> = new Set(
 	AGENT_DATABASE_KINDS,
@@ -330,7 +357,7 @@ async function assertExpandedApplicationAllowed(
 		return application;
 	}
 	throw agentPolicyBlocked(
-		`agent-safe deploy policy requires application in ${expandedApplicationAllowlistReason()} for this operation`,
+		`agent-safe deploy policy requires application in ${expandedApplicationAllowlistReason()} for this operation; deploy-project applications do not get it`,
 	);
 }
 
@@ -382,6 +409,56 @@ async function assertApplicationWritable(
 	const application = await apiGet("application.one", { applicationId });
 	assertApplicationRecordWritable(policy, applicationId, application);
 	return application;
+}
+
+// configure endpoints for expanded or deploy-project applications; the latter
+// keep application.update's protected fields so the shortcut grants nothing new
+async function assertDeployProjectApplicationOperation(
+	policy: AgentDeployPolicyConfig,
+	endpoint: string,
+	opts: Record<string, any>,
+) {
+	const applicationId = stringValue(opts.applicationId);
+	if (!applicationId) {
+		throw agentPolicyBlocked(`agent-safe ${endpoint} requires applicationId`);
+	}
+	const application = await apiGet("application.one", { applicationId });
+	assertApplicationRecordWritable(policy, applicationId, application);
+	if (
+		!isApplicationExpandedAllowed(
+			policy,
+			applicationCandidateFromService(application, applicationId),
+		)
+	) {
+		const protectedFields =
+			AGENT_PROTECTED_UPDATE_FIELDS.get("application.update");
+		const forbiddenFields = Object.keys(opts).filter((field) =>
+			protectedFields?.has(field),
+		);
+		if (forbiddenFields.length > 0) {
+			throw agentPolicyBlocked(
+				`agent-safe ${endpoint} rejects protected fields for deploy-project applications: ${forbiddenFields.join(", ")}`,
+			);
+		}
+	}
+	await assertAgentGitProvidersConfigured(opts);
+}
+
+// provider ids must name a git provider configured in Dokploy, so a write
+// cannot point a service at credentials the operator never set up
+async function assertAgentGitProvidersConfigured(opts: Record<string, any>) {
+	for (const [field, endpoint] of AGENT_GIT_PROVIDER_LISTS) {
+		const providerId = stringValue(opts[field]);
+		if (!providerId) continue;
+		const providers = await apiGet(endpoint, {});
+		const configured = Array.isArray(providers)
+			? providers.some((provider) => provider?.[field] === providerId)
+			: false;
+		if (configured) continue;
+		throw agentPolicyBlocked(
+			`agent-safe deploy policy rejects ${field} ${providerId}; not a git provider configured in Dokploy (see ${endpoint})`,
+		);
+	}
 }
 
 async function assertAgentServiceLifecycleAllowed(
@@ -669,6 +746,10 @@ export async function guardAgentSafePost(
 		await assertAgentServiceLifecycleAllowed(policy, endpoint, opts);
 		return;
 	}
+	if (AGENT_DEPLOY_PROJECT_APPLICATION_MUTATIONS.has(endpoint)) {
+		await assertDeployProjectApplicationOperation(policy, endpoint, opts);
+		return;
+	}
 	if (AGENT_EXPANDED_APPLICATION_MUTATIONS.has(endpoint)) {
 		await assertExpandedApplicationAllowed(policy, opts.applicationId);
 		return;
@@ -715,6 +796,7 @@ export async function guardAgentSafePost(
 				opts.composeId,
 			);
 		}
+		await assertAgentGitProvidersConfigured(opts);
 		return;
 	}
 	if (AGENT_DEPLOY_DOMAIN_MUTATION_SET.has(endpoint)) {
@@ -732,16 +814,21 @@ export async function guardAgentSafePost(
 	);
 }
 
-async function resolveExpandedApplications(policy: AgentDeployPolicyConfig) {
-	if (!hasExpandedApplicationAllowlist(policy)) return [];
+type ResolvedApplication = Record<string, string | undefined>;
+
+// one project.all pass: expanded-allowlisted apps plus deploy-project apps,
+// which agents may create, configure, and deploy but not delete or move
+async function resolvePolicyApplications(policy: AgentDeployPolicyConfig) {
 	const data = await apiGet("project.all", {});
 	const projects = Array.isArray(data)
 		? data
 		: Array.isArray(data?.projects)
 			? data.projects
 			: [];
-	const matches: Array<Record<string, string | undefined>> = [];
-	const seen = new Set<string>();
+	const expandedApplications: ResolvedApplication[] = [];
+	const managedApplications: ResolvedApplication[] = [];
+	const seenExpanded = new Set<string>();
+	const seenManaged = new Set<string>();
 	for (const project of projects) {
 		const environments = Array.isArray(project?.environments)
 			? project.environments
@@ -763,7 +850,6 @@ async function resolveExpandedApplications(policy: AgentDeployPolicyConfig) {
 						stringValue(environment?.environmentId) ??
 						stringValue(application?.environmentId),
 				};
-				if (!isApplicationExpandedAllowed(policy, candidate)) continue;
 				const key =
 					applicationId ??
 					[
@@ -771,26 +857,55 @@ async function resolveExpandedApplications(policy: AgentDeployPolicyConfig) {
 						candidate.environmentName,
 						candidate.name,
 					].join("/");
-				if (seen.has(key)) continue;
-				seen.add(key);
-				matches.push({
+				const summary = {
 					name: candidate.name,
 					appName: candidate.appName,
 					applicationId: candidate.applicationId,
 					projectName: candidate.projectName,
 					environmentName: candidate.environmentName,
-				});
+				};
+				if (
+					!seenManaged.has(key) &&
+					policy.projects.some((deployProject) =>
+						candidateInDeployProject(deployProject, candidate),
+					)
+				) {
+					seenManaged.add(key);
+					managedApplications.push(summary);
+				}
+				if (
+					!seenExpanded.has(key) &&
+					isApplicationExpandedAllowed(policy, candidate)
+				) {
+					seenExpanded.add(key);
+					expandedApplications.push(summary);
+				}
 			}
 		}
 	}
-	return matches;
+	return { expandedApplications, managedApplications };
+}
+
+// same match as serviceMatchesAgentDeployProject, on a project.all entry
+function candidateInDeployProject(
+	project: AgentDeployProjectConfig,
+	candidate: {
+		projectId?: string;
+		projectName?: string;
+		environmentId?: string;
+	},
+) {
+	const projectMatches = project.projectId
+		? candidate.projectId === project.projectId
+		: candidate.projectName === project.projectName;
+	return candidate.environmentId === project.environmentId && projectMatches;
 }
 
 async function agentDeployPolicy() {
 	const policy = readAgentDeployPolicyConfig();
 	return {
 		...policy,
-		expandedApplications: await resolveExpandedApplications(policy),
+		...(await resolvePolicyApplications(policy)),
 		examples: [
 			"dokploy-agent compose create --name demo --composeType docker-compose --composeFile <compose.yaml>",
 			"dokploy-agent application create --name demo" +
@@ -801,8 +916,18 @@ async function agentDeployPolicy() {
 				(policy.domainNameSuffix ?? "") +
 				policy.domainSuffixes[0] +
 				" --https --certificateType letsencrypt --domainType compose",
+			"dokploy-agent application save-github-provider --applicationId <id from create> --githubId <id from github github-providers> --owner <owner> --repository <repo> --branch main",
 		],
 	};
+}
+
+function printResolvedApplications(applications: ResolvedApplication[]) {
+	if (applications.length === 0) console.log("- (none)");
+	for (const application of applications) {
+		console.log(
+			`- ${application.name} (${application.applicationId}) in ${application.projectName}/${application.environmentName}`,
+		);
+	}
 }
 
 export async function printAgentDeployPolicy(jsonOutput: boolean) {
@@ -861,19 +986,12 @@ export async function printAgentDeployPolicy(jsonOutput: boolean) {
 				policy.expandedApplicationNames.join(", "),
 		);
 	}
+	console.log(
+		"managed applications (deploy projects: create, configure, deploy; no delete/move):",
+	);
+	printResolvedApplications(policy.managedApplications);
 	console.log("resolved expanded applications:");
-	for (const application of policy.expandedApplications) {
-		console.log(
-			"- " +
-				application.name +
-				" (" +
-				application.applicationId +
-				") in " +
-				application.projectName +
-				"/" +
-				application.environmentName,
-		);
-	}
+	printResolvedApplications(policy.expandedApplications);
 	console.log("examples:");
 	for (const example of policy.examples) console.log(example);
 }

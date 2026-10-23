@@ -67,6 +67,7 @@ These commands are exposed only in agent-safe builds and are guarded at runtime:
 - `compose`: create, deploy, isolated-deployment, update, start, stop
 - `domain`: create, delete
 - `libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`: create, deploy, start, stop, reload
+- `application` configure operations (source providers, build type, cancel, kill build, clean queues) for deploy-project and expanded applications
 - `application` expanded operations for explicitly allowlisted application IDs
 - `mounts create` and `port create` for explicitly allowlisted applications
 - `volume-backups`: create, run-manually
@@ -80,6 +81,9 @@ Runtime policy:
 - updates, deploys, and domain creation first resolve the target service and require it to belong to one configured project/environment
 - database deploys resolve the database and enforce the same project and server policy
 - start, stop, and reload resolve the target service the same way; applications may also be expanded-allowlisted. Reload requires `appName` to equal the target's `appName`, so a permitted ID cannot restart a different container
+- applications inside a configured project/environment, including ones the agent just created, may also use `save-github-provider`, `save-gitlab-provider`, `save-gitea-provider`, `save-bitbucket-provider`, `save-git-provider`, `save-docker-provider`, `save-build-type`, `cancel-deployment`, `kill-build`, and `clean-queues` without allowlist entries. These are narrower forms of `application update`, which deploy-project applications already have, so the deploy project is the agent's sandbox. Deploy-project callers cannot pass `application update`'s protected fields (for example `save-docker-provider --password`)
+- provenance is location-based on purpose: a local "created by agent" file is writable by the agent and a name or description marker can be set through `update`, so neither can be trusted
+- `githubId`, `gitlabId`, `giteaId`, and `bitbucketId` on provider saves and on `application update`/`compose update` must name a provider listed by Dokploy (`<kind>.<kind>Providers`); owner and repository are not restricted, since custom git URLs and docker images already are not
 - `agentDeployPolicy.expandedProjects` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations for applications inside named projects
 - omit `applicationNames` on an expanded project to allow every application in that project; set `applicationNames` to restrict to matching Dokploy `name` or `appName` (case-insensitive) inside that project only
 - optional `projectId` matches first when present; optional `environmentNames` further restricts by environment name
@@ -89,10 +93,11 @@ Runtime policy:
 - expanded allowlist entries are explicit exceptions to configured project and server restrictions, so existing applications outside agent deployment projects can be managed
 - expanded rights apply to applications only; compose and database writes stay governed by `projects[]`
 - application reads and inventory are not limited to configured deployment projects; the project list controls baseline writes and new resource placement
-- `agent-safety deploy-policy --json` resolves expanded projects/ids/legacy names and returns matching applications in `expandedApplications`
+- `agent-safety deploy-policy --json` resolves expanded projects/ids/legacy names and returns matching applications in `expandedApplications`, plus every application in a configured project/environment in `managedApplications`
 - mount and port creation requires an expanded-allowlisted application; mounts for other service types stay blocked
 - volume backup create and run-manually resolve the parent service first; applications may be in a configured project or the expanded allowlist, while compose and database parents stay governed by `projects[]`
 - volume backup update and delete stay blocked
+- expanded-only operations (deploy-project applications do not get them): delete, move, disconnect git provider, save environment, refresh token, mark running, clear deployments, Traefik config, mounts, and ports
 - expanded operations include delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.apps.example.net` for `*.apps.example.net`
 - before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects

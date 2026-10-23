@@ -713,7 +713,7 @@ describe("generator", () => {
 					"node",
 					"cli",
 					"application",
-					"clean-queues",
+					"mark-running",
 					"--applicationId",
 					"app-blocked",
 				]),
@@ -728,11 +728,11 @@ describe("generator", () => {
 				"node",
 				"cli",
 				"application",
-				"clean-queues",
+				"mark-running",
 				"--applicationId",
 				"app-allowed",
 			]);
-			expect(postSpy).toHaveBeenCalledWith("application.cleanQueues", {
+			expect(postSpy).toHaveBeenCalledWith("application.markRunning", {
 				applicationId: "app-allowed",
 			});
 			expect(getSpy).toHaveBeenCalledWith("application.one", {
@@ -743,17 +743,222 @@ describe("generator", () => {
 				"node",
 				"cli",
 				"application",
-				"clean-queues",
+				"mark-running",
 				"--applicationId",
 				"app-catalog",
 			]);
-			expect(postSpy).toHaveBeenCalledWith("application.cleanQueues", {
+			expect(postSpy).toHaveBeenCalledWith("application.markRunning", {
 				applicationId: "app-catalog",
 			});
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
 	}, 15_000);
+
+	describe("deploy-project application configuration", () => {
+		const deployPolicy = {
+			projects: [
+				{
+					projectName: "agent_sandbox",
+					projectId: "proj-agent",
+					environmentName: "production",
+					environmentId: "env-agent",
+				},
+			],
+			servers: [],
+			allowAnyServer: true,
+			domainSuffixes: [".example.com"],
+			expandedProjects: [],
+			expandedApplicationIds: [],
+			expandedApplicationNames: [],
+		};
+		const records: Record<string, any> = {
+			"app-new": {
+				name: "sample-repo",
+				environmentId: "env-agent",
+				environment: {
+					name: "production",
+					project: { name: "agent_sandbox", projectId: "proj-agent" },
+				},
+			},
+			// same name and description an agent would set, other project
+			"app-other": {
+				name: "sample-repo",
+				description: "created by dokploy-agent",
+				environmentId: "env-other",
+				environment: {
+					name: "production",
+					project: { name: "storefront", projectId: "proj-other" },
+				},
+			},
+			// renamed project lookalike: deploy project name, other ids
+			"app-lookalike": {
+				name: "sample-repo",
+				environmentId: "env-lookalike",
+				environment: {
+					name: "production",
+					project: { name: "agent_sandbox", projectId: "proj-lookalike" },
+				},
+			},
+		};
+		const githubArgs = (applicationId: string, githubId = "gh-1") => [
+			"node",
+			"cli",
+			"application",
+			"save-github-provider",
+			"--applicationId",
+			applicationId,
+			"--githubId",
+			githubId,
+			"--owner",
+			"hamidzr",
+			"--repository",
+			"sample-repo",
+			"--branch",
+			"main",
+			"--buildPath",
+			"/",
+			"--triggerType",
+			"push",
+		];
+
+		async function setup() {
+			const loaded = await loadAgentSafeGeneratedCommands();
+			const program = new Command();
+			loaded.registerGeneratedCommands(program);
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue(
+				deployPolicy,
+			);
+			vi.spyOn(client, "apiGet").mockImplementation(async (endpoint, opts) => {
+				if (endpoint === "github.githubProviders")
+					return [{ githubId: "gh-1" }];
+				return records[opts?.applicationId as string];
+			});
+			const postSpy = vi
+				.spyOn(client, "apiPost")
+				.mockImplementation(async (endpoint) =>
+					endpoint === "application.create"
+						? { applicationId: "app-new", environmentId: "env-agent" }
+						: true,
+				);
+			return { program, postSpy, tempDir: loaded.tempDir };
+		}
+
+		it("lets agents configure applications they created", async () => {
+			const { program, postSpy, tempDir } = await setup();
+			try {
+				await program.parseAsync([
+					"node",
+					"cli",
+					"application",
+					"create",
+					"--name",
+					"sample-repo",
+				]);
+				expect(postSpy).toHaveBeenCalledWith(
+					"application.create",
+					expect.objectContaining({ environmentId: "env-agent" }),
+				);
+
+				await program.parseAsync(githubArgs("app-new"));
+				expect(postSpy).toHaveBeenCalledWith(
+					"application.saveGithubProvider",
+					expect.objectContaining({
+						applicationId: "app-new",
+						githubId: "gh-1",
+						owner: "hamidzr",
+						repository: "sample-repo",
+					}),
+				);
+
+				await program.parseAsync([
+					"node",
+					"cli",
+					"application",
+					"kill-build",
+					"--applicationId",
+					"app-new",
+				]);
+				expect(postSpy).toHaveBeenCalledWith("application.killBuild", {
+					applicationId: "app-new",
+				});
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("keeps destructive and protected operations expanded-only", async () => {
+			const { program, postSpy, tempDir } = await setup();
+			try {
+				for (const args of [
+					["delete", "--applicationId", "app-new"],
+					["move", "--applicationId", "app-new", "--targetEnvironmentId", "x"],
+					["disconnect-git-provider", "--applicationId", "app-new"],
+					[
+						"save-docker-provider",
+						"--applicationId",
+						"app-new",
+						"--dockerImage",
+						"nginx",
+						"--password",
+						"pw",
+					],
+				]) {
+					await expect(
+						program.parseAsync(["node", "cli", "application", ...args]),
+					).rejects.toMatchObject({
+						code: "AGENT_POLICY_BLOCKED",
+						exitCode: 2,
+					});
+				}
+				expect(postSpy).not.toHaveBeenCalled();
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("blocks apps outside deploy projects, lookalikes, and unknown providers", async () => {
+			const { program, postSpy, tempDir } = await setup();
+			try {
+				await expect(
+					program.parseAsync(githubArgs("app-other")),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining("rejects application app-other"),
+				});
+				await expect(
+					program.parseAsync(githubArgs("app-lookalike")),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining("rejects application app-lookalike"),
+				});
+				await expect(
+					program.parseAsync(githubArgs("app-new", "gh-unknown")),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining("githubId gh-unknown"),
+				});
+				await expect(
+					program.parseAsync([
+						"node",
+						"cli",
+						"application",
+						"update",
+						"--applicationId",
+						"app-new",
+						"--githubId",
+						"gh-unknown",
+					]),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining("githubId gh-unknown"),
+				});
+				expect(postSpy).not.toHaveBeenCalled();
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+	});
 
 	it("allows lifecycle operations on deploy-project services", async () => {
 		const { registerGeneratedCommands, tempDir } =

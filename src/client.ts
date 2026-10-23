@@ -524,16 +524,6 @@ export function isApplicationExpandedAllowed(
 	return legacyExpandedNameMatches(policy, application);
 }
 
-export function hasExpandedApplicationAllowlist(
-	policy: AgentDeployPolicyConfig,
-): boolean {
-	return (
-		policy.expandedApplicationIds.length > 0 ||
-		policy.expandedProjects.length > 0 ||
-		policy.expandedApplicationNames.length > 0
-	);
-}
-
 export function expandedApplicationAllowlistReason(): string {
 	return "expandedApplicationIds, expandedProjects, or expandedApplicationNames";
 }
