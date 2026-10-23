@@ -74,7 +74,7 @@ function printOutput(data: unknown, jsonOutput: boolean, logOutput: boolean, age
 function printBlockedCommand(endpoint: string, reason: string): never {
 	throw new CliError(
 		"AGENT_POLICY_BLOCKED",
-		`Blocked by agent-safe policy: ${endpoint}. ${reason} Ask the user for approval or use the full CLI outside agent-safe mode.`,
+		`Blocked by agent-safe policy: ${endpoint}. ${reason}. Ask the user for approval or use the full CLI outside agent-safe mode.`,
 		2,
 	);
 }
