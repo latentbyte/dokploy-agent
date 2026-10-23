@@ -96,7 +96,7 @@ Runtime policy:
 - expanded operations include delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.apps.example.net` for `*.apps.example.net`
 - before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects
-- domain delete resolves the domain's parent application or compose with the same write policy and requires the host to match the agent domain suffix policy, so custom domains on expanded applications stay untouched
+- domain delete mirrors create: the domain's parent application or compose must be in a configured project (expanded rights do not apply) and the host must match the agent domain suffix policy
 - domain update stays blocked, so agents cannot move existing domains
 - Dokploy's create operation remains the final uniqueness check if two clients race after the inventory check
 - server entries can set `domainSuffixes` to bind a deploy server to a narrower domain set

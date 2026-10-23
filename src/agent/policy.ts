@@ -550,8 +550,8 @@ async function assertAgentDomainInDeployProject(
 	);
 }
 
-// deletes are limited to writable services and to hosts the agent could have
-// created, so custom domains on expanded applications stay untouched
+// mirrors domain.create: parent must be in a deploy project (expanded rights do
+// not apply) and the host must be one the agent could have created
 async function assertAgentDomainDeletable(
 	policy: AgentDeployPolicyConfig,
 	domainId: string | undefined,
@@ -563,20 +563,18 @@ async function assertAgentDomainDeletable(
 	const domain = await apiGet("domain.one", { domainId });
 	const applicationId = stringValue(domain?.applicationId);
 	const composeId = stringValue(domain?.composeId);
-	let service: any;
-	if (applicationId) {
-		service = await assertApplicationWritable(policy, applicationId);
-	} else if (composeId) {
-		service = await assertAgentServiceInDeployProject(
-			policy,
-			"compose",
-			composeId,
-		);
-	} else {
+	if (!applicationId && !composeId) {
 		throw agentPolicyBlocked(
 			`agent-safe ${AGENT_DOMAIN_DELETE} allows only application or compose domains`,
 		);
 	}
+	const service = applicationId
+		? await assertAgentServiceInDeployProject(
+				policy,
+				"application",
+				applicationId,
+			)
+		: await assertAgentServiceInDeployProject(policy, "compose", composeId);
 	const host = stringValue(domain?.host);
 	if (!host)
 		throw agentPolicyBlocked(

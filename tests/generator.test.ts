@@ -1161,7 +1161,7 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
-	it("deletes only agent-pattern domains on writable services", async () => {
+	it("deletes only agent-pattern domains on deploy-project services", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
 		try {
@@ -1182,7 +1182,11 @@ describe("generator", () => {
 			});
 			const domains: Record<string, Record<string, string>> = {
 				"dom-agent": { applicationId: "app-agent", host: "demo.example.com" },
-				"dom-custom": { applicationId: "app-expanded", host: "my-app.com" },
+				"dom-custom": { applicationId: "app-agent", host: "my-app.com" },
+				"dom-expanded": {
+					applicationId: "app-expanded",
+					host: "my-app.example.com",
+				},
 				"dom-other": { composeId: "compose-other", host: "x.example.com" },
 			};
 			vi.spyOn(client, "apiGet").mockImplementation(async (endpoint, opts) => {
@@ -1217,6 +1221,10 @@ describe("generator", () => {
 			await expect(run("dom-custom")).rejects.toMatchObject({
 				code: "AGENT_POLICY_BLOCKED",
 				message: expect.stringContaining("rejects host my-app.com"),
+			});
+			await expect(run("dom-expanded")).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("rejects application app-expanded"),
 			});
 			await expect(run("dom-other")).rejects.toMatchObject({
 				code: "AGENT_POLICY_BLOCKED",
