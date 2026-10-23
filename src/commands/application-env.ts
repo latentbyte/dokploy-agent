@@ -1,10 +1,6 @@
 import type { Command } from "commander";
-import {
-	apiGet,
-	apiPost,
-	isApplicationExpandedAllowed,
-	readAgentDeployPolicyConfig,
-} from "../client.js";
+import { assertApplicationRecordWritable } from "../agent/policy.js";
+import { apiGet, apiPost, readAgentDeployPolicyConfig } from "../client.js";
 import { maskSecret } from "../redact.js";
 
 interface ApplicationEnvCommandOptions {
@@ -38,10 +34,6 @@ interface ApplicationRecord {
 const ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
 const ENV_ASSIGNMENT_PATTERN =
 	/^([\t ]*(?:export[\t ]+)?)([A-Za-z_][A-Za-z0-9_.-]*)([\t ]*=[\t ]*)(.*)$/gm;
-
-function stringValue(value: unknown): string | undefined {
-	return typeof value === "string" && value.trim() ? value : undefined;
-}
 
 function nullableString(value: unknown, field: string): string | null {
 	if (value === null) return null;
@@ -160,67 +152,6 @@ export function setEnvironmentVariable(
 	return `${document.slice(0, index)}${assignment}${document.slice(index + match[0].length)}`;
 }
 
-function applicationProjectName(
-	application: ApplicationRecord,
-): string | undefined {
-	return (
-		stringValue(application.environment?.project?.name) ??
-		stringValue(application.project?.name)
-	);
-}
-
-function assertAgentApplicationAllowed(
-	applicationId: string,
-	application: ApplicationRecord,
-): void {
-	const policy = readAgentDeployPolicyConfig();
-	const projectName = applicationProjectName(application);
-	const projectId =
-		stringValue(application.environment?.project?.projectId) ??
-		stringValue(application.project?.projectId);
-	const allowedProject = policy.projects.some(
-		(project) =>
-			application.environmentId === project.environmentId &&
-			(project.projectId
-				? projectId === project.projectId
-				: projectName === project.projectName),
-	);
-	const allowedExpanded = isApplicationExpandedAllowed(policy, {
-		applicationId,
-		name: stringValue(application.name),
-		appName: stringValue(application.appName),
-		projectName,
-		projectId,
-		environmentName: stringValue(application.environment?.name),
-		environmentId: stringValue(application.environmentId),
-	});
-	if (!allowedProject && !allowedExpanded) {
-		throw new Error(
-			"agent-safe deploy policy rejects application environment mutation.",
-		);
-	}
-
-	if (policy.allowAnyServer) return;
-
-	const allowedServers = new Set(
-		policy.servers.map((server) => server.serverId),
-	);
-	const serverIds = [
-		stringValue(application.serverId),
-		stringValue(application.buildServerId),
-		stringValue(application.server?.serverId),
-		stringValue(application.buildServer?.serverId),
-	].filter((value): value is string => value !== undefined);
-	const rejectedServer = serverIds.find(
-		(serverId) => !allowedServers.has(serverId),
-	);
-	if (rejectedServer) {
-		throw new Error(
-			`agent-safe deploy policy rejects application server ${rejectedServer}.`,
-		);
-	}
-}
-
 async function readApplication(
 	applicationId: string,
 	agentSafe: boolean,
@@ -228,7 +159,13 @@ async function readApplication(
 	const application = (await apiGet("application.one", {
 		applicationId,
 	})) as ApplicationRecord;
-	if (agentSafe) assertAgentApplicationAllowed(applicationId, application);
+	if (agentSafe) {
+		assertApplicationRecordWritable(
+			readAgentDeployPolicyConfig(),
+			applicationId,
+			application,
+		);
+	}
 	return application;
 }
 

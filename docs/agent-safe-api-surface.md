@@ -55,6 +55,10 @@ All commands below are `apiGet` based and considered safe-by-default in agent-sa
 
 Note: `cluster add-manager` and `cluster add-worker` are exposed as `apiGet` in the generator, but names imply mutation and they are treated as side-effect and blocked.
 
+`docker read-container-file` and `docker-volume read-volume-file` are also blocked: they return raw file contents, such as mounted secrets or `/proc/*/environ`, that key-based redaction cannot vet. Directory listings stay available.
+
+Classification tables (`MUTATING_GET_ENDPOINTS`, `SECRET_READ_GET_ENDPOINTS`, `SAFE_POST_ENDPOINTS`, protected update fields) live in `src/agent/policy.ts` alongside the runtime guards.
+
 ## Side-effect limited allowlist
 
 These commands are exposed only in agent-safe builds and are guarded at runtime:
@@ -294,7 +298,10 @@ When forwarding output to the agent, apply a scrubber that masks secret-like val
 - fully mask values of 4 characters or fewer
 - hide existing env comment bodies
 - never emit full `DOKPLOY_API_KEY`, service tokens, credentials, or private keys
-- keep public resource IDs visible, for example `applicationId`, `serverId`, and inventory `id`
+- keep public resource IDs visible, for example `applicationId`, `serverId`, and inventory `id`, derived from the `<group>Id` params of `<group>.one` endpoints (`src/generated/resource-ids.ts`) plus a short manual list
+- mask well-known credential formats even without a sensitive key name (`sk-`, `sk_live_`, `ghp_`, `github_pat_`, `glpat-`, `xox*-`, `AKIA`, `AIza`, `npm_`, `whsec_`)
+- replace private key blocks with `[private key hidden]`
+- treat JSON text (`"password": "..."`) and NUL-separated environments as assignments
 
 Suggested sanitizer behavior:
 

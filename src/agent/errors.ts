@@ -12,6 +12,11 @@ export class CliError extends Error {
 	}
 }
 
+// policy denials share one code and exit status so agents can tell them apart
+export function agentPolicyBlocked(message: string): CliError {
+	return new CliError("AGENT_POLICY_BLOCKED", message, 2);
+}
+
 export function cliErrorCode(error: unknown): string {
 	if (error instanceof CliError) return error.code;
 	if (error instanceof CommanderError) return error.code;

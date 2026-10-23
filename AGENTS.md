@@ -17,8 +17,10 @@ Fork of `Dokploy/cli` (origin `hamidzr/dokploy-cli`). TypeScript ESM CLI on comm
 - `src/client.ts`: auth/config loading (env > `.env` > JSONC config at `DOKPLOY_CONFIG_PATH` or `$XDG_CONFIG_HOME/dokploy/config.json`), `apiGet`/`apiPost`, `agentDeployPolicy` parsing
 - `src/commands/*`: hand-written overlays (`service list`/`inventory`, `application logs`, `application env`, `compose effective|summary`, `deployment read-logs`, `auth`). Each takes `agentSafe` and must enforce policy itself
 - `src/redact.ts`: secret redaction applied to agent output
-- `src/agent/errors.ts`: `CliError`, JSON error shape, exit codes (policy block = exit 2, `AGENT_POLICY_BLOCKED`)
-- `scripts/generate.ts`: OpenAPI -> commands generator. Also owns all agent-safe classification (`SAFE_POST_ENDPOINTS`, `MUTATING_GET_ENDPOINTS`, `AGENT_PROTECTED_UPDATE_FIELDS`, `AGENT_EXPANDED_APPLICATION_ENDPOINTS`, `AGENT_STATE_ENDPOINTS`) and emits the runtime guard code (`guardAgentSafePost` etc.) as template strings
+- `src/agent/errors.ts`: `CliError`, JSON error shape, exit codes. Every policy denial goes through `agentPolicyBlocked` (exit 2, `AGENT_POLICY_BLOCKED`)
+- `scripts/generate.ts`: OpenAPI -> commands generator. Classifies endpoints using tables imported from `src/agent/policy.ts` and emits the safety report plus calls to `guardAgentSafePost`. Also writes `src/generated/resource-ids.ts` (public ID keys for redaction)
+- `src/agent/policy.ts`: agent-safe classification tables (`SAFE_POST_ENDPOINTS`, `MUTATING_GET_ENDPOINTS`, `SECRET_READ_GET_ENDPOINTS`, `AGENT_PROTECTED_UPDATE_FIELDS`, `AGENT_EXPANDED_APPLICATION_ENDPOINTS`) and runtime guards (`guardAgentSafePost`, `assertApplicationRecordWritable`). Overlays reuse these instead of re-implementing checks
+- `src/agent/safety-commands.ts`: `logs`, `state`, `agent-safety *` metadata commands
 - `scripts/build-agent-safe.ts`: copies `src` to `tmp/`, generates with `--agent-safe`, compiles into `dist/`. The committed `src/generated/commands.ts` is always the full build
 - `docs/agent-command-blacklist.json`: built-in hidden-command list, read by the generator (token reduction, not safety)
 - `docs/agent-safe-api-surface.{md,json}`, `docs/agentic-commands.md`: hand-maintained; update when policy or overlay commands change
@@ -26,8 +28,8 @@ Fork of `Dokploy/cli` (origin `hamidzr/dokploy-cli`). TypeScript ESM CLI on comm
 ## Gotchas
 
 - Never hand-edit `src/generated/commands.ts`; change `scripts/generate.ts` or `openapi.json` and regenerate. Biome ignores `src/generated/**`
-- Agent-safe policy bugs live in generator template strings, so `tsc` does not typecheck them until regenerated; cover with `tests/generator.test.ts` / `tests/client.test.ts`
-- GET is not automatically safe: some GETs mutate (`MUTATING_GET_ENDPOINTS`). New side-effect endpoints are denied in agent-safe unless explicitly allowlisted and guarded (project/environment, server, domain-suffix, app-name scoping via `agentDeployPolicy`)
+- Guard behavior is tested through generated commands in `tests/generator.test.ts`; keep generator template strings thin and put logic in `src/agent/`
+- GET is not automatically safe: some GETs mutate (`MUTATING_GET_ENDPOINTS`) or return raw file contents (`SECRET_READ_GET_ENDPOINTS`). Review new GETs after each upstream merge. New side-effect endpoints are denied in agent-safe unless explicitly allowlisted and guarded (project/environment, server, domain-suffix, app-name scoping via `agentDeployPolicy`)
 - Agent-safe builds must not leak secrets: route new output through `sanitizeForAgent`; env commands are blind (write without echoing values)
 - `agentDeployPolicy` lives in the same config file as the API token; keep docs/examples token-free. Field reference: `env.example` and `AgentDeployPolicyConfig` in `src/client.ts`
 - `chore: sync OpenAPI specification` commits come from upstream; upstream merges land as `chore: merge upstream <ver>`. Keep fork changes out of upstream-owned files where possible to ease merges

@@ -211,7 +211,11 @@ describe("application environment mutations", () => {
 				"--value",
 				"new-value",
 			]),
-		).rejects.toThrow("rejects application environment mutation");
+		).rejects.toMatchObject({
+			code: "AGENT_POLICY_BLOCKED",
+			exitCode: 2,
+			message: expect.stringContaining("rejects application app-1"),
+		});
 		expect(postSpy).not.toHaveBeenCalled();
 	});
 

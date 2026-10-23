@@ -127,3 +127,5 @@ When `--json` is present, CLI errors use:
   }
 }
 ```
+
+Every agent-safe policy denial, whether a command blocked outright or a write rejected by the deploy policy, uses code `AGENT_POLICY_BLOCKED` and exit status `2`. Other failures exit `1`. Treat exit `2` as "ask the user", not as a transient error to retry.

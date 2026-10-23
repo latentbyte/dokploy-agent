@@ -23,6 +23,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --ignore-scripts
       - run: pnpm run build:agent-safe
-      - run: node dist/index.js application delete --json 2> blocked.json; test $? -eq 2
+      - run: node dist/index.js project remove --json 2> blocked.json; test $? -eq 2
         shell: bash {0}
       - run: node -e 'const result = require("./blocked.json"); if (result.error?.code !== "AGENT_POLICY_BLOCKED") process.exit(1)'

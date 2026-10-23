@@ -19,6 +19,7 @@ import {
 	AGENT_PROTECTED_UPDATE_FIELDS,
 	MUTATING_GET_ENDPOINTS,
 	SAFE_POST_ENDPOINTS,
+	SECRET_READ_GET_ENDPOINTS,
 } from "../src/agent/policy.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -388,6 +389,12 @@ function classifyCommand(cmd: CommandInfo): {
 			return {
 				allowed: false,
 				reason: "get endpoint appears to mutate server state",
+			};
+		}
+		if (SECRET_READ_GET_ENDPOINTS.has(cmd.endpoint)) {
+			return {
+				allowed: false,
+				reason: "get endpoint returns raw file contents that may hold secrets",
 			};
 		}
 		return {

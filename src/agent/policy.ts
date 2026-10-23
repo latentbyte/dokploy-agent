@@ -8,6 +8,7 @@ import {
 	isApplicationExpandedAllowed,
 	readAgentDeployPolicyConfig,
 } from "../client.js";
+import { agentPolicyBlocked } from "./errors.js";
 
 // classification tables shared by scripts/generate.ts and the runtime guards
 
@@ -15,6 +16,12 @@ import {
 export const MUTATING_GET_ENDPOINTS: ReadonlySet<string> = new Set([
 	"cluster.addManager",
 	"cluster.addWorker",
+]);
+
+// GET endpoints returning raw file contents that key-based redaction cannot vet
+export const SECRET_READ_GET_ENDPOINTS: ReadonlySet<string> = new Set([
+	"docker.readContainerFile",
+	"dockerVolume.readVolumeFile",
 ]);
 
 // update fields agents must change through constrained commands instead
@@ -133,7 +140,7 @@ function ensureAgentDeployServer(
 		(candidate) => candidate.serverId === serverId,
 	);
 	if (server) return server;
-	throw new Error(
+	throw agentPolicyBlocked(
 		"agent-safe deploy policy rejects " +
 			label +
 			" " +
@@ -174,7 +181,7 @@ function ensureAgentDeployEnvironment(
 ) {
 	const project = allowedAgentDeployProject(policy, opts.environmentId);
 	if (project) return project;
-	throw new Error(
+	throw agentPolicyBlocked(
 		"agent-safe deploy policy rejects environmentId " +
 			opts.environmentId +
 			"; allowed projects: " +
@@ -249,15 +256,12 @@ function assertServiceServersAllowed(
 	]);
 }
 
-async function assertAgentServiceInDeployProject(
+function assertServiceRecordInDeployProject(
 	policy: AgentDeployPolicyConfig,
 	kind: AgentServiceKind,
-	id: string | undefined,
+	id: string,
+	service: any,
 ) {
-	if (!id) throw new Error(`agent-safe deploy policy requires ${kind} id`);
-	const endpoint = `${kind}.one`;
-	const key = `${kind}Id`;
-	const service = await apiGet(endpoint, { [key]: id });
 	if (
 		!policy.projects.some((project) =>
 			serviceMatchesAgentDeployProject(project, service),
@@ -269,20 +273,22 @@ async function assertAgentServiceInDeployProject(
 			"unknown";
 		const serviceEnvironment =
 			service?.environment?.name ?? service?.environmentId ?? "unknown";
-		throw new Error(
-			"agent-safe deploy policy rejects " +
-				kind +
-				" " +
-				id +
-				" in " +
-				serviceProject +
-				"/" +
-				serviceEnvironment +
-				"; allowed projects: " +
-				policy.projects.map(agentDeployProjectLabel).join(", "),
+		throw agentPolicyBlocked(
+			`agent-safe deploy policy rejects ${kind} ${id} in ${serviceProject}/${serviceEnvironment}; allowed projects: ${policy.projects.map(agentDeployProjectLabel).join(", ")}`,
 		);
 	}
 	assertServiceServersAllowed(policy, service);
+}
+
+async function assertAgentServiceInDeployProject(
+	policy: AgentDeployPolicyConfig,
+	kind: AgentServiceKind,
+	id: string | undefined,
+) {
+	if (!id)
+		throw agentPolicyBlocked(`agent-safe deploy policy requires ${kind} id`);
+	const service = await apiGet(`${kind}.one`, { [`${kind}Id`]: id });
+	assertServiceRecordInDeployProject(policy, kind, id, service);
 	return service;
 }
 
@@ -291,7 +297,7 @@ async function assertExpandedApplicationAllowed(
 	applicationId: string | undefined,
 ) {
 	if (!applicationId) {
-		throw new Error(
+		throw agentPolicyBlocked(
 			"agent-safe deploy policy requires applicationId for this operation",
 		);
 	}
@@ -305,10 +311,31 @@ async function assertExpandedApplicationAllowed(
 		assertServiceServersAllowed(policy, application);
 		return application;
 	}
-	throw new Error(
-		"agent-safe deploy policy requires application in " +
-			expandedApplicationAllowlistReason() +
-			" for this operation",
+	throw agentPolicyBlocked(
+		`agent-safe deploy policy requires application in ${expandedApplicationAllowlistReason()} for this operation`,
+	);
+}
+
+// applications are writable when expanded-allowlisted or inside a deploy project
+export function assertApplicationRecordWritable(
+	policy: AgentDeployPolicyConfig,
+	applicationId: string,
+	application: any,
+) {
+	if (
+		isApplicationExpandedAllowed(
+			policy,
+			applicationCandidateFromService(application, applicationId),
+		)
+	) {
+		assertServiceServersAllowed(policy, application);
+		return;
+	}
+	assertServiceRecordInDeployProject(
+		policy,
+		"application",
+		applicationId,
+		application,
 	);
 }
 
@@ -316,23 +343,12 @@ async function assertApplicationWritable(
 	policy: AgentDeployPolicyConfig,
 	applicationId: string | undefined,
 ) {
-	if (!applicationId)
-		throw new Error("agent-safe deploy policy requires applicationId");
-	try {
-		return await assertExpandedApplicationAllowed(policy, applicationId);
-	} catch (error) {
-		if (
-			!(error instanceof Error) ||
-			!error.message.includes(expandedApplicationAllowlistReason())
-		) {
-			throw error;
-		}
+	if (!applicationId) {
+		throw agentPolicyBlocked("agent-safe deploy policy requires applicationId");
 	}
-	return assertAgentServiceInDeployProject(
-		policy,
-		"application",
-		applicationId,
-	);
+	const application = await apiGet("application.one", { applicationId });
+	assertApplicationRecordWritable(policy, applicationId, application);
+	return application;
 }
 
 function databaseKindForEndpoint(endpoint: string) {
@@ -387,7 +403,7 @@ function assertAgentDomainHost(
 		? matchingAgentDomainSuffix(normalizedHost, allowedSuffixes)
 		: undefined;
 	if (!normalizedHost || !domainSuffix) {
-		throw new Error(
+		throw agentPolicyBlocked(
 			"agent-safe deploy policy rejects host " +
 				host +
 				"; allowed wildcard domains: *" +
@@ -397,7 +413,7 @@ function assertAgentDomainHost(
 	if (!policy.domainNameSuffix) return;
 	const domainName = normalizedHost.slice(0, -domainSuffix.length);
 	if (domainName.endsWith(policy.domainNameSuffix)) return;
-	throw new Error(
+	throw agentPolicyBlocked(
 		"agent-safe deploy policy rejects host " +
 			host +
 			"; domain name before " +
@@ -434,10 +450,10 @@ function collectDokployDomainHosts(
 async function assertAgentDomainHostUnused(host: string | undefined) {
 	const normalizedHost = normalizeAgentDomainHost(host);
 	if (!normalizedHost)
-		throw new Error("agent-safe domain.create requires a valid host");
+		throw agentPolicyBlocked("agent-safe domain.create requires a valid host");
 	const inventory = await apiGet("project.all", {});
 	if (collectDokployDomainHosts(inventory).has(normalizedHost)) {
-		throw new Error(
+		throw agentPolicyBlocked(
 			"agent-safe domain.create rejects host " +
 				normalizedHost +
 				"; domain is already in use in Dokploy",
@@ -460,7 +476,7 @@ async function assertAgentDomainInDeployProject(
 		return assertAgentServiceInDeployProject(policy, "compose", opts.composeId);
 	}
 	if (!opts.domainId)
-		throw new Error(
+		throw agentPolicyBlocked(
 			"agent-safe deploy policy requires applicationId, composeId, or domainId for domain writes",
 		);
 	const domain = await apiGet("domain.one", { domainId: opts.domainId });
@@ -478,7 +494,7 @@ async function assertAgentDomainInDeployProject(
 			domain.composeId,
 		);
 	}
-	throw new Error(
+	throw agentPolicyBlocked(
 		"agent-safe deploy policy could not resolve domain parent service",
 	);
 }
@@ -508,7 +524,9 @@ async function assertAgentVolumeBackupParentWritable(
 ) {
 	const parent = volumeBackupParentFromOpts(opts);
 	if (!parent?.id) {
-		throw new Error(`agent-safe ${endpoint} requires a parent service id`);
+		throw agentPolicyBlocked(
+			`agent-safe ${endpoint} requires a parent service id`,
+		);
 	}
 	const kind = parent.kind as AgentServiceKind;
 	if (kind === "application") {
@@ -523,7 +541,7 @@ async function assertAgentVolumeBackupWritable(
 	endpoint: string,
 ) {
 	if (!volumeBackupId)
-		throw new Error(`agent-safe ${endpoint} requires volumeBackupId`);
+		throw agentPolicyBlocked(`agent-safe ${endpoint} requires volumeBackupId`);
 	const backup = await apiGet("volumeBackups.one", { volumeBackupId });
 	return assertAgentVolumeBackupParentWritable(policy, backup ?? {}, endpoint);
 }
@@ -537,7 +555,7 @@ export async function guardAgentSafePost(
 		forbiddenUpdateFields?.has(field),
 	);
 	if (forbiddenFields.length > 0) {
-		throw new Error(
+		throw agentPolicyBlocked(
 			"agent-safe " +
 				endpoint +
 				" rejects protected fields: " +
@@ -569,7 +587,7 @@ export async function guardAgentSafePost(
 	}
 	if (endpoint === "mounts.create") {
 		if (opts.serviceType !== "application") {
-			throw new Error(
+			throw agentPolicyBlocked(
 				"agent-safe mounts.create allows only allowlisted applications",
 			);
 		}
@@ -617,7 +635,7 @@ export async function guardAgentSafePost(
 		await assertAgentDomainHostUnused(opts.host);
 		return;
 	}
-	throw new Error(
+	throw agentPolicyBlocked(
 		`agent-safe deploy policy does not allow write endpoint ${endpoint}`,
 	);
 }

@@ -452,7 +452,11 @@ describe("generator", () => {
 					"--applicationId",
 					"app-blocked",
 				]),
-			).rejects.toThrow("expandedProjects");
+			).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				exitCode: 2,
+				message: expect.stringContaining("expandedProjects"),
+			});
 			expect(postSpy).not.toHaveBeenCalled();
 
 			await program.parseAsync([
@@ -828,6 +832,21 @@ describe("generator", () => {
 				code: "AGENT_POLICY_BLOCKED",
 				exitCode: 2,
 			});
+
+			const getSpy = vi.spyOn(client, "apiGet");
+			for (const [group, action] of [
+				["docker", "read-container-file"],
+				["docker-volume", "read-volume-file"],
+			]) {
+				await expect(
+					program.parseAsync(["node", "cli", group, action, "--path", "/x"]),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					exitCode: 2,
+					message: expect.stringContaining("raw file contents"),
+				});
+			}
+			expect(getSpy).not.toHaveBeenCalled();
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
