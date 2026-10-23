@@ -19,8 +19,8 @@ describe("agent redaction", () => {
 		});
 
 		expect(output).toEqual({
-			apiKey: "abcd***",
-			nested: { password: "secr***" },
+			apiKey: "*** (10 chars)",
+			nested: { password: "secr*** (12 chars)" },
 		});
 	});
 
@@ -54,12 +54,21 @@ describe("agent redaction", () => {
 		expect(output).toEqual({
 			dnsProviderId: "dns-123456",
 			vaultProviderId: "vault-123456",
-			config: { accessKeyId: "AKIA***", clientId: "clie***" },
+			config: {
+				accessKeyId: "*** (11 chars)",
+				clientId: "clie*** (13 chars)",
+			},
 		});
 	});
 
-	it("fully masks very short secret values", () => {
-		expect(maskSecret("abc")).toBe("***");
+	it("reveals at most a third of a masked value", () => {
+		expect(maskSecret("abc")).toBe("*** (3 chars)");
+		expect(maskSecret("abcdefghijk")).toBe("*** (11 chars)");
+		expect(maskSecret("abcdefghijkl")).toBe("abcd*** (12 chars)");
+		expect(maskSecret("abcdefghijklmnopqrstuvw")).toBe("abcd*** (23 chars)");
+		expect(maskSecret("abcdefghijklmnopqrstuvwx")).toBe(
+			"abcd***uvwx (24 chars)",
+		);
 	});
 
 	it("masks every value and comment in environment documents", () => {
@@ -73,17 +82,17 @@ describe("agent redaction", () => {
 		expect(redactEnvDocument(input)).toBe(
 			[
 				"# [comment hidden]",
-				"FOO=valu***",
-				"export PORT=***",
-				"EMPTY=***",
+				"FOO=valu*** (15 chars)",
+				"export PORT=*** (4 chars)",
+				"EMPTY=*** (0 chars)",
 			].join("\n"),
 		);
 		expect(sanitizeForAgent({ env: input })).toEqual({
 			env: [
 				"# [comment hidden]",
-				"FOO=valu***",
-				"export PORT=***",
-				"EMPTY=***",
+				"FOO=valu*** (15 chars)",
+				"export PORT=*** (4 chars)",
+				"EMPTY=*** (0 chars)",
 			].join("\n"),
 		});
 	});
@@ -128,12 +137,12 @@ describe("agent redaction", () => {
 			].join("\n"),
 		);
 
-		expect(output).toContain("POSTGRES_PASSWORD=post***");
-		expect(output).toContain("POSTGRESPASSWORD=post***");
-		expect(output).toContain("API_URL=http***");
-		expect(output).toContain("ORGANIZATIONID: org-***");
-		expect(output).toContain("SERVER_ID: srv-***");
-		expect(output).toContain("DB_PWD=pwd-***");
+		expect(output).toContain("POSTGRES_PASSWORD=post*** (15 chars)");
+		expect(output).toContain("POSTGRESPASSWORD=post*** (19 chars)");
+		expect(output).toContain("API_URL=http***oken (25 chars)");
+		expect(output).toContain("ORGANIZATIONID: *** (10 chars)");
+		expect(output).toContain("SERVER_ID: *** (10 chars)");
+		expect(output).toContain("DB_PWD=*** (10 chars)");
 		expect(output).toContain("VALID=true");
 		expect(output).toContain("SAFE_HOST=example.com");
 		expect(output).not.toContain("postgres-secret");
@@ -147,12 +156,12 @@ describe("agent redaction", () => {
 				"\n",
 			),
 		);
-		expect(output).toContain("TOKEN=secr***");
-		expect(output).toContain("PASS=toke***");
+		expect(output).toContain("TOKEN=secr*** (12 chars)");
+		expect(output).toContain("PASS=*** (11 chars)");
 		expect(output).not.toContain("secret value");
 		expect(output).not.toContain("token value");
 		const escaped = redactString('TOKEN="abc\\"def"\n');
-		expect(escaped).toContain('TOKEN=abc"***');
+		expect(escaped).toContain("TOKEN=*** (7 chars)");
 	});
 
 	it("redacts numeric secrets from nested objects and arrays", () => {
@@ -166,10 +175,10 @@ describe("agent redaction", () => {
 
 		expect(output).toEqual({
 			deployment: {
-				password: "1234***",
-				token: "***",
+				password: "*** (6 chars)",
+				token: "*** (3 chars)",
 			},
-			services: [{ apiToken: "6543***" }, "TOKEN=shou***"],
+			services: [{ apiToken: "*** (6 chars)" }, "TOKEN=*** (10 chars)"],
 		});
 	});
 
@@ -178,8 +187,8 @@ describe("agent redaction", () => {
 			"DOKPLOY_API_KEY=abcd1234 Authorization: Bearer eyJabcdef.eyJpayload.sig",
 		);
 
-		expect(output).toContain("DOKPLOY_API_KEY=abcd***");
-		expect(output).toContain("Bearer eyJa***");
+		expect(output).toContain("DOKPLOY_API_KEY=*** (8 chars)");
+		expect(output).toContain("Bearer eyJa***.sig (24 chars)");
 		expect(output).not.toContain("abcd1234");
 	});
 
@@ -197,8 +206,8 @@ describe("agent redaction", () => {
 		const json = redactString(
 			'{"db_password": "hunter2hunter2", "config":{"apiToken":"cf-token-value"}, "name": "web"}',
 		);
-		expect(json).toContain('"db_password": hunt***');
-		expect(json).toContain('"apiToken":cf-t***');
+		expect(json).toContain('"db_password": hunt*** (14 chars)');
+		expect(json).toContain('"apiToken":cf-t*** (14 chars)');
 		expect(json).toContain('"name": "web"');
 		expect(json).not.toContain("hunter2hunter2");
 		expect(json).not.toContain("cf-token-value");
@@ -206,7 +215,9 @@ describe("agent redaction", () => {
 		const environ = redactString(
 			"PATH=/bin\0POSTGRES_PASSWORD=hunter2hunter2\0HOME=/root",
 		);
-		expect(environ).toBe("PATH=/bin\0POSTGRES_PASSWORD=hunt***\0HOME=/root");
+		expect(environ).toBe(
+			"PATH=/bin\0POSTGRES_PASSWORD=hunt*** (14 chars)\0HOME=/root",
+		);
 	});
 
 	it("redacts assignments nested in quoted values of benign keys", () => {
@@ -219,9 +230,11 @@ describe("agent redaction", () => {
 			].join("\n"),
 		);
 
-		expect(output).toContain('"msg":"starting with API_KEY=abc1*** now"');
-		expect(output).toContain('"args":"--password=hunt***"');
-		expect(output).toContain('NOTE="run with TOKEN=abcd***"');
+		expect(output).toContain(
+			'"msg":"starting with API_KEY=abc1*** (12 chars) now"',
+		);
+		expect(output).toContain('"args":"--password=hunt*** (13 chars)"');
+		expect(output).toContain('NOTE="run with TOKEN=abcd*** (12 chars)"');
 		expect(output).not.toContain("abc123def456");
 		expect(output).not.toContain("hunter2secret");
 		expect(output).not.toContain("abcdef123456");
@@ -239,7 +252,7 @@ describe("agent redaction", () => {
 
 		for (const token of tokens) {
 			expect(output).not.toContain(token);
-			expect(output).toContain(`${token.slice(0, 4)}***`);
+			expect(output).toContain(maskSecret(token));
 		}
 		expect(redactString("sk-learn and ghp_short stay")).toBe(
 			"sk-learn and ghp_short stay",
@@ -288,7 +301,7 @@ describe("agent redaction", () => {
 		);
 
 		expect(output).toEqual({
-			logs: "PASSWORD=long***",
+			logs: "PASSWORD=long*** (17 chars)",
 		});
 	});
 
@@ -299,7 +312,7 @@ describe("agent redaction", () => {
 		);
 
 		expect(output).toEqual({
-			logs: "[truncated to last 2 lines, omitted 1 lines]\ntwo\nPASSWORD=long***",
+			logs: "[truncated to last 2 lines, omitted 1 lines]\ntwo\nPASSWORD=long*** (17 chars)",
 		});
 	});
 });

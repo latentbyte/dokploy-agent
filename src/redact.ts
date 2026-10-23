@@ -131,10 +131,19 @@ const STRING_SECRET_PATTERNS: Array<
 	[TOKEN_PREFIX_PATTERN, (match) => maskSecret(match)],
 ];
 
+// reveal at most a third of a value: 4-char prefix from 12 chars, plus a 4-char
+// suffix from 24; length always shown so agents can tell values apart
+const MASK_EDGE_CHARS = 4;
+const MASK_PREFIX_MIN_LENGTH = 12;
+const MASK_SUFFIX_MIN_LENGTH = 24;
+
 export function maskSecret(value: unknown): string {
 	const text = String(value);
-	if (text.length <= 4) return "***";
-	return `${text.slice(0, 4)}***`;
+	const length = ` (${text.length} chars)`;
+	if (text.length < MASK_PREFIX_MIN_LENGTH) return `***${length}`;
+	const prefix = text.slice(0, MASK_EDGE_CHARS);
+	if (text.length < MASK_SUFFIX_MIN_LENGTH) return `${prefix}***${length}`;
+	return `${prefix}***${text.slice(-MASK_EDGE_CHARS)}${length}`;
 }
 
 export function redactEnvDocument(input: string): string {

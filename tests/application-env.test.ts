@@ -114,8 +114,8 @@ describe("application environment mutations", () => {
 
 		const output = logSpy.mock.calls.flat().join("\n");
 		expect(output).toContain('"name": "FOO"');
-		expect(output).toContain('"preview": "valu***"');
-		expect(output).toContain('"preview": "***"');
+		expect(output).toContain('"preview": "valu*** (15 chars)"');
+		expect(output).toContain('"preview": "*** (4 chars)"');
 		expect(output).not.toContain("valuable-secret");
 		expect(output).not.toContain("3000");
 	});

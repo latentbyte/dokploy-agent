@@ -294,8 +294,8 @@ Log exposure rules:
 When forwarding output to the agent, apply a scrubber that masks secret-like values.
 
 - mask every env assignment regardless of key name
-- expose at most the first 4 characters for values longer than 4 characters
-- fully mask values of 4 characters or fewer
+- reveal at most a third of a value: first 4 characters from 12 characters, plus the last 4 from 24 characters
+- always append the length, for example `abcd***wxyz (40 chars)`; values under 12 characters show only `*** (N chars)`
 - hide existing env comment bodies
 - never emit full `DOKPLOY_API_KEY`, service tokens, credentials, or private keys
 - keep public resource IDs visible, for example `applicationId`, `serverId`, and inventory `id`, derived from the `<group>Id` params of `<group>.one` endpoints (`src/generated/resource-ids.ts`) plus a short manual list
@@ -306,13 +306,14 @@ When forwarding output to the agent, apply a scrubber that masks secret-like val
 Suggested sanitizer behavior:
 
 - mask any object key matching `api.?key|token|secret|password|pass|credential|private|privateKey|authorization|webhook`
-- string form output: `value => value.slice(0, 4) + '***'`
+- string form output: see `maskSecret` in `src/redact.ts`
 - keep non-sensitive fields untouched
 
 Example:
 
-- `abcd1234...` becomes `abcd***`
-- `a1b2...` (len <= 4) stays as-is
+- `abcd1234efgh5678ijkl9012` becomes `abcd***9012 (24 chars)`
+- `abcd1234efgh` becomes `abcd*** (12 chars)`
+- `hunter2` becomes `*** (7 chars)`
 
 ## Update process
 
