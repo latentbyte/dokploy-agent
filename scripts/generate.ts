@@ -21,6 +21,7 @@ import {
 	SAFE_POST_ENDPOINTS,
 	SECRET_READ_GET_ENDPOINTS,
 } from "../src/agent/policy.js";
+import type { RecordLookup } from "../src/record-fill.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -128,6 +129,8 @@ interface CommandInfo {
 	method: "get" | "post";
 	description: string;
 	options: OptionInfo[];
+	/** fills omitted required fields from the current record */
+	recordLookup?: RecordLookup;
 }
 
 type OptionType = "string" | "number" | "boolean" | "array" | "object";
@@ -137,6 +140,7 @@ interface OptionInfo {
 	flag: string;
 	description: string;
 	required: boolean;
+	nullable?: boolean;
 	type: OptionType;
 	enumValues?: string[];
 }
@@ -257,6 +261,7 @@ function extractOptionsFromSchema(
 			),
 			description: desc,
 			required: required.has(name),
+			nullable: prop.anyOf?.some((candidate) => candidate.type === "null"),
 			type,
 			enumValues,
 		};
@@ -469,6 +474,35 @@ function buildSafetyReport(
 // Parse spec into CommandInfo[]
 // ---------------------------------------------------------------------------
 
+// the spec marks some update fields required yet nullable, i.e. "send the full
+// record"; those endpoints keep current values for omitted fields
+function findRecordLookup(
+	spec: OpenAPISpec,
+	group: string,
+	method: string,
+	bodyOptions: OptionInfo[],
+): RecordLookup | undefined {
+	const idKey = `${group}Id`;
+	const lookupParams = spec.paths[`/${group}.one`]?.get?.parameters ?? [];
+	if (method !== "post") return undefined;
+	if (!lookupParams.some((param) => param.name === idKey)) return undefined;
+	if (!bodyOptions.some((opt) => opt.name === idKey && opt.required)) {
+		return undefined;
+	}
+	const required = bodyOptions.filter(
+		(opt) => opt.required && opt.name !== idKey,
+	);
+	// a lone required field is the whole update; keeping it would be a no-op
+	if (required.length < 2 || !required.some((opt) => opt.nullable)) {
+		return undefined;
+	}
+	return {
+		endpoint: `${group}.one`,
+		idKey,
+		fillKeys: required.map((opt) => opt.name),
+	};
+}
+
 function parseSpec(spec: OpenAPISpec): ParsedSpec {
 	const commands: CommandInfo[] = [];
 	const unavailable: UnavailableInfo[] = [];
@@ -507,6 +541,7 @@ function parseSpec(spec: OpenAPISpec): ParsedSpec {
 				method,
 				description: op.summary ?? op.description ?? `${group} ${action}`,
 				options,
+				recordLookup: findRecordLookup(spec, group, method, bodyOptions),
 			});
 		}
 	}
@@ -534,9 +569,16 @@ function generateOptionLine(cmd: CommandInfo, opt: OptionInfo): string {
 		opt.name === "environmentId"
 			? `${opt.description}; optional in agent-safe builds, forced to configured agentDeployPolicy project`
 			: opt.description;
-	const escaped = escapeSingleQuoted(policyDesc);
+	const fillsFromRecord =
+		cmd.recordLookup?.fillKeys.includes(opt.name) ?? false;
+	const escaped = escapeSingleQuoted(
+		fillsFromRecord
+			? `${policyDesc}; defaults to the current value`
+			: policyDesc,
+	);
 	const required =
 		opt.required &&
+		!fillsFromRecord &&
 		!(
 			isAgentSafeBuild &&
 			(cmd.endpoint === "application.create" ||
@@ -595,6 +637,9 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 		isAgentSafeBuild && cmd.method === "post"
 			? `\n\t\t\tawait guardAgentSafePost("${cmd.endpoint}", opts);`
 			: "";
+	const recordFill = cmd.recordLookup
+		? `\n\t\t\tawait fillFromCurrentRecord(${JSON.stringify(cmd.recordLookup)}, opts);`
+		: "";
 	const apiCall =
 		cmd.method === "post"
 			? `await apiPost("${cmd.endpoint}", opts)`
@@ -618,7 +663,7 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 ${logOptionsLine}
-${coercions}${agentPostGuard}
+${coercions}${agentPostGuard}${recordFill}
 			const data = ${apiCall};
 			printOutput(data, jsonOutput, ${logFlag}${logOptionsArg});
 		});`;
@@ -729,6 +774,7 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import { CliError } from "${relativeImport("agent", "errors.js")}";
 import { apiGet, apiPost } from "${relativeImport("client.js")}";
+import { fillFromCurrentRecord } from "${relativeImport("record-fill.js")}";
 import { sanitizeForAgent } from "${relativeImport("redact.js")}";
 ${agentImports}
 export const AGENT_SAFE_BUILD = ${isAgentSafeBuild ? "true" : "false"};

@@ -17,6 +17,7 @@ Fork of `Dokploy/cli` (origin `hamidzr/dokploy-cli`). TypeScript ESM CLI on comm
 - `src/client.ts`: auth/config loading (env > `.env` > JSONC config at `DOKPLOY_CONFIG_PATH` or `$XDG_CONFIG_HOME/dokploy/config.json`), `apiGet`/`apiPost`, `agentDeployPolicy` parsing
 - `src/commands/*`: hand-written overlays (`service list`/`inventory`, `application logs`, `application env`, `compose effective|summary`, `deployment read-logs`, `auth`). Each takes `agentSafe` and must enforce policy itself
 - `src/redact.ts`: secret redaction applied to agent output
+- `src/record-fill.ts`: fills omitted required fields from `<group>.one` for full-record update endpoints (`save-build-type`, `save-*-provider`, ...); the generator picks the endpoints via `findRecordLookup`
 - `src/agent/errors.ts`: `CliError`, JSON error shape, exit codes. Every policy denial goes through `agentPolicyBlocked` (exit 2, `AGENT_POLICY_BLOCKED`)
 - `scripts/generate.ts`: OpenAPI -> commands generator. Classifies endpoints using tables imported from `src/agent/policy.ts` and emits the safety report plus calls to `guardAgentSafePost`. Also writes `src/generated/resource-ids.ts` (public ID keys for redaction)
 - `src/agent/policy.ts`: agent-safe classification tables (`SAFE_POST_ENDPOINTS`, `MUTATING_GET_ENDPOINTS`, `SECRET_READ_GET_ENDPOINTS`, `AGENT_PROTECTED_UPDATE_FIELDS`, `AGENT_EXPANDED_APPLICATION_ENDPOINTS`) and runtime guards (`guardAgentSafePost`, `assertApplicationRecordWritable`). Overlays reuse these instead of re-implementing checks

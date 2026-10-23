@@ -5,6 +5,7 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import { CliError } from "../agent/errors.js";
 import { apiGet, apiPost } from "../client.js";
+import { fillFromCurrentRecord } from "../record-fill.js";
 import { sanitizeForAgent } from "../redact.js";
 
 export const AGENT_SAFE_BUILD = false;
@@ -570,13 +571,13 @@ export function registerGeneratedCommands(program: Command) {
 	g_application
 		.command('save-bitbucket-provider')
 		.description('application saveBitbucketProvider')
-		.requiredOption('--bitbucketBuildPath <value>', 'bitbucketBuildPath')
-		.requiredOption('--bitbucketOwner <value>', 'bitbucketOwner')
-		.requiredOption('--bitbucketRepository <value>', 'bitbucketRepository')
-		.requiredOption('--bitbucketRepositorySlug <value>', 'bitbucketRepositorySlug')
-		.requiredOption('--bitbucketId <value>', 'bitbucketId')
+		.option('--bitbucketBuildPath <value>', 'bitbucketBuildPath; defaults to the current value')
+		.option('--bitbucketOwner <value>', 'bitbucketOwner; defaults to the current value')
+		.option('--bitbucketRepository <value>', 'bitbucketRepository; defaults to the current value')
+		.option('--bitbucketRepositorySlug <value>', 'bitbucketRepositorySlug; defaults to the current value')
+		.option('--bitbucketId <value>', 'bitbucketId; defaults to the current value')
 		.requiredOption('--applicationId <value>', 'applicationId')
-		.requiredOption('--bitbucketBranch <value>', 'bitbucketBranch')
+		.option('--bitbucketBranch <value>', 'bitbucketBranch; defaults to the current value')
 		.option('--enableSubmodules', 'enableSubmodules')
 		.option('--watchPaths <value>', 'watchPaths')
 		.option('--json', 'Output raw JSON')
@@ -585,6 +586,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["bitbucketBuildPath","bitbucketOwner","bitbucketRepository","bitbucketRepositorySlug","bitbucketId","bitbucketBranch"]}, opts);
 			const data = await apiPost("application.saveBitbucketProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -593,12 +595,12 @@ export function registerGeneratedCommands(program: Command) {
 		.command('save-build-type')
 		.description('application saveBuildType')
 		.requiredOption('--applicationId <value>', 'applicationId')
-		.requiredOption('--buildType <value>', 'buildType (dockerfile, heroku_buildpacks, paketo_buildpacks, nixpacks, static, railpack)')
-		.requiredOption('--dockerfile <value>', 'dockerfile')
-		.requiredOption('--dockerContextPath <value>', 'dockerContextPath')
-		.requiredOption('--dockerBuildStage <value>', 'dockerBuildStage')
-		.requiredOption('--herokuVersion <value>', 'herokuVersion')
-		.requiredOption('--railpackVersion <value>', 'railpackVersion')
+		.option('--buildType <value>', 'buildType (dockerfile, heroku_buildpacks, paketo_buildpacks, nixpacks, static, railpack); defaults to the current value')
+		.option('--dockerfile <value>', 'dockerfile; defaults to the current value')
+		.option('--dockerContextPath <value>', 'dockerContextPath; defaults to the current value')
+		.option('--dockerBuildStage <value>', 'dockerBuildStage; defaults to the current value')
+		.option('--herokuVersion <value>', 'herokuVersion; defaults to the current value')
+		.option('--railpackVersion <value>', 'railpackVersion; defaults to the current value')
 		.option('--publishDirectory <value>', 'publishDirectory')
 		.option('--isStaticSpa', 'isStaticSpa')
 		.option('--json', 'Output raw JSON')
@@ -606,6 +608,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = opts["isStaticSpa"] === true || opts["isStaticSpa"] === "true";
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["buildType","dockerfile","dockerContextPath","dockerBuildStage","herokuVersion","railpackVersion"]}, opts);
 			const data = await apiPost("application.saveBuildType", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -613,16 +616,17 @@ export function registerGeneratedCommands(program: Command) {
 	g_application
 		.command('save-docker-provider')
 		.description('application saveDockerProvider')
-		.requiredOption('--dockerImage <value>', 'dockerImage')
+		.option('--dockerImage <value>', 'dockerImage; defaults to the current value')
 		.requiredOption('--applicationId <value>', 'applicationId')
-		.requiredOption('--username <value>', 'username')
-		.requiredOption('--password <value>', 'password')
-		.requiredOption('--registryUrl <value>', 'registryUrl')
+		.option('--username <value>', 'username; defaults to the current value')
+		.option('--password <value>', 'password; defaults to the current value')
+		.option('--registryUrl <value>', 'registryUrl; defaults to the current value')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["dockerImage","username","password","registryUrl"]}, opts);
 			const data = await apiPost("application.saveDockerProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -631,15 +635,16 @@ export function registerGeneratedCommands(program: Command) {
 		.command('save-environment')
 		.description('application saveEnvironment')
 		.requiredOption('--applicationId <value>', 'applicationId')
-		.requiredOption('--env <value>', 'env')
-		.requiredOption('--buildArgs <value>', 'buildArgs')
-		.requiredOption('--buildSecrets <value>', 'buildSecrets')
-		.requiredOption('--createEnvFile', 'createEnvFile')
+		.option('--env <value>', 'env; defaults to the current value')
+		.option('--buildArgs <value>', 'buildArgs; defaults to the current value')
+		.option('--buildSecrets <value>', 'buildSecrets; defaults to the current value')
+		.option('--createEnvFile', 'createEnvFile; defaults to the current value')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["env","buildArgs","buildSecrets","createEnvFile"]}, opts);
 			const data = await apiPost("application.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -648,11 +653,11 @@ export function registerGeneratedCommands(program: Command) {
 		.command('save-gitea-provider')
 		.description('application saveGiteaProvider')
 		.requiredOption('--applicationId <value>', 'applicationId')
-		.requiredOption('--giteaBuildPath <value>', 'giteaBuildPath')
-		.requiredOption('--giteaOwner <value>', 'giteaOwner')
-		.requiredOption('--giteaRepository <value>', 'giteaRepository')
-		.requiredOption('--giteaId <value>', 'giteaId')
-		.requiredOption('--giteaBranch <value>', 'giteaBranch')
+		.option('--giteaBuildPath <value>', 'giteaBuildPath; defaults to the current value')
+		.option('--giteaOwner <value>', 'giteaOwner; defaults to the current value')
+		.option('--giteaRepository <value>', 'giteaRepository; defaults to the current value')
+		.option('--giteaId <value>', 'giteaId; defaults to the current value')
+		.option('--giteaBranch <value>', 'giteaBranch; defaults to the current value')
 		.option('--enableSubmodules', 'enableSubmodules')
 		.option('--watchPaths <value>', 'watchPaths')
 		.option('--json', 'Output raw JSON')
@@ -661,6 +666,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["giteaBuildPath","giteaOwner","giteaRepository","giteaId","giteaBranch"]}, opts);
 			const data = await apiPost("application.saveGiteaProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -669,12 +675,12 @@ export function registerGeneratedCommands(program: Command) {
 		.command('save-github-provider')
 		.description('application saveGithubProvider')
 		.requiredOption('--applicationId <value>', 'applicationId')
-		.requiredOption('--repository <value>', 'repository')
-		.requiredOption('--owner <value>', 'owner')
-		.requiredOption('--buildPath <value>', 'buildPath')
-		.requiredOption('--githubId <value>', 'githubId')
-		.requiredOption('--branch <value>', 'branch')
-		.requiredOption('--triggerType <value>', 'triggerType (push, tag)')
+		.option('--repository <value>', 'repository; defaults to the current value')
+		.option('--owner <value>', 'owner; defaults to the current value')
+		.option('--buildPath <value>', 'buildPath; defaults to the current value')
+		.option('--githubId <value>', 'githubId; defaults to the current value')
+		.option('--branch <value>', 'branch; defaults to the current value')
+		.option('--triggerType <value>', 'triggerType (push, tag); defaults to the current value')
 		.option('--enableSubmodules', 'enableSubmodules')
 		.option('--watchPaths <value>', 'watchPaths')
 		.option('--json', 'Output raw JSON')
@@ -683,6 +689,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["repository","owner","buildPath","githubId","branch","triggerType"]}, opts);
 			const data = await apiPost("application.saveGithubProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -691,13 +698,13 @@ export function registerGeneratedCommands(program: Command) {
 		.command('save-gitlab-provider')
 		.description('application saveGitlabProvider')
 		.requiredOption('--applicationId <value>', 'applicationId')
-		.requiredOption('--gitlabBuildPath <value>', 'gitlabBuildPath')
-		.requiredOption('--gitlabOwner <value>', 'gitlabOwner')
-		.requiredOption('--gitlabRepository <value>', 'gitlabRepository')
-		.requiredOption('--gitlabId <value>', 'gitlabId')
-		.requiredOption('--gitlabProjectId <value>', 'gitlabProjectId')
-		.requiredOption('--gitlabPathNamespace <value>', 'gitlabPathNamespace')
-		.requiredOption('--gitlabBranch <value>', 'gitlabBranch')
+		.option('--gitlabBuildPath <value>', 'gitlabBuildPath; defaults to the current value')
+		.option('--gitlabOwner <value>', 'gitlabOwner; defaults to the current value')
+		.option('--gitlabRepository <value>', 'gitlabRepository; defaults to the current value')
+		.option('--gitlabId <value>', 'gitlabId; defaults to the current value')
+		.option('--gitlabProjectId <value>', 'gitlabProjectId; defaults to the current value')
+		.option('--gitlabPathNamespace <value>', 'gitlabPathNamespace; defaults to the current value')
+		.option('--gitlabBranch <value>', 'gitlabBranch; defaults to the current value')
 		.option('--enableSubmodules', 'enableSubmodules')
 		.option('--watchPaths <value>', 'watchPaths')
 		.option('--json', 'Output raw JSON')
@@ -707,6 +714,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["gitlabBuildPath","gitlabOwner","gitlabRepository","gitlabId","gitlabProjectId","gitlabPathNamespace","gitlabBranch"]}, opts);
 			const data = await apiPost("application.saveGitlabProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -715,11 +723,11 @@ export function registerGeneratedCommands(program: Command) {
 		.command('save-git-provider')
 		.description('application saveGitProvider')
 		.requiredOption('--applicationId <value>', 'applicationId')
-		.requiredOption('--customGitBuildPath <value>', 'customGitBuildPath')
-		.requiredOption('--customGitUrl <value>', 'customGitUrl')
-		.requiredOption('--watchPaths <value>', 'watchPaths')
+		.option('--customGitBuildPath <value>', 'customGitBuildPath; defaults to the current value')
+		.option('--customGitUrl <value>', 'customGitUrl; defaults to the current value')
+		.option('--watchPaths <value>', 'watchPaths; defaults to the current value')
 		.option('--enableSubmodules', 'enableSubmodules')
-		.requiredOption('--customGitBranch <value>', 'customGitBranch')
+		.option('--customGitBranch <value>', 'customGitBranch; defaults to the current value')
 		.option('--customGitSSHKeyId <value>', 'customGitSSHKeyId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
@@ -727,6 +735,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["customGitBuildPath","customGitUrl","watchPaths","customGitBranch"]}, opts);
 			const data = await apiPost("application.saveGitProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1127,16 +1136,16 @@ export function registerGeneratedCommands(program: Command) {
 	g_backup
 		.command('update')
 		.description('backup update')
-		.requiredOption('--schedule <value>', 'schedule')
-		.requiredOption('--enabled', 'enabled')
-		.requiredOption('--prefix <value>', 'prefix')
+		.option('--schedule <value>', 'schedule; defaults to the current value')
+		.option('--enabled', 'enabled; defaults to the current value')
+		.option('--prefix <value>', 'prefix; defaults to the current value')
 		.requiredOption('--backupId <value>', 'backupId')
-		.requiredOption('--destinationId <value>', 'destinationId')
-		.requiredOption('--database <value>', 'database')
-		.requiredOption('--keepLatestCount <value>', 'keepLatestCount')
-		.requiredOption('--serviceName <value>', 'serviceName')
-		.requiredOption('--metadata <value>', 'metadata')
-		.requiredOption('--databaseType <value>', 'databaseType (postgres, mariadb, mysql, mongo, web-server, libsql)')
+		.option('--destinationId <value>', 'destinationId; defaults to the current value')
+		.option('--database <value>', 'database; defaults to the current value')
+		.option('--keepLatestCount <value>', 'keepLatestCount; defaults to the current value')
+		.option('--serviceName <value>', 'serviceName; defaults to the current value')
+		.option('--metadata <value>', 'metadata; defaults to the current value')
+		.option('--databaseType <value>', 'databaseType (postgres, mariadb, mysql, mongo, web-server, libsql); defaults to the current value')
 		.option('--includeEncryptionKey', 'includeEncryptionKey')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
@@ -1145,6 +1154,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			if (opts["includeEncryptionKey"] != null) opts["includeEncryptionKey"] = opts["includeEncryptionKey"] === true || opts["includeEncryptionKey"] === "true";
+			await fillFromCurrentRecord({"endpoint":"backup.one","idKey":"backupId","fillKeys":["schedule","enabled","prefix","destinationId","database","keepLatestCount","serviceName","metadata","databaseType"]}, opts);
 			const data = await apiPost("backup.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2167,21 +2177,22 @@ export function registerGeneratedCommands(program: Command) {
 	g_destination
 		.command('update')
 		.description('destination update')
-		.requiredOption('--name <value>', 'name')
-		.requiredOption('--accessKey <value>', 'accessKey')
-		.requiredOption('--bucket <value>', 'bucket')
-		.requiredOption('--region <value>', 'region')
-		.requiredOption('--endpoint <value>', 'endpoint')
-		.requiredOption('--secretAccessKey <value>', 'secretAccessKey')
+		.option('--name <value>', 'name; defaults to the current value')
+		.option('--accessKey <value>', 'accessKey; defaults to the current value')
+		.option('--bucket <value>', 'bucket; defaults to the current value')
+		.option('--region <value>', 'region; defaults to the current value')
+		.option('--endpoint <value>', 'endpoint; defaults to the current value')
+		.option('--secretAccessKey <value>', 'secretAccessKey; defaults to the current value')
 		.requiredOption('--destinationId <value>', 'destinationId')
-		.requiredOption('--provider <value>', 'provider')
-		.requiredOption('--additionalFlags <value>', 'additionalFlags')
+		.option('--provider <value>', 'provider; defaults to the current value')
+		.option('--additionalFlags <value>', 'additionalFlags; defaults to the current value')
 		.option('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["additionalFlags"] != null) opts["additionalFlags"] = parseJsonOption(opts["additionalFlags"], "additionalFlags", "array");
+			await fillFromCurrentRecord({"endpoint":"destination.one","idKey":"destinationId","fillKeys":["name","accessKey","bucket","region","endpoint","secretAccessKey","provider","additionalFlags"]}, opts);
 			const data = await apiPost("destination.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7918,14 +7929,14 @@ export function registerGeneratedCommands(program: Command) {
 	g_server
 		.command('update')
 		.description('server update')
-		.requiredOption('--name <value>', 'name')
-		.requiredOption('--description <value>', 'description')
+		.option('--name <value>', 'name; defaults to the current value')
+		.option('--description <value>', 'description; defaults to the current value')
 		.requiredOption('--serverId <value>', 'serverId')
-		.requiredOption('--ipAddress <value>', 'ipAddress')
-		.requiredOption('--port <value>', 'port')
-		.requiredOption('--username <value>', 'username')
-		.requiredOption('--sshKeyId <value>', 'sshKeyId')
-		.requiredOption('--serverType <value>', 'serverType (deploy, build)')
+		.option('--ipAddress <value>', 'ipAddress; defaults to the current value')
+		.option('--port <value>', 'port; defaults to the current value')
+		.option('--username <value>', 'username; defaults to the current value')
+		.option('--sshKeyId <value>', 'sshKeyId; defaults to the current value')
+		.option('--serverType <value>', 'serverType (deploy, build); defaults to the current value')
 		.option('--enableDockerCleanup', 'enableDockerCleanup')
 		.option('--command <value>', 'command')
 		.option('--json', 'Output raw JSON')
@@ -7934,6 +7945,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = opts["enableDockerCleanup"] === true || opts["enableDockerCleanup"] === "true";
+			await fillFromCurrentRecord({"endpoint":"server.one","idKey":"serverId","fillKeys":["name","description","ipAddress","port","username","sshKeyId","serverType"]}, opts);
 			const data = await apiPost("server.update", opts);
 			printOutput(data, jsonOutput, false);
 		});

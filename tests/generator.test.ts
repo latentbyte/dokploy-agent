@@ -350,6 +350,197 @@ describe("generator", () => {
 		expect(payload?.healthCheckSwarm).toBe(null);
 	});
 
+	it("keeps current values for omitted required-but-nullable fields", async () => {
+		const program = new Command();
+		const getSpy = vi.spyOn(client, "apiGet").mockResolvedValue({
+			applicationId: "app-1",
+			buildType: "nixpacks",
+			dockerfile: "Dockerfile",
+			dockerContextPath: ".",
+			dockerBuildStage: "",
+			herokuVersion: "24",
+			railpackVersion: null,
+		});
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+
+		await import("../src/generated/commands.js").then(
+			({ registerGeneratedCommands }) => {
+				registerGeneratedCommands(program);
+			},
+		);
+
+		await program.parseAsync([
+			"node",
+			"cli",
+			"application",
+			"save-build-type",
+			"--applicationId",
+			"app-1",
+			"--buildType",
+			"dockerfile",
+			"--dockerfile",
+			"Dockerfile.prod",
+		]);
+
+		expect(getSpy).toHaveBeenCalledWith("application.one", {
+			applicationId: "app-1",
+		});
+		expect(postSpy).toHaveBeenCalledWith("application.saveBuildType", {
+			applicationId: "app-1",
+			buildType: "dockerfile",
+			dockerfile: "Dockerfile.prod",
+			dockerContextPath: ".",
+			dockerBuildStage: "",
+			herokuVersion: "24",
+			railpackVersion: null,
+		});
+	});
+
+	it("skips the record lookup when every required field is passed", async () => {
+		const program = new Command();
+		const getSpy = vi.spyOn(client, "apiGet");
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+
+		await import("../src/generated/commands.js").then(
+			({ registerGeneratedCommands }) => {
+				registerGeneratedCommands(program);
+			},
+		);
+
+		await program.parseAsync([
+			"node",
+			"cli",
+			"application",
+			"save-docker-provider",
+			"--applicationId",
+			"app-1",
+			"--dockerImage",
+			"nginx:1",
+			"--username",
+			"u",
+			"--password",
+			"p",
+			"--registryUrl",
+			"r",
+		]);
+
+		expect(getSpy).not.toHaveBeenCalled();
+		expect(postSpy).toHaveBeenCalledTimes(1);
+	});
+
+	it("fails before posting when the record has no value to keep", async () => {
+		const program = new Command();
+		vi.spyOn(client, "apiGet").mockResolvedValue({ applicationId: "app-1" });
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+
+		await import("../src/generated/commands.js").then(
+			({ registerGeneratedCommands }) => {
+				registerGeneratedCommands(program);
+			},
+		);
+
+		await expect(
+			program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"save-build-type",
+				"--applicationId",
+				"app-1",
+				"--buildType",
+				"static",
+			]),
+		).rejects.toMatchObject({
+			code: "MISSING_OPTION",
+			message: expect.stringContaining("--dockerfile"),
+		});
+		expect(postSpy).not.toHaveBeenCalled();
+	});
+
+	it("keeps single-field updates required", async () => {
+		const program = new Command();
+		await import("../src/generated/commands.js").then(
+			({ registerGeneratedCommands }) => {
+				registerGeneratedCommands(program);
+			},
+		);
+		const compose = program.commands.find(
+			(command) => command.name() === "compose",
+		);
+		const saveEnvironment = compose?.commands.find(
+			(command) => command.name() === "save-environment",
+		);
+		const env = saveEnvironment?.options.find(
+			(option) => option.long === "--env",
+		);
+		expect(env?.mandatory).toBe(true);
+	});
+
+	it("checks agent policy before filling from the current record", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			registerGeneratedCommands(program);
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [],
+				servers: [{ serverId: "srv-allowed" }],
+				domainSuffixes: [],
+				expandedProjects: [{ projectName: "my-app" }],
+				expandedApplicationIds: [],
+				expandedApplicationNames: [],
+			});
+			const getSpy = vi
+				.spyOn(client, "apiGet")
+				.mockImplementation(async (_endpoint, opts) => ({
+					name: "api",
+					environment: {
+						name: "production",
+						project: {
+							name: opts?.applicationId === "app-allowed" ? "my-app" : "other",
+						},
+					},
+					serverId: "srv-allowed",
+					repository: "repo",
+					owner: "me",
+					buildPath: "/",
+					githubId: "gh-1",
+					branch: "main",
+					triggerType: "push",
+				}));
+			const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+			const args = (applicationId: string) => [
+				"node",
+				"cli",
+				"application",
+				"save-github-provider",
+				"--applicationId",
+				applicationId,
+				"--branch",
+				"release",
+			];
+
+			await expect(program.parseAsync(args("app-other"))).rejects.toMatchObject(
+				{ code: "AGENT_POLICY_BLOCKED", exitCode: 2 },
+			);
+			expect(getSpy).toHaveBeenCalledTimes(1);
+			expect(postSpy).not.toHaveBeenCalled();
+
+			await program.parseAsync(args("app-allowed"));
+			expect(postSpy).toHaveBeenCalledWith("application.saveGithubProvider", {
+				applicationId: "app-allowed",
+				repository: "repo",
+				owner: "me",
+				buildPath: "/",
+				githubId: "gh-1",
+				branch: "release",
+				triggerType: "push",
+			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
 	it("hides protected update fields from agent-safe commands", async () => {
 		const { AGENT_SAFE_BUILD, registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();

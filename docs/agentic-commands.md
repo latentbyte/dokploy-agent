@@ -114,6 +114,16 @@ Safety behavior:
 
 Dokploy exposes replacement-style environment writes. These commands perform read-modify-write internally and preserve `buildArgs`, `buildSecrets`, and `createEnvFile`. Concurrent panel edits can still race because Dokploy does not expose compare-and-swap for this operation.
 
+## Partial `save-*` updates
+
+Some Dokploy update endpoints require the full field set even though most fields accept `null`, for example `application save-build-type` (`--dockerfile`, `--herokuVersion`, `--railpackVersion`, ...) and the `application save-*-provider` commands. For these, the CLI makes the required fields optional: omitted ones are read from the current record (`<group>.one`) and sent unchanged, so pass only what changes:
+
+```bash
+dokploy-agent application save-build-type --applicationId ID --buildType dockerfile --dockerfile Dockerfile.prod --json
+```
+
+The generator detects these endpoints from the spec (a `<group>Id` update with a required nullable field and at least two required fields). Agent-safe policy checks run before the record is read. If the record has no value for an omitted field, the command fails with `MISSING_OPTION` before writing. Like env writes, this is read-modify-write without compare-and-swap.
+
 ## JSON errors
 
 When `--json` is present, CLI errors use:
