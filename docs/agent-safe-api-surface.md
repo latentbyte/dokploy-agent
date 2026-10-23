@@ -65,7 +65,7 @@ These commands are exposed only in agent-safe builds and are guarded at runtime:
 
 - `application`: create, deploy, redeploy, update, start, stop, reload
 - `compose`: create, deploy, isolated-deployment, update, start, stop
-- `domain`: create
+- `domain`: create, delete
 - `libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`: create, deploy, start, stop, reload
 - `application` expanded operations for explicitly allowlisted application IDs
 - `mounts create` and `port create` for explicitly allowlisted applications
@@ -96,7 +96,8 @@ Runtime policy:
 - expanded operations include delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.apps.example.net` for `*.apps.example.net`
 - before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects
-- domain update and delete stay blocked, so agents cannot move or remove existing domains
+- domain delete resolves the domain's parent application or compose with the same write policy and requires the host to match the agent domain suffix policy, so custom domains on expanded applications stay untouched
+- domain update stays blocked, so agents cannot move existing domains
 - Dokploy's create operation remains the final uniqueness check if two clients race after the inventory check
 - server entries can set `domainSuffixes` to bind a deploy server to a narrower domain set
 - when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value; omit it to allow any unused single-label name

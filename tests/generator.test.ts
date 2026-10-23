@@ -244,7 +244,7 @@ describe("generator", () => {
 			expect(generatedContent).toContain(
 				'apiPost("application.saveGitProvider"',
 			);
-			expect(generatedContent).not.toContain('apiPost("domain.delete"');
+			expect(generatedContent).toContain('apiPost("domain.delete"');
 			expect(generatedContent).toContain(
 				'await guardAgentSafePost("application.update", opts);',
 			);
@@ -1087,6 +1087,73 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
+	it("deletes only agent-pattern domains on writable services", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [{ serverId: "srv-allowed" }],
+				domainSuffixes: [".example.com"],
+				expandedProjects: [{ projectName: "my-app" }],
+				expandedApplicationIds: [],
+				expandedApplicationNames: [],
+			});
+			const domains: Record<string, Record<string, string>> = {
+				"dom-agent": { applicationId: "app-agent", host: "demo.example.com" },
+				"dom-custom": { applicationId: "app-expanded", host: "my-app.com" },
+				"dom-other": { composeId: "compose-other", host: "x.example.com" },
+			};
+			vi.spyOn(client, "apiGet").mockImplementation(async (endpoint, opts) => {
+				if (endpoint === "domain.one") return domains[String(opts?.domainId)];
+				const id = String(Object.values(opts ?? {})[0]);
+				return {
+					name: id,
+					environmentId: id === "app-agent" ? "env-1" : "env-2",
+					environment: {
+						name: "production",
+						project: { name: id === "app-expanded" ? "my-app" : "agent-project" },
+					},
+					serverId: "srv-allowed",
+				};
+			});
+			const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+			registerGeneratedCommands(program);
+			const run = (domainId: string) =>
+				program.parseAsync([
+					"node",
+					"cli",
+					"domain",
+					"delete",
+					"--domainId",
+					domainId,
+				]);
+
+			await run("dom-agent");
+			expect(postSpy).toHaveBeenCalledWith("domain.delete", {
+				domainId: "dom-agent",
+			});
+			await expect(run("dom-custom")).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("rejects host my-app.com"),
+			});
+			await expect(run("dom-other")).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("rejects compose compose-other"),
+			});
+			expect(postSpy).toHaveBeenCalledOnce();
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
 	it("throws a typed error for blocked agent-safe commands", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
@@ -1095,7 +1162,7 @@ describe("generator", () => {
 			registerGeneratedCommands(program);
 
 			await expect(
-				program.parseAsync(["node", "cli", "domain", "delete", "--json"]),
+				program.parseAsync(["node", "cli", "domain", "update", "--json"]),
 			).rejects.toMatchObject({
 				code: "AGENT_POLICY_BLOCKED",
 				exitCode: 2,

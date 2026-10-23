@@ -103,6 +103,7 @@ const AGENT_SERVICE_LIFECYCLE_MUTATIONS = [
 ];
 
 const AGENT_DEPLOY_DOMAIN_MUTATIONS = ["domain.create"] as const;
+const AGENT_DOMAIN_DELETE = "domain.delete";
 
 // POST endpoints agents may call; each is guarded by guardAgentSafePost
 export const SAFE_POST_ENDPOINTS: ReadonlySet<string> = new Set([
@@ -112,6 +113,7 @@ export const SAFE_POST_ENDPOINTS: ReadonlySet<string> = new Set([
 	...AGENT_SERVICE_LIFECYCLE_MUTATIONS,
 	"compose.create",
 	...AGENT_DEPLOY_DOMAIN_MUTATIONS,
+	AGENT_DOMAIN_DELETE,
 	"mounts.create",
 	"port.create",
 	"volumeBackups.create",
@@ -548,6 +550,41 @@ async function assertAgentDomainInDeployProject(
 	);
 }
 
+// deletes are limited to writable services and to hosts the agent could have
+// created, so custom domains on expanded applications stay untouched
+async function assertAgentDomainDeletable(
+	policy: AgentDeployPolicyConfig,
+	domainId: string | undefined,
+) {
+	if (!domainId)
+		throw agentPolicyBlocked(
+			`agent-safe ${AGENT_DOMAIN_DELETE} requires domainId`,
+		);
+	const domain = await apiGet("domain.one", { domainId });
+	const applicationId = stringValue(domain?.applicationId);
+	const composeId = stringValue(domain?.composeId);
+	let service: any;
+	if (applicationId) {
+		service = await assertApplicationWritable(policy, applicationId);
+	} else if (composeId) {
+		service = await assertAgentServiceInDeployProject(
+			policy,
+			"compose",
+			composeId,
+		);
+	} else {
+		throw agentPolicyBlocked(
+			`agent-safe ${AGENT_DOMAIN_DELETE} allows only application or compose domains`,
+		);
+	}
+	const host = stringValue(domain?.host);
+	if (!host)
+		throw agentPolicyBlocked(
+			`agent-safe ${AGENT_DOMAIN_DELETE} requires a domain host`,
+		);
+	assertAgentDomainHost(policy, host, serviceServerId(service));
+}
+
 const AGENT_VOLUME_BACKUP_SERVICE_KINDS: ReadonlySet<string> = new Set([
 	"application",
 	"compose",
@@ -686,6 +723,10 @@ export async function guardAgentSafePost(
 		const service = await assertAgentDomainInDeployProject(policy, opts);
 		assertAgentDomainHost(policy, opts.host, serviceServerId(service));
 		await assertAgentDomainHostUnused(opts.host);
+		return;
+	}
+	if (endpoint === AGENT_DOMAIN_DELETE) {
+		await assertAgentDomainDeletable(policy, opts.domainId);
 		return;
 	}
 	throw agentPolicyBlocked(
