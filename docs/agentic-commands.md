@@ -139,6 +139,17 @@ dokploy-agent application save-github-provider --applicationId ID --githubId GH_
 
 Delete, move, and disconnect still need the expanded allowlist.
 
+### Watch paths on any git-backed service
+
+A write of only the service ID and `--watchPaths` works on any git-backed application or compose service the token can read, inside or outside `agentDeployPolicy` projects and the expanded allowlist. Use the `save-*-provider` command matching the app's current `sourceType` (Dokploy's save handlers overwrite `sourceType`, so a mismatch is rejected) or `compose update`; record fill sends the other provider fields unchanged:
+
+```bash
+dokploy-agent application save-github-provider --applicationId ID --watchPaths '["backend/**","shared/**"]' --json
+dokploy-agent compose update --composeId ID --watchPaths '["deploy/**"]' --json
+```
+
+Any other field in the same call (`--branch`, `--buildPath`, `--enableSubmodules`, ...) goes through the normal policy, and `application update` does not get the exception. Dokploy matches with `micromatch(changedFiles, watchPaths)` and no options, so agent-safe builds reject entries that can never match (`INVALID_WATCH_PATHS`): a leading `/`, a trailing `/` such as `src/`, or an empty string. Dotfiles need explicit patterns (`.github/**`); `[]` means every push deploys.
+
 The generator detects these endpoints from the spec (a `<group>Id` update with a required nullable field and at least two required fields). Agent-safe policy checks run before the record is read. Optional fields with a spec default (such as `server update --enableDockerCleanup`) are carried over too, so the default cannot reset them. A current `null` is kept only where the spec accepts `null`; if a field is missing or `null` where a value is required, the command fails with `MISSING_OPTION` before writing. When switching source providers, pass every provider field (`--githubId` and so on), since the old provider's fields are `null` and would be kept. Like env writes, this is read-modify-write without compare-and-swap.
 
 ## JSON errors

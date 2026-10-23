@@ -7,7 +7,7 @@ import {
 	isApplicationExpandedAllowed,
 	readAgentDeployPolicyConfig,
 } from "../client.js";
-import { agentPolicyBlocked } from "./errors.js";
+import { agentPolicyBlocked, CliError, cliErrorCode } from "./errors.js";
 
 // classification tables shared by scripts/generate.ts and the runtime guards
 
@@ -42,6 +42,45 @@ export const AGENT_PROTECTED_UPDATE_FIELDS: ReadonlyMap<
 		]),
 	],
 	["compose.update", new Set(["env", "refreshToken"])],
+]);
+
+const AGENT_GIT_SOURCE_TYPES: ReadonlySet<string> = new Set([
+	"bitbucket",
+	"git",
+	"gitea",
+	"github",
+	"gitlab",
+]);
+
+// endpoints that take watchPaths alone on any readable git-backed service,
+// outside the deploy perimeter: watch paths only pick which pushes auto-deploy.
+// save-*-provider also forces sourceType, so the stored source must already
+// match, and record fill sends stored values for the other fields
+const AGENT_WATCH_PATH_ENDPOINTS: ReadonlyMap<
+	string,
+	{ kind: "application" | "compose"; sourceTypes: ReadonlySet<string> }
+> = new Map([
+	[
+		"application.saveBitbucketProvider",
+		{ kind: "application", sourceTypes: new Set(["bitbucket"]) },
+	],
+	[
+		"application.saveGiteaProvider",
+		{ kind: "application", sourceTypes: new Set(["gitea"]) },
+	],
+	[
+		"application.saveGithubProvider",
+		{ kind: "application", sourceTypes: new Set(["github"]) },
+	],
+	[
+		"application.saveGitlabProvider",
+		{ kind: "application", sourceTypes: new Set(["gitlab"]) },
+	],
+	[
+		"application.saveGitProvider",
+		{ kind: "application", sourceTypes: new Set(["git"]) },
+	],
+	["compose.update", { kind: "compose", sourceTypes: AGENT_GIT_SOURCE_TYPES }],
 ]);
 
 export const AGENT_EXPANDED_APPLICATION_ENDPOINTS = [
@@ -707,7 +746,70 @@ async function assertAgentVolumeBackupWritable(
 	return assertAgentVolumeBackupParentWritable(policy, backup ?? {}, endpoint);
 }
 
+// Dokploy deploys when micromatch(changedFiles, watchPaths) matches, with no
+// options: files are repo-relative, so "/src/**" or a bare "src/" never match,
+// and an empty pattern makes micromatch throw
+function assertAgentWatchPaths(watchPaths: unknown) {
+	if (!Array.isArray(watchPaths)) return;
+	const invalid = watchPaths.filter((path) => {
+		if (typeof path !== "string") return false;
+		const pattern = path.trim().replace(/^!/, "");
+		return pattern === "" || pattern.startsWith("/") || pattern.endsWith("/");
+	});
+	if (invalid.length === 0) return;
+	throw new CliError(
+		"INVALID_WATCH_PATHS",
+		`watchPaths entries never match in Dokploy: ${invalid.map((path) => JSON.stringify(path)).join(", ")}; use repo-relative globs without a leading slash, e.g. "src/**" (dotfiles need explicit patterns like ".github/**")`,
+	);
+}
+
+// a body of only the service id and watchPaths skips the deploy perimeter;
+// reason explains a watchPaths-only body the exception still rejects
+async function agentWatchPathOnlyWrite(
+	endpoint: string,
+	opts: Record<string, any>,
+): Promise<{ allowed: boolean; reason?: string }> {
+	const target = AGENT_WATCH_PATH_ENDPOINTS.get(endpoint);
+	if (!target || opts.watchPaths === undefined) return { allowed: false };
+	const idKey = `${target.kind}Id`;
+	const id = stringValue(opts[idKey]);
+	const onlyWatchPaths = Object.keys(opts).every(
+		(field) =>
+			field === idKey || field === "watchPaths" || opts[field] === undefined,
+	);
+	if (!id || !onlyWatchPaths) return { allowed: false };
+	const service = await apiGet(`${target.kind}.one`, { [idKey]: id });
+	const sourceType = stringValue(service?.sourceType);
+	if (sourceType && target.sourceTypes.has(sourceType))
+		return { allowed: true };
+	return {
+		allowed: false,
+		reason: `${target.kind} ${id} has sourceType ${sourceType ?? "unknown"}, ${endpoint} needs ${[...target.sourceTypes].join("|")}`,
+	};
+}
+
 export async function guardAgentSafePost(
+	endpoint: string,
+	opts: Record<string, any>,
+) {
+	if (opts.watchPaths != null) assertAgentWatchPaths(opts.watchPaths);
+	const watchPathWrite = await agentWatchPathOnlyWrite(endpoint, opts);
+	if (watchPathWrite.allowed) return;
+	try {
+		await guardAgentPerimeterPost(endpoint, opts);
+	} catch (error) {
+		if (
+			!watchPathWrite.reason ||
+			cliErrorCode(error) !== "AGENT_POLICY_BLOCKED"
+		)
+			throw error;
+		throw agentPolicyBlocked(
+			`${(error as Error).message}; watchPaths-only exception does not apply: ${watchPathWrite.reason}`,
+		);
+	}
+}
+
+async function guardAgentPerimeterPost(
 	endpoint: string,
 	opts: Record<string, any>,
 ) {

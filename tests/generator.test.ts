@@ -960,6 +960,257 @@ describe("generator", () => {
 		}, 15_000);
 	});
 
+	describe("watchPaths-only writes outside the deploy perimeter", () => {
+		const outside = {
+			environmentId: "env-other",
+			environment: {
+				name: "production",
+				project: { name: "storefront", projectId: "proj-other" },
+			},
+			serverId: "srv-other",
+		};
+		const records: Record<string, any> = {
+			"app-github": {
+				...outside,
+				name: "backend",
+				sourceType: "github",
+				repository: "repo",
+				owner: "me",
+				buildPath: "/",
+				githubId: "gh-1",
+				branch: "main",
+				triggerType: "push",
+				enableSubmodules: false,
+				watchPaths: ["old/**"],
+			},
+			"app-gitlab": {
+				...outside,
+				name: "gl",
+				sourceType: "gitlab",
+				repository: null,
+				owner: null,
+				buildPath: "/",
+				githubId: null,
+				branch: "main",
+				triggerType: "push",
+			},
+			"compose-github": { ...outside, name: "stack", sourceType: "github" },
+			"compose-raw": { ...outside, name: "raw", sourceType: "raw" },
+		};
+
+		async function setup() {
+			const loaded = await loadAgentSafeGeneratedCommands();
+			const program = new Command();
+			loaded.registerGeneratedCommands(program);
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent_sandbox",
+						projectId: "proj-agent",
+						environmentName: "production",
+						environmentId: "env-agent",
+					},
+				],
+				servers: [{ serverId: "srv-agent" }],
+				domainSuffixes: [".example.com"],
+				expandedProjects: [],
+				expandedApplicationIds: [],
+				expandedApplicationNames: [],
+			});
+			vi.spyOn(client, "apiGet").mockImplementation(
+				async (_endpoint, opts) =>
+					records[(opts?.applicationId ?? opts?.composeId) as string],
+			);
+			const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+			return { program, postSpy, tempDir: loaded.tempDir };
+		}
+
+		const run = (program: Command, ...args: string[]) =>
+			program.parseAsync(["node", "cli", ...args]);
+
+		it("allows watchPaths alone on any git-backed service", async () => {
+			const { program, postSpy, tempDir } = await setup();
+			try {
+				await run(
+					program,
+					"application",
+					"save-github-provider",
+					"--applicationId",
+					"app-github",
+					"--watchPaths",
+					'["backend/**","!backend/**/*.md"]',
+				);
+				// record fill keeps every other provider field at its stored value
+				expect(postSpy).toHaveBeenLastCalledWith(
+					"application.saveGithubProvider",
+					{
+						applicationId: "app-github",
+						repository: "repo",
+						owner: "me",
+						buildPath: "/",
+						githubId: "gh-1",
+						branch: "main",
+						triggerType: "push",
+						watchPaths: ["backend/**", "!backend/**/*.md"],
+					},
+				);
+
+				await run(
+					program,
+					"compose",
+					"update",
+					"--composeId",
+					"compose-github",
+					"--watchPaths",
+					"[]",
+				);
+				expect(postSpy).toHaveBeenLastCalledWith("compose.update", {
+					composeId: "compose-github",
+					watchPaths: [],
+				});
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("falls back to the perimeter guards for any other field", async () => {
+			const { program, postSpy, tempDir } = await setup();
+			try {
+				for (const args of [
+					[
+						"application",
+						"save-github-provider",
+						"--applicationId",
+						"app-github",
+						"--branch",
+						"main",
+					],
+					[
+						"application",
+						"save-github-provider",
+						"--applicationId",
+						"app-github",
+						"--watchPaths",
+						'["src/**"]',
+						"--branch",
+						"release",
+					],
+					[
+						"application",
+						"save-github-provider",
+						"--applicationId",
+						"app-github",
+						"--watchPaths",
+						'["src/**"]',
+						"--buildPath",
+						"/other",
+					],
+					[
+						"application",
+						"save-github-provider",
+						"--applicationId",
+						"app-github",
+						"--watchPaths",
+						'["src/**"]',
+						"--enableSubmodules",
+					],
+					[
+						"compose",
+						"update",
+						"--composeId",
+						"compose-github",
+						"--watchPaths",
+						'["src/**"]',
+						"--composeFile",
+						"services: {}",
+					],
+					[
+						"application",
+						"update",
+						"--applicationId",
+						"app-github",
+						"--watchPaths",
+						'["src/**"]',
+					],
+				]) {
+					await expect(run(program, ...args)).rejects.toMatchObject({
+						code: "AGENT_POLICY_BLOCKED",
+						exitCode: 2,
+					});
+				}
+				expect(postSpy).not.toHaveBeenCalled();
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("rejects a provider endpoint that would switch the source", async () => {
+			const { program, postSpy, tempDir } = await setup();
+			try {
+				await expect(
+					run(
+						program,
+						"application",
+						"save-github-provider",
+						"--applicationId",
+						"app-gitlab",
+						"--watchPaths",
+						'["src/**"]',
+					),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining(
+						"watchPaths-only exception does not apply: application app-gitlab has sourceType gitlab",
+					),
+				});
+				await expect(
+					run(
+						program,
+						"compose",
+						"update",
+						"--composeId",
+						"compose-raw",
+						"--watchPaths",
+						'["src/**"]',
+					),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining("has sourceType raw"),
+				});
+				expect(postSpy).not.toHaveBeenCalled();
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("rejects watch paths Dokploy can never match", async () => {
+			const { program, postSpy, tempDir } = await setup();
+			try {
+				for (const watchPaths of [
+					'["/src/**"]',
+					'["src/"]',
+					'["!/x/**"]',
+					'[""]',
+				]) {
+					await expect(
+						run(
+							program,
+							"compose",
+							"update",
+							"--composeId",
+							"compose-github",
+							"--watchPaths",
+							watchPaths,
+						),
+					).rejects.toMatchObject({ code: "INVALID_WATCH_PATHS" });
+				}
+				expect(postSpy).not.toHaveBeenCalled();
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+	});
+
 	it("allows lifecycle operations on deploy-project services", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
