@@ -65,6 +65,18 @@ describe("service environment mutations", () => {
 		);
 	});
 
+	it("treats a multi-line quoted value as one assignment", () => {
+		const document = 'A=1\nKEY="line1\nB=evil\nline3"\nC=3\n';
+		expect(unsetEnvironmentVariable(document, "KEY")).toBe("A=1\nC=3\n");
+		expect(setEnvironmentVariable(document, "KEY", "x")).toBe(
+			'A=1\nKEY="x"\nC=3\n',
+		);
+		expect(() => unsetEnvironmentVariable(document, "B")).toThrow(
+			"does not exist",
+		);
+		expect(unsetEnvironmentVariable("K='a\nb' # note\r\nZ=1", "K")).toBe("Z=1");
+	});
+
 	it("keeps CRLF line endings when replacing a value", () => {
 		expect(setEnvironmentVariable("FOO=old\r\nBAR=1\r\n", "FOO", "new")).toBe(
 			'FOO="new"\r\nBAR=1\r\n',

@@ -97,6 +97,28 @@ describe("agent redaction", () => {
 		});
 	});
 
+	it("masks multi-line env values and hides stray lines", () => {
+		const input = [
+			'DEPLOY_KEY="-----BEGIN OPENSSH PRIVATE KEY-----',
+			"b3BlbnNzaC1rZXk",
+			'-----END OPENSSH PRIVATE KEY-----"',
+			"PORT=3000",
+			"",
+			"orphan-secret-line",
+		].join("\r\n");
+
+		const output = redactEnvDocument(input);
+		expect(output).toBe(
+			[
+				"DEPLOY_KEY=----***---- (87 chars)",
+				"PORT=*** (4 chars)",
+				"",
+				"[line hidden]",
+			].join("\r\n"),
+		);
+		expect(output).not.toContain("b3BlbnNzaC1rZXk");
+	});
+
 	it("detects sensitive env key parts", () => {
 		expect(isSensitiveKey("POSTGRES_PASSWORD")).toBe(true);
 		expect(isSensitiveKey("apiUrl")).toBe(true);

@@ -1,3 +1,4 @@
+import { parseEnvDocument, unquoteEnvValue } from "./env-document.js";
 import { DOKPLOY_RESOURCE_ID_KEYS } from "./generated/resource-ids.js";
 
 export interface SanitizeOptions {
@@ -61,8 +62,6 @@ const PUBLIC_IDENTIFIER_KEYS = new Set([
 const ENV_KEY_PATTERN =
 	/(?:api|key|token|secret|password|passworkd|passwd|pass|pwd|credential|private|authorization|webhook|dsn|url|uri)/i;
 const ENV_DOCUMENT_KEYS = new Set(["env", "previewenv"]);
-const ENV_DOCUMENT_ASSIGNMENT_PATTERN =
-	/^(\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_.-]*\s*=\s*)(.*)$/;
 // optional quote after the key covers JSON text; NUL covers /proc/*/environ
 const ENV_ASSIGNMENT_PATTERN =
 	/(^|[\s([{,;'"\0-])([A-Za-z_][A-Za-z0-9_.-]*)("?\s*[:=]\s*)((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',}\]\0]+))/gm;
@@ -146,16 +145,19 @@ export function maskSecret(value: unknown): string {
 	return `${prefix}***${text.slice(-MASK_EDGE_CHARS)}${length}`;
 }
 
+// any line that is not a blank, comment, or assignment is hidden too: it may be
+// a stray piece of a value, such as an unterminated quoted key
 export function redactEnvDocument(input: string): string {
-	return input
-		.split(/(\r?\n)/)
-		.map((part) => {
-			if (/^\r?\n$/.test(part)) return part;
-			if (part.trimStart().startsWith("#")) return "# [comment hidden]";
-			const match = part.match(ENV_DOCUMENT_ASSIGNMENT_PATTERN);
-			if (!match) return part;
-			const [, prefix = "", rawValue = ""] = match;
-			return `${prefix}${maskSecret(stripQuotedValue(rawValue.trim()))}`;
+	return parseEnvDocument(input)
+		.map(({ index, length, eol, assignment }) => {
+			const text = input.slice(index, index + length);
+			if (assignment) {
+				const { prefix, name, separator, value } = assignment;
+				return `${prefix}${name}${separator}${maskSecret(unquoteEnvValue(value))}${eol}`;
+			}
+			if (!text.trim()) return `${text}${eol}`;
+			if (text.trimStart().startsWith("#")) return `# [comment hidden]${eol}`;
+			return `[line hidden]${eol}`;
 		})
 		.join("");
 }

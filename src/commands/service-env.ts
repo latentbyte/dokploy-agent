@@ -1,6 +1,11 @@
 import type { Command } from "commander";
 import { assertServiceRecordWritable } from "../agent/policy.js";
 import { apiGet, apiPost, readAgentDeployPolicyConfig } from "../client.js";
+import {
+	type EnvLine,
+	parseEnvDocument,
+	unquoteEnvValue,
+} from "../env-document.js";
 import { maskSecret } from "../redact.js";
 
 interface ServiceEnvCommandOptions {
@@ -21,8 +26,6 @@ interface EnvTarget {
 }
 
 const ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
-const ENV_ASSIGNMENT_PATTERN =
-	/^([\t ]*(?:export[\t ]+)?)([A-Za-z_][A-Za-z0-9_.-]*)([\t ]*=[\t ]*)([^\r\n]*)$/gm;
 
 function nullableString(value: unknown, field: string): string | null {
 	if (value === null) return null;
@@ -64,22 +67,23 @@ function environmentDocument(kind: EnvServiceKind, record: ServiceRecord) {
 	throw new Error(`Dokploy ${kind} response is missing env.`);
 }
 
+type Assignment = EnvLine & { assignment: NonNullable<EnvLine["assignment"]> };
+
+function assignments(document: string): Assignment[] {
+	return parseEnvDocument(document).filter(
+		(line): line is Assignment => line.assignment !== undefined,
+	);
+}
+
 function environmentEntries(document: string): EnvironmentEntry[] {
-	return [...document.matchAll(ENV_ASSIGNMENT_PATTERN)].map((match) => ({
-		name: match[2] ?? "",
-		preview: maskSecret(
-			(match[4] ?? "").trim().replace(/^(["'])(.*)\1$/, "$2"),
-		),
+	return assignments(document).map(({ assignment }) => ({
+		name: assignment.name,
+		preview: maskSecret(unquoteEnvValue(assignment.value)),
 	}));
 }
 
-function matchingAssignments(
-	document: string,
-	name: string,
-): RegExpMatchArray[] {
-	return [...document.matchAll(ENV_ASSIGNMENT_PATTERN)].filter(
-		(match) => match[2] === name,
-	);
+function matchingAssignments(document: string, name: string): Assignment[] {
+	return assignments(document).filter((line) => line.assignment.name === name);
 }
 
 function lineEnding(document: string): string {
@@ -131,10 +135,7 @@ export function annotateEnvironmentVariable(
 		);
 	}
 
-	const match = matches[0];
-	const index = match?.index;
-	if (index === undefined)
-		throw new Error(`Could not locate environment variable ${name}.`);
+	const index = matches[0]?.index ?? 0;
 	const eol = lineEnding(document);
 	return `${document.slice(0, index)}${commentLines(comment, eol)}${eol}${document.slice(index)}`;
 }
@@ -157,16 +158,10 @@ export function setEnvironmentVariable(
 		);
 	}
 
-	const match = matches[0];
-	const index = match?.index;
-	if (index === undefined || match === undefined) {
-		throw new Error(`Could not locate environment variable ${name}.`);
-	}
-	const eol = lineEnding(document);
-	const prefix = match[1] ?? "";
-	const separator = match[3] ?? "=";
+	const [line] = matches as [Assignment];
+	const { prefix, separator } = line.assignment;
 	const assignment = `${prefix}${name}${separator}${JSON.stringify(value)}`;
-	return `${document.slice(0, index)}${assignment}${document.slice(index + match[0].length)}`;
+	return `${document.slice(0, line.index)}${assignment}${document.slice(line.index + line.length)}`;
 }
 
 export function unsetEnvironmentVariable(
@@ -183,18 +178,9 @@ export function unsetEnvironmentVariable(
 
 	// remove every assignment of the name, with its line ending
 	let next = document;
-	for (const match of matches.reverse()) {
-		const index = match.index;
-		if (index === undefined) {
-			throw new Error(`Could not locate environment variable ${name}.`);
-		}
-		const end = index + match[0].length;
-		const eolLength = next.startsWith("\r\n", end)
-			? 2
-			: next.startsWith("\n", end)
-				? 1
-				: 0;
-		next = `${next.slice(0, index)}${next.slice(end + eolLength)}`;
+	for (const line of matches.reverse()) {
+		const end = line.index + line.length + line.eol.length;
+		next = `${next.slice(0, line.index)}${next.slice(end)}`;
 	}
 	return next;
 }
