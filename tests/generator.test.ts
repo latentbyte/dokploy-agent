@@ -296,6 +296,39 @@ describe("generator", () => {
 		);
 	});
 
+	it("parses boolean flags with an optional true or false value", async () => {
+		const program = new Command();
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+
+		await import("../src/generated/commands.js").then(
+			({ registerGeneratedCommands }) => {
+				registerGeneratedCommands(program);
+			},
+		);
+		const run = (...extra: string[]) =>
+			program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"update",
+				"--applicationId",
+				"app-1",
+				...extra,
+			]);
+
+		await run("--previewHttps", "false", "--isPreviewDeploymentsActive");
+		expect(postSpy.mock.calls[0]?.[1]).toEqual(
+			expect.objectContaining({
+				previewHttps: false,
+				isPreviewDeploymentsActive: true,
+			}),
+		);
+		await expect(run("--previewHttps", "yes")).rejects.toThrow(
+			"Invalid boolean for --previewHttps",
+		);
+		expect(postSpy).toHaveBeenCalledOnce();
+	});
+
 	it("rejects malformed JSON for complex options", async () => {
 		const program = new Command();
 		const postSpy = vi

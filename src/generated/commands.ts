@@ -10,6 +10,12 @@ import { sanitizeForAgent } from "../redact.js";
 
 export const AGENT_SAFE_BUILD = false;
 
+function parseBooleanOption(value: unknown, name: string) {
+	if (value === true || value === "true") return true;
+	if (value === false || value === "false") return false;
+	throw new Error("Invalid boolean for --" + name + "; expected true or false.");
+}
+
 function parseJsonOption(value: unknown, name: string, kind: "array" | "object") {
 	if (value === null || value === undefined || value === "") return value;
 	if (kind === "array" && (value === null || Array.isArray(value))) return value;
@@ -119,12 +125,12 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--apiUrl <value>', 'apiUrl')
 		.requiredOption('--apiKey <value>', 'apiKey')
 		.requiredOption('--model <value>', 'model')
-		.requiredOption('--isEnabled', 'isEnabled')
+		.requiredOption('--isEnabled [true|false]', 'isEnabled')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["isEnabled"] != null) opts["isEnabled"] = opts["isEnabled"] === true || opts["isEnabled"] === "true";
+			if (opts["isEnabled"] != null) opts["isEnabled"] = parseBooleanOption(opts["isEnabled"], "isEnabled");
 			const data = await apiPost("ai.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -294,13 +300,13 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--apiUrl <value>', 'apiUrl')
 		.option('--apiKey <value>', 'apiKey')
 		.option('--model <value>', 'model')
-		.option('--isEnabled', 'isEnabled')
+		.option('--isEnabled [true|false]', 'isEnabled')
 		.option('--createdAt <value>', 'createdAt')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["isEnabled"] != null) opts["isEnabled"] = opts["isEnabled"] === true || opts["isEnabled"] === "true";
+			if (opts["isEnabled"] != null) opts["isEnabled"] = parseBooleanOption(opts["isEnabled"], "isEnabled");
 			const data = await apiPost("ai.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -578,13 +584,13 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--bitbucketId <value>', 'bitbucketId; defaults to the current value')
 		.requiredOption('--applicationId <value>', 'applicationId')
 		.option('--bitbucketBranch <value>', 'bitbucketBranch; defaults to the current value')
-		.option('--enableSubmodules', 'enableSubmodules')
+		.option('--enableSubmodules [true|false]', 'enableSubmodules')
 		.option('--watchPaths <value>', 'watchPaths')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = parseBooleanOption(opts["enableSubmodules"], "enableSubmodules");
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"bitbucketBuildPath","nullable":true},{"name":"bitbucketOwner","nullable":true},{"name":"bitbucketRepository","nullable":true},{"name":"bitbucketRepositorySlug","nullable":true},{"name":"bitbucketId","nullable":true},{"name":"bitbucketBranch"}]}, opts);
 			const data = await apiPost("application.saveBitbucketProvider", opts);
@@ -602,12 +608,12 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--herokuVersion <value>', 'herokuVersion; defaults to the current value')
 		.option('--railpackVersion <value>', 'railpackVersion; defaults to the current value')
 		.option('--publishDirectory <value>', 'publishDirectory')
-		.option('--isStaticSpa', 'isStaticSpa')
+		.option('--isStaticSpa [true|false]', 'isStaticSpa')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = opts["isStaticSpa"] === true || opts["isStaticSpa"] === "true";
+			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = parseBooleanOption(opts["isStaticSpa"], "isStaticSpa");
 			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"buildType"},{"name":"dockerfile","nullable":true},{"name":"dockerContextPath","nullable":true},{"name":"dockerBuildStage","nullable":true},{"name":"herokuVersion","nullable":true},{"name":"railpackVersion","nullable":true}]}, opts);
 			const data = await apiPost("application.saveBuildType", opts);
 			printOutput(data, jsonOutput, false);
@@ -638,12 +644,12 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--env <value>', 'env; defaults to the current value')
 		.option('--buildArgs <value>', 'buildArgs; defaults to the current value')
 		.option('--buildSecrets <value>', 'buildSecrets; defaults to the current value')
-		.option('--createEnvFile', 'createEnvFile; defaults to the current value')
+		.option('--createEnvFile [true|false]', 'createEnvFile; defaults to the current value')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
+			if (opts["createEnvFile"] != null) opts["createEnvFile"] = parseBooleanOption(opts["createEnvFile"], "createEnvFile");
 			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"env","nullable":true},{"name":"buildArgs","nullable":true},{"name":"buildSecrets","nullable":true},{"name":"createEnvFile"}]}, opts);
 			const data = await apiPost("application.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
@@ -658,13 +664,13 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--giteaRepository <value>', 'giteaRepository; defaults to the current value')
 		.option('--giteaId <value>', 'giteaId; defaults to the current value')
 		.option('--giteaBranch <value>', 'giteaBranch; defaults to the current value')
-		.option('--enableSubmodules', 'enableSubmodules')
+		.option('--enableSubmodules [true|false]', 'enableSubmodules')
 		.option('--watchPaths <value>', 'watchPaths')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = parseBooleanOption(opts["enableSubmodules"], "enableSubmodules");
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"giteaBuildPath","nullable":true},{"name":"giteaOwner","nullable":true},{"name":"giteaRepository","nullable":true},{"name":"giteaId","nullable":true},{"name":"giteaBranch"}]}, opts);
 			const data = await apiPost("application.saveGiteaProvider", opts);
@@ -681,13 +687,13 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--githubId <value>', 'githubId; defaults to the current value')
 		.option('--branch <value>', 'branch; defaults to the current value')
 		.option('--triggerType <value>', 'triggerType (push, tag); defaults to the current value')
-		.option('--enableSubmodules', 'enableSubmodules')
+		.option('--enableSubmodules [true|false]', 'enableSubmodules')
 		.option('--watchPaths <value>', 'watchPaths')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = parseBooleanOption(opts["enableSubmodules"], "enableSubmodules");
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"repository","nullable":true},{"name":"owner","nullable":true},{"name":"buildPath","nullable":true},{"name":"githubId","nullable":true},{"name":"branch"},{"name":"triggerType"}]}, opts);
 			const data = await apiPost("application.saveGithubProvider", opts);
@@ -705,14 +711,14 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--gitlabProjectId <value>', 'gitlabProjectId; defaults to the current value')
 		.option('--gitlabPathNamespace <value>', 'gitlabPathNamespace; defaults to the current value')
 		.option('--gitlabBranch <value>', 'gitlabBranch; defaults to the current value')
-		.option('--enableSubmodules', 'enableSubmodules')
+		.option('--enableSubmodules [true|false]', 'enableSubmodules')
 		.option('--watchPaths <value>', 'watchPaths')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
-			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = parseBooleanOption(opts["enableSubmodules"], "enableSubmodules");
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"gitlabBuildPath","nullable":true},{"name":"gitlabOwner","nullable":true},{"name":"gitlabRepository","nullable":true},{"name":"gitlabId","nullable":true},{"name":"gitlabProjectId","nullable":true},{"name":"gitlabPathNamespace","nullable":true},{"name":"gitlabBranch"}]}, opts);
 			const data = await apiPost("application.saveGitlabProvider", opts);
@@ -726,7 +732,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--customGitBuildPath <value>', 'customGitBuildPath; defaults to the current value')
 		.option('--customGitUrl <value>', 'customGitUrl; defaults to the current value')
 		.option('--watchPaths <value>', 'watchPaths; defaults to the current value')
-		.option('--enableSubmodules', 'enableSubmodules')
+		.option('--enableSubmodules [true|false]', 'enableSubmodules')
 		.option('--customGitBranch <value>', 'customGitBranch; defaults to the current value')
 		.option('--customGitSSHKeyId <value>', 'customGitSSHKeyId')
 		.option('--json', 'Output raw JSON')
@@ -734,7 +740,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
-			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = parseBooleanOption(opts["enableSubmodules"], "enableSubmodules");
 			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"customGitBuildPath","nullable":true},{"name":"customGitUrl","nullable":true},{"name":"watchPaths","nullable":true},{"name":"customGitBranch"}]}, opts);
 			const data = await apiPost("application.saveGitProvider", opts);
 			printOutput(data, jsonOutput, false);
@@ -805,14 +811,14 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--previewLabels <value>', 'previewLabels')
 		.option('--previewWildcard <value>', 'previewWildcard')
 		.option('--previewPort <value>', 'previewPort')
-		.option('--previewHttps', 'previewHttps')
+		.option('--previewHttps [true|false]', 'previewHttps')
 		.option('--previewPath <value>', 'previewPath')
 		.option('--previewCertificateType <value>', 'previewCertificateType (letsencrypt, none, custom)')
 		.option('--previewCustomCertResolver <value>', 'previewCustomCertResolver')
 		.option('--previewLimit <value>', 'previewLimit')
-		.option('--isPreviewDeploymentsActive', 'isPreviewDeploymentsActive')
-		.option('--previewRequireCollaboratorPermissions', 'previewRequireCollaboratorPermissions')
-		.option('--rollbackActive', 'rollbackActive')
+		.option('--isPreviewDeploymentsActive [true|false]', 'isPreviewDeploymentsActive')
+		.option('--previewRequireCollaboratorPermissions [true|false]', 'previewRequireCollaboratorPermissions')
+		.option('--rollbackActive [true|false]', 'rollbackActive')
 		.option('--buildArgs <value>', 'buildArgs')
 		.option('--buildSecrets <value>', 'buildSecrets')
 		.option('--memoryReservation <value>', 'memoryReservation')
@@ -820,20 +826,20 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--cpuReservation <value>', 'cpuReservation')
 		.option('--cpuLimit <value>', 'cpuLimit')
 		.option('--title <value>', 'title')
-		.option('--enabled', 'enabled')
+		.option('--enabled [true|false]', 'enabled')
 		.option('--subtitle <value>', 'subtitle')
 		.option('--command <value>', 'command')
 		.option('--args <value>', 'args')
 		.option('--icon <value>', 'icon')
 		.option('--refreshToken <value>', 'refreshToken')
 		.option('--sourceType <value>', 'sourceType (github, docker, git, gitlab, bitbucket, gitea, drop)')
-		.option('--cleanCache', 'cleanCache')
+		.option('--cleanCache [true|false]', 'cleanCache')
 		.option('--repository <value>', 'repository')
 		.option('--owner <value>', 'owner')
 		.option('--branch <value>', 'branch')
 		.option('--buildPath <value>', 'buildPath')
 		.option('--triggerType <value>', 'triggerType (push, tag)')
-		.option('--autoDeploy', 'autoDeploy')
+		.option('--autoDeploy [true|false]', 'autoDeploy')
 		.option('--gitlabProjectId <value>', 'gitlabProjectId')
 		.option('--gitlabRepository <value>', 'gitlabRepository')
 		.option('--gitlabOwner <value>', 'gitlabOwner')
@@ -857,7 +863,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--customGitBranch <value>', 'customGitBranch')
 		.option('--customGitBuildPath <value>', 'customGitBuildPath')
 		.option('--customGitSSHKeyId <value>', 'customGitSSHKeyId')
-		.option('--enableSubmodules', 'enableSubmodules')
+		.option('--enableSubmodules [true|false]', 'enableSubmodules')
 		.option('--dockerfile <value>', 'dockerfile')
 		.option('--dockerContextPath <value>', 'dockerContextPath')
 		.option('--dockerBuildStage <value>', 'dockerBuildStage')
@@ -879,8 +885,8 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--railpackVersion <value>', 'railpackVersion')
 		.option('--herokuVersion <value>', 'herokuVersion')
 		.option('--publishDirectory <value>', 'publishDirectory')
-		.option('--isStaticSpa', 'isStaticSpa')
-		.option('--createEnvFile', 'createEnvFile')
+		.option('--isStaticSpa [true|false]', 'isStaticSpa')
+		.option('--createEnvFile [true|false]', 'createEnvFile')
 		.option('--createdAt <value>', 'createdAt')
 		.option('--registryId <value>', 'registryId')
 		.option('--rollbackRegistryId <value>', 'rollbackRegistryId')
@@ -892,7 +898,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--buildServerId <value>', 'buildServerId')
 		.option('--buildRegistryId <value>', 'buildRegistryId')
 		.option('--networkIds <value>', 'networkIds')
-		.option('--detachDokployNetwork', 'detachDokployNetwork')
+		.option('--detachDokployNetwork [true|false]', 'detachDokployNetwork')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -900,17 +906,17 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			if (opts["previewLabels"] != null) opts["previewLabels"] = parseJsonOption(opts["previewLabels"], "previewLabels", "array");
 			if (opts["previewPort"] != null) opts["previewPort"] = Number(opts["previewPort"]);
-			if (opts["previewHttps"] != null) opts["previewHttps"] = opts["previewHttps"] === true || opts["previewHttps"] === "true";
+			if (opts["previewHttps"] != null) opts["previewHttps"] = parseBooleanOption(opts["previewHttps"], "previewHttps");
 			if (opts["previewLimit"] != null) opts["previewLimit"] = Number(opts["previewLimit"]);
-			if (opts["isPreviewDeploymentsActive"] != null) opts["isPreviewDeploymentsActive"] = opts["isPreviewDeploymentsActive"] === true || opts["isPreviewDeploymentsActive"] === "true";
-			if (opts["previewRequireCollaboratorPermissions"] != null) opts["previewRequireCollaboratorPermissions"] = opts["previewRequireCollaboratorPermissions"] === true || opts["previewRequireCollaboratorPermissions"] === "true";
-			if (opts["rollbackActive"] != null) opts["rollbackActive"] = opts["rollbackActive"] === true || opts["rollbackActive"] === "true";
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["isPreviewDeploymentsActive"] != null) opts["isPreviewDeploymentsActive"] = parseBooleanOption(opts["isPreviewDeploymentsActive"], "isPreviewDeploymentsActive");
+			if (opts["previewRequireCollaboratorPermissions"] != null) opts["previewRequireCollaboratorPermissions"] = parseBooleanOption(opts["previewRequireCollaboratorPermissions"], "previewRequireCollaboratorPermissions");
+			if (opts["rollbackActive"] != null) opts["rollbackActive"] = parseBooleanOption(opts["rollbackActive"], "rollbackActive");
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			if (opts["args"] != null) opts["args"] = parseJsonOption(opts["args"], "args", "array");
-			if (opts["cleanCache"] != null) opts["cleanCache"] = opts["cleanCache"] === true || opts["cleanCache"] === "true";
-			if (opts["autoDeploy"] != null) opts["autoDeploy"] = opts["autoDeploy"] === true || opts["autoDeploy"] === "true";
+			if (opts["cleanCache"] != null) opts["cleanCache"] = parseBooleanOption(opts["cleanCache"], "cleanCache");
+			if (opts["autoDeploy"] != null) opts["autoDeploy"] = parseBooleanOption(opts["autoDeploy"], "autoDeploy");
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
-			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
+			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = parseBooleanOption(opts["enableSubmodules"], "enableSubmodules");
 			if (opts["healthCheckSwarm"] != null) opts["healthCheckSwarm"] = parseJsonOption(opts["healthCheckSwarm"], "healthCheckSwarm", "object");
 			if (opts["restartPolicySwarm"] != null) opts["restartPolicySwarm"] = parseJsonOption(opts["restartPolicySwarm"], "restartPolicySwarm", "object");
 			if (opts["placementSwarm"] != null) opts["placementSwarm"] = parseJsonOption(opts["placementSwarm"], "placementSwarm", "object");
@@ -923,10 +929,10 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
 			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
-			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = opts["isStaticSpa"] === true || opts["isStaticSpa"] === "true";
-			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
+			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = parseBooleanOption(opts["isStaticSpa"], "isStaticSpa");
+			if (opts["createEnvFile"] != null) opts["createEnvFile"] = parseBooleanOption(opts["createEnvFile"], "createEnvFile");
 			if (opts["networkIds"] != null) opts["networkIds"] = parseJsonOption(opts["networkIds"], "networkIds", "array");
-			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = opts["detachDokployNetwork"] === true || opts["detachDokployNetwork"] === "true";
+			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = parseBooleanOption(opts["detachDokployNetwork"], "detachDokployNetwork");
 			const data = await apiPost("application.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -973,7 +979,7 @@ export function registerGeneratedCommands(program: Command) {
 		.command('create')
 		.description('backup create')
 		.requiredOption('--schedule <value>', 'schedule')
-		.option('--enabled', 'enabled')
+		.option('--enabled [true|false]', 'enabled')
 		.requiredOption('--prefix <value>', 'prefix')
 		.requiredOption('--destinationId <value>', 'destinationId')
 		.option('--keepLatestCount <value>', 'keepLatestCount')
@@ -988,15 +994,15 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--backupType <value>', 'backupType (database, compose)')
 		.option('--composeId <value>', 'composeId')
 		.option('--serviceName <value>', 'serviceName')
-		.option('--includeEncryptionKey', 'includeEncryptionKey')
+		.option('--includeEncryptionKey [true|false]', 'includeEncryptionKey')
 		.option('--metadata <value>', 'metadata')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
-			if (opts["includeEncryptionKey"] != null) opts["includeEncryptionKey"] = opts["includeEncryptionKey"] === true || opts["includeEncryptionKey"] === "true";
+			if (opts["includeEncryptionKey"] != null) opts["includeEncryptionKey"] = parseBooleanOption(opts["includeEncryptionKey"], "includeEncryptionKey");
 			const data = await apiPost("backup.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1137,7 +1143,7 @@ export function registerGeneratedCommands(program: Command) {
 		.command('update')
 		.description('backup update')
 		.option('--schedule <value>', 'schedule; defaults to the current value')
-		.option('--enabled', 'enabled; defaults to the current value')
+		.option('--enabled [true|false]', 'enabled; defaults to the current value')
 		.option('--prefix <value>', 'prefix; defaults to the current value')
 		.requiredOption('--backupId <value>', 'backupId')
 		.option('--destinationId <value>', 'destinationId; defaults to the current value')
@@ -1146,14 +1152,14 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--serviceName <value>', 'serviceName; defaults to the current value')
 		.option('--metadata <value>', 'metadata; defaults to the current value')
 		.option('--databaseType <value>', 'databaseType (postgres, mariadb, mysql, mongo, web-server, libsql); defaults to the current value')
-		.option('--includeEncryptionKey', 'includeEncryptionKey')
+		.option('--includeEncryptionKey [true|false]', 'includeEncryptionKey')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
-			if (opts["includeEncryptionKey"] != null) opts["includeEncryptionKey"] = opts["includeEncryptionKey"] === true || opts["includeEncryptionKey"] === "true";
+			if (opts["includeEncryptionKey"] != null) opts["includeEncryptionKey"] = parseBooleanOption(opts["includeEncryptionKey"], "includeEncryptionKey");
 			await fillFromCurrentRecord({"endpoint":"backup.one","idKey":"backupId","fields":[{"name":"schedule"},{"name":"enabled","nullable":true},{"name":"prefix"},{"name":"destinationId"},{"name":"database"},{"name":"keepLatestCount","nullable":true},{"name":"serviceName","nullable":true},{"name":"metadata","nullable":true},{"name":"databaseType"}]}, opts);
 			const data = await apiPost("backup.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -1296,14 +1302,14 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--certificateData <value>', 'certificateData')
 		.requiredOption('--privateKey <value>', 'privateKey')
 		.option('--certificatePath <value>', 'certificatePath')
-		.option('--autoRenew', 'autoRenew')
+		.option('--autoRenew [true|false]', 'autoRenew')
 		.requiredOption('--organizationId <value>', 'organizationId')
 		.option('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["autoRenew"] != null) opts["autoRenew"] = opts["autoRenew"] === true || opts["autoRenew"] === "true";
+			if (opts["autoRenew"] != null) opts["autoRenew"] = parseBooleanOption(opts["autoRenew"], "autoRenew");
 			const data = await apiPost("certificates.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1468,12 +1474,12 @@ export function registerGeneratedCommands(program: Command) {
 		.command('delete')
 		.description('compose delete')
 		.requiredOption('--composeId <value>', 'composeId')
-		.requiredOption('--deleteVolumes', 'deleteVolumes')
+		.requiredOption('--deleteVolumes [true|false]', 'deleteVolumes')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["deleteVolumes"] != null) opts["deleteVolumes"] = opts["deleteVolumes"] === true || opts["deleteVolumes"] === "true";
+			if (opts["deleteVolumes"] != null) opts["deleteVolumes"] = parseBooleanOption(opts["deleteVolumes"], "deleteVolumes");
 			const data = await apiPost("compose.delete", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1484,12 +1490,12 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--composeId <value>', 'composeId')
 		.option('--title <value>', 'title')
 		.option('--description <value>', 'description')
-		.option('--freshVolumes', 'freshVolumes')
+		.option('--freshVolumes [true|false]', 'freshVolumes')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["freshVolumes"] != null) opts["freshVolumes"] = opts["freshVolumes"] === true || opts["freshVolumes"] === "true";
+			if (opts["freshVolumes"] != null) opts["freshVolumes"] = parseBooleanOption(opts["freshVolumes"], "freshVolumes");
 			const data = await apiPost("compose.deploy", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1737,12 +1743,12 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--composeId <value>', 'composeId')
 		.option('--title <value>', 'title')
 		.option('--description <value>', 'description')
-		.option('--freshVolumes', 'freshVolumes')
+		.option('--freshVolumes [true|false]', 'freshVolumes')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["freshVolumes"] != null) opts["freshVolumes"] = opts["freshVolumes"] === true || opts["freshVolumes"] === "true";
+			if (opts["freshVolumes"] != null) opts["freshVolumes"] = parseBooleanOption(opts["freshVolumes"], "freshVolumes");
 			const data = await apiPost("compose.redeploy", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1765,12 +1771,12 @@ export function registerGeneratedCommands(program: Command) {
 		.description('compose saveEnvironment')
 		.requiredOption('--composeId <value>', 'composeId')
 		.requiredOption('--env <value>', 'env')
-		.option('--createEnvFile', 'createEnvFile')
+		.option('--createEnvFile [true|false]', 'createEnvFile')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
+			if (opts["createEnvFile"] != null) opts["createEnvFile"] = parseBooleanOption(opts["createEnvFile"], "createEnvFile");
 			const data = await apiPost("compose.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1850,7 +1856,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--repository <value>', 'repository')
 		.option('--owner <value>', 'owner')
 		.option('--branch <value>', 'branch')
-		.option('--autoDeploy', 'autoDeploy')
+		.option('--autoDeploy [true|false]', 'autoDeploy')
 		.option('--gitlabProjectId <value>', 'gitlabProjectId')
 		.option('--gitlabRepository <value>', 'gitlabRepository')
 		.option('--gitlabOwner <value>', 'gitlabOwner')
@@ -1867,14 +1873,14 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--customGitBranch <value>', 'customGitBranch')
 		.option('--customGitSSHKeyId <value>', 'customGitSSHKeyId')
 		.option('--command <value>', 'command')
-		.option('--createEnvFile', 'createEnvFile')
-		.option('--enableSubmodules', 'enableSubmodules')
+		.option('--createEnvFile [true|false]', 'createEnvFile')
+		.option('--enableSubmodules [true|false]', 'enableSubmodules')
 		.option('--composePath <value>', 'composePath')
 		.option('--suffix <value>', 'suffix')
-		.option('--randomize', 'randomize')
-		.option('--isolatedDeployment', 'isolatedDeployment')
-		.option('--isolatedDeploymentsVolume', 'isolatedDeploymentsVolume')
-		.option('--pullImages', 'pullImages')
+		.option('--randomize [true|false]', 'randomize')
+		.option('--isolatedDeployment [true|false]', 'isolatedDeployment')
+		.option('--isolatedDeploymentsVolume [true|false]', 'isolatedDeploymentsVolume')
+		.option('--pullImages [true|false]', 'pullImages')
 		.option('--triggerType <value>', 'triggerType (push, tag)')
 		.option('--composeStatus <value>', 'composeStatus (idle, running, done, error)')
 		.option('--icon <value>', 'icon')
@@ -1890,14 +1896,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["autoDeploy"] != null) opts["autoDeploy"] = opts["autoDeploy"] === true || opts["autoDeploy"] === "true";
+			if (opts["autoDeploy"] != null) opts["autoDeploy"] = parseBooleanOption(opts["autoDeploy"], "autoDeploy");
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
-			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
-			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
-			if (opts["randomize"] != null) opts["randomize"] = opts["randomize"] === true || opts["randomize"] === "true";
-			if (opts["isolatedDeployment"] != null) opts["isolatedDeployment"] = opts["isolatedDeployment"] === true || opts["isolatedDeployment"] === "true";
-			if (opts["isolatedDeploymentsVolume"] != null) opts["isolatedDeploymentsVolume"] = opts["isolatedDeploymentsVolume"] === true || opts["isolatedDeploymentsVolume"] === "true";
-			if (opts["pullImages"] != null) opts["pullImages"] = opts["pullImages"] === true || opts["pullImages"] === "true";
+			if (opts["createEnvFile"] != null) opts["createEnvFile"] = parseBooleanOption(opts["createEnvFile"], "createEnvFile");
+			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = parseBooleanOption(opts["enableSubmodules"], "enableSubmodules");
+			if (opts["randomize"] != null) opts["randomize"] = parseBooleanOption(opts["randomize"], "randomize");
+			if (opts["isolatedDeployment"] != null) opts["isolatedDeployment"] = parseBooleanOption(opts["isolatedDeployment"], "isolatedDeployment");
+			if (opts["isolatedDeploymentsVolume"] != null) opts["isolatedDeploymentsVolume"] = parseBooleanOption(opts["isolatedDeploymentsVolume"], "isolatedDeploymentsVolume");
+			if (opts["pullImages"] != null) opts["pullImages"] = parseBooleanOption(opts["pullImages"], "pullImages");
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			if (opts["serviceNetworks"] != null) opts["serviceNetworks"] = parseJsonOption(opts["serviceNetworks"], "serviceNetworks", "array");
 			const data = await apiPost("compose.update", opts);
@@ -2232,7 +2238,7 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--name <value>', 'name')
 		.requiredOption('--content <value>', 'content')
 		.option('--ttl <value>', 'ttl')
-		.option('--proxied', 'proxied')
+		.option('--proxied [true|false]', 'proxied')
 		.requiredOption('--dnsProviderId <value>', 'dnsProviderId')
 		.requiredOption('--zoneId <value>', 'zoneId')
 		.option('--json', 'Output raw JSON')
@@ -2240,7 +2246,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["ttl"] != null) opts["ttl"] = Number(opts["ttl"]);
-			if (opts["proxied"] != null) opts["proxied"] = opts["proxied"] === true || opts["proxied"] === "true";
+			if (opts["proxied"] != null) opts["proxied"] = parseBooleanOption(opts["proxied"], "proxied");
 			const data = await apiPost("dnsProvider.createRecord", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2349,7 +2355,7 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--name <value>', 'name')
 		.requiredOption('--content <value>', 'content')
 		.option('--ttl <value>', 'ttl')
-		.option('--proxied', 'proxied')
+		.option('--proxied [true|false]', 'proxied')
 		.requiredOption('--dnsProviderId <value>', 'dnsProviderId')
 		.requiredOption('--zoneId <value>', 'zoneId')
 		.requiredOption('--recordId <value>', 'recordId')
@@ -2358,7 +2364,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["ttl"] != null) opts["ttl"] = Number(opts["ttl"]);
-			if (opts["proxied"] != null) opts["proxied"] = opts["proxied"] === true || opts["proxied"] === "true";
+			if (opts["proxied"] != null) opts["proxied"] = parseBooleanOption(opts["proxied"], "proxied");
 			const data = await apiPost("dnsProvider.updateRecord", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2695,13 +2701,13 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--repository <value>', 'repository')
 		.requiredOption('--tag <value>', 'tag')
 		.requiredOption('--id <value>', 'id')
-		.option('--force', 'force')
+		.option('--force [true|false]', 'force')
 		.option('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["force"] != null) opts["force"] = opts["force"] === true || opts["force"] === "true";
+			if (opts["force"] != null) opts["force"] = parseBooleanOption(opts["force"], "force");
 			const data = await apiPost("dockerImage.removeImage", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2869,7 +2875,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--path <value>', 'path')
 		.option('--port <value>', 'port')
 		.option('--customEntrypoint <value>', 'customEntrypoint')
-		.option('--https', 'https')
+		.option('--https [true|false]', 'https')
 		.option('--applicationId <value>', 'applicationId')
 		.option('--certificateType <value>', 'certificateType (letsencrypt, none, custom)')
 		.option('--customCertResolver <value>', 'customCertResolver')
@@ -2878,18 +2884,18 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--domainType <value>', 'domainType (compose, application, preview)')
 		.option('--previewDeploymentId <value>', 'previewDeploymentId')
 		.option('--internalPath <value>', 'internalPath')
-		.option('--stripPath', 'stripPath')
+		.option('--stripPath [true|false]', 'stripPath')
 		.option('--middlewares <value>', 'middlewares')
-		.option('--forwardAuthEnabled', 'forwardAuthEnabled')
+		.option('--forwardAuthEnabled [true|false]', 'forwardAuthEnabled')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
-			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
-			if (opts["stripPath"] != null) opts["stripPath"] = opts["stripPath"] === true || opts["stripPath"] === "true";
+			if (opts["https"] != null) opts["https"] = parseBooleanOption(opts["https"], "https");
+			if (opts["stripPath"] != null) opts["stripPath"] = parseBooleanOption(opts["stripPath"], "stripPath");
 			if (opts["middlewares"] != null) opts["middlewares"] = parseJsonOption(opts["middlewares"], "middlewares", "array");
-			if (opts["forwardAuthEnabled"] != null) opts["forwardAuthEnabled"] = opts["forwardAuthEnabled"] === true || opts["forwardAuthEnabled"] === "true";
+			if (opts["forwardAuthEnabled"] != null) opts["forwardAuthEnabled"] = parseBooleanOption(opts["forwardAuthEnabled"], "forwardAuthEnabled");
 			const data = await apiPost("domain.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2954,27 +2960,27 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--path <value>', 'path')
 		.option('--port <value>', 'port')
 		.option('--customEntrypoint <value>', 'customEntrypoint')
-		.option('--https', 'https')
+		.option('--https [true|false]', 'https')
 		.option('--certificateType <value>', 'certificateType (letsencrypt, none, custom)')
 		.option('--customCertResolver <value>', 'customCertResolver')
 		.option('--serviceName <value>', 'serviceName')
 		.option('--domainType <value>', 'domainType (compose, application, preview)')
 		.option('--internalPath <value>', 'internalPath')
-		.option('--stripPath', 'stripPath')
+		.option('--stripPath [true|false]', 'stripPath')
 		.option('--middlewares <value>', 'middlewares')
-		.option('--forwardAuthEnabled', 'forwardAuthEnabled')
-		.option('--enabled', 'enabled')
+		.option('--forwardAuthEnabled [true|false]', 'forwardAuthEnabled')
+		.option('--enabled [true|false]', 'enabled')
 		.requiredOption('--domainId <value>', 'domainId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
-			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
-			if (opts["stripPath"] != null) opts["stripPath"] = opts["stripPath"] === true || opts["stripPath"] === "true";
+			if (opts["https"] != null) opts["https"] = parseBooleanOption(opts["https"], "https");
+			if (opts["stripPath"] != null) opts["stripPath"] = parseBooleanOption(opts["stripPath"], "stripPath");
 			if (opts["middlewares"] != null) opts["middlewares"] = parseJsonOption(opts["middlewares"], "middlewares", "array");
-			if (opts["forwardAuthEnabled"] != null) opts["forwardAuthEnabled"] = opts["forwardAuthEnabled"] === true || opts["forwardAuthEnabled"] === "true";
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["forwardAuthEnabled"] != null) opts["forwardAuthEnabled"] = parseBooleanOption(opts["forwardAuthEnabled"], "forwardAuthEnabled");
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			const data = await apiPost("domain.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3210,14 +3216,14 @@ export function registerGeneratedCommands(program: Command) {
 		.description('forwardAuth setAuthDomain')
 		.requiredOption('--serverId <value>', 'serverId')
 		.requiredOption('--authDomain <value>', 'authDomain')
-		.option('--https', 'https')
+		.option('--https [true|false]', 'https')
 		.option('--certificateType <value>', 'certificateType (none, letsencrypt, custom)')
 		.option('--customCertResolver <value>', 'customCertResolver')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
+			if (opts["https"] != null) opts["https"] = parseBooleanOption(opts["https"], "https");
 			const data = await apiPost("forwardAuth.setAuthDomain", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3613,12 +3619,12 @@ export function registerGeneratedCommands(program: Command) {
 		.command('toggle-share')
 		.description('gitProvider toggleShare')
 		.requiredOption('--gitProviderId <value>', 'gitProviderId')
-		.requiredOption('--sharedWithOrganization', 'sharedWithOrganization')
+		.requiredOption('--sharedWithOrganization [true|false]', 'sharedWithOrganization')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["sharedWithOrganization"] != null) opts["sharedWithOrganization"] = opts["sharedWithOrganization"] === true || opts["sharedWithOrganization"] === "true";
+			if (opts["sharedWithOrganization"] != null) opts["sharedWithOrganization"] = parseBooleanOption(opts["sharedWithOrganization"], "sharedWithOrganization");
 			const data = await apiPost("gitProvider.toggleShare", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3650,13 +3656,13 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--databasePassword <value>', 'databasePassword')
 		.requiredOption('--sqldNode <value>', 'sqldNode (primary, replica)')
 		.requiredOption('--sqldPrimaryUrl <value>', 'sqldPrimaryUrl')
-		.requiredOption('--enableNamespaces', 'enableNamespaces')
+		.requiredOption('--enableNamespaces [true|false]', 'enableNamespaces')
 		.requiredOption('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enableNamespaces"] != null) opts["enableNamespaces"] = opts["enableNamespaces"] === true || opts["enableNamespaces"] === "true";
+			if (opts["enableNamespaces"] != null) opts["enableNamespaces"] = parseBooleanOption(opts["enableNamespaces"], "enableNamespaces");
 			const data = await apiPost("libsql.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3826,7 +3832,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--databasePassword <value>', 'databasePassword')
 		.option('--sqldNode <value>', 'sqldNode (primary, replica)')
 		.option('--sqldPrimaryUrl <value>', 'sqldPrimaryUrl')
-		.option('--enableNamespaces', 'enableNamespaces')
+		.option('--enableNamespaces [true|false]', 'enableNamespaces')
 		.option('--dockerImage <value>', 'dockerImage')
 		.option('--command <value>', 'command')
 		.option('--env <value>', 'env')
@@ -3850,14 +3856,14 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--endpointSpecSwarm <value>', 'endpointSpecSwarm')
 		.option('--replicas <value>', 'replicas')
 		.option('--networkIds <value>', 'networkIds')
-		.option('--detachDokployNetwork', 'detachDokployNetwork')
+		.option('--detachDokployNetwork [true|false]', 'detachDokployNetwork')
 		.option('--createdAt <value>', 'createdAt')
 		.option('--environmentId <value>', 'environmentId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enableNamespaces"] != null) opts["enableNamespaces"] = opts["enableNamespaces"] === true || opts["enableNamespaces"] === "true";
+			if (opts["enableNamespaces"] != null) opts["enableNamespaces"] = parseBooleanOption(opts["enableNamespaces"], "enableNamespaces");
 			if (opts["externalPort"] != null) opts["externalPort"] = Number(opts["externalPort"]);
 			if (opts["externalGRPCPort"] != null) opts["externalGRPCPort"] = Number(opts["externalGRPCPort"]);
 			if (opts["externalAdminPort"] != null) opts["externalAdminPort"] = Number(opts["externalAdminPort"]);
@@ -3873,7 +3879,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			if (opts["networkIds"] != null) opts["networkIds"] = parseJsonOption(opts["networkIds"], "networkIds", "array");
-			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = opts["detachDokployNetwork"] === true || opts["detachDokployNetwork"] === "true";
+			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = parseBooleanOption(opts["detachDokployNetwork"], "detachDokployNetwork");
 			const data = await apiPost("libsql.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -3934,12 +3940,12 @@ export function registerGeneratedCommands(program: Command) {
 	g_licenseKey
 		.command('update-enterprise-settings')
 		.description('licenseKey updateEnterpriseSettings')
-		.option('--enableEnterpriseFeatures', 'enableEnterpriseFeatures')
+		.option('--enableEnterpriseFeatures [true|false]', 'enableEnterpriseFeatures')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enableEnterpriseFeatures"] != null) opts["enableEnterpriseFeatures"] = opts["enableEnterpriseFeatures"] === true || opts["enableEnterpriseFeatures"] === "true";
+			if (opts["enableEnterpriseFeatures"] != null) opts["enableEnterpriseFeatures"] = parseBooleanOption(opts["enableEnterpriseFeatures"], "enableEnterpriseFeatures");
 			const data = await apiPost("licenseKey.updateEnterpriseSettings", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4216,7 +4222,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--createdAt <value>', 'createdAt')
 		.option('--environmentId <value>', 'environmentId')
 		.option('--networkIds <value>', 'networkIds')
-		.option('--detachDokployNetwork', 'detachDokployNetwork')
+		.option('--detachDokployNetwork [true|false]', 'detachDokployNetwork')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -4236,7 +4242,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			if (opts["networkIds"] != null) opts["networkIds"] = parseJsonOption(opts["networkIds"], "networkIds", "array");
-			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = opts["detachDokployNetwork"] === true || opts["detachDokployNetwork"] === "true";
+			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = parseBooleanOption(opts["detachDokployNetwork"], "detachDokployNetwork");
 			const data = await apiPost("mariadb.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4281,12 +4287,12 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--databaseUser <value>', 'databaseUser')
 		.requiredOption('--databasePassword <value>', 'databasePassword')
 		.option('--serverId <value>', 'serverId')
-		.option('--replicaSets', 'replicaSets')
+		.option('--replicaSets [true|false]', 'replicaSets')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["replicaSets"] != null) opts["replicaSets"] = opts["replicaSets"] === true || opts["replicaSets"] === "true";
+			if (opts["replicaSets"] != null) opts["replicaSets"] = parseBooleanOption(opts["replicaSets"], "replicaSets");
 			const data = await apiPost("mongo.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4495,9 +4501,9 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--replicas <value>', 'replicas')
 		.option('--createdAt <value>', 'createdAt')
 		.option('--environmentId <value>', 'environmentId')
-		.option('--replicaSets', 'replicaSets')
+		.option('--replicaSets [true|false]', 'replicaSets')
 		.option('--networkIds <value>', 'networkIds')
-		.option('--detachDokployNetwork', 'detachDokployNetwork')
+		.option('--detachDokployNetwork [true|false]', 'detachDokployNetwork')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -4516,9 +4522,9 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["endpointSpecSwarm"] != null) opts["endpointSpecSwarm"] = parseJsonOption(opts["endpointSpecSwarm"], "endpointSpecSwarm", "object");
 			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
-			if (opts["replicaSets"] != null) opts["replicaSets"] = opts["replicaSets"] === true || opts["replicaSets"] === "true";
+			if (opts["replicaSets"] != null) opts["replicaSets"] = parseBooleanOption(opts["replicaSets"], "replicaSets");
 			if (opts["networkIds"] != null) opts["networkIds"] = parseJsonOption(opts["networkIds"], "networkIds", "array");
-			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = opts["detachDokployNetwork"] === true || opts["detachDokployNetwork"] === "true";
+			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = parseBooleanOption(opts["detachDokployNetwork"], "detachDokployNetwork");
 			const data = await apiPost("mongo.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4884,7 +4890,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--createdAt <value>', 'createdAt')
 		.option('--environmentId <value>', 'environmentId')
 		.option('--networkIds <value>', 'networkIds')
-		.option('--detachDokployNetwork', 'detachDokployNetwork')
+		.option('--detachDokployNetwork [true|false]', 'detachDokployNetwork')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -4904,7 +4910,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			if (opts["networkIds"] != null) opts["networkIds"] = parseJsonOption(opts["networkIds"], "networkIds", "array");
-			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = opts["detachDokployNetwork"] === true || opts["detachDokployNetwork"] === "true";
+			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = parseBooleanOption(opts["detachDokployNetwork"], "detachDokployNetwork");
 			const data = await apiPost("mysql.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -4928,10 +4934,10 @@ export function registerGeneratedCommands(program: Command) {
 		.description('network create')
 		.requiredOption('--name <value>', 'name')
 		.option('--driver <value>', 'driver (bridge, overlay)')
-		.option('--internal', 'internal')
-		.option('--attachable', 'attachable')
-		.option('--enableIPv4', 'enableIPv4')
-		.option('--enableIPv6', 'enableIPv6')
+		.option('--internal [true|false]', 'internal')
+		.option('--attachable [true|false]', 'attachable')
+		.option('--enableIPv4 [true|false]', 'enableIPv4')
+		.option('--enableIPv6 [true|false]', 'enableIPv6')
 		.option('--mtu <value>', 'mtu')
 		.option('--ipam <value>', 'ipam')
 		.option('--serverId <value>', 'serverId')
@@ -4939,10 +4945,10 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["internal"] != null) opts["internal"] = opts["internal"] === true || opts["internal"] === "true";
-			if (opts["attachable"] != null) opts["attachable"] = opts["attachable"] === true || opts["attachable"] === "true";
-			if (opts["enableIPv4"] != null) opts["enableIPv4"] = opts["enableIPv4"] === true || opts["enableIPv4"] === "true";
-			if (opts["enableIPv6"] != null) opts["enableIPv6"] = opts["enableIPv6"] === true || opts["enableIPv6"] === "true";
+			if (opts["internal"] != null) opts["internal"] = parseBooleanOption(opts["internal"], "internal");
+			if (opts["attachable"] != null) opts["attachable"] = parseBooleanOption(opts["attachable"], "attachable");
+			if (opts["enableIPv4"] != null) opts["enableIPv4"] = parseBooleanOption(opts["enableIPv4"], "enableIPv4");
+			if (opts["enableIPv6"] != null) opts["enableIPv6"] = parseBooleanOption(opts["enableIPv6"], "enableIPv6");
 			if (opts["mtu"] != null) opts["mtu"] = Number(opts["mtu"]);
 			if (opts["ipam"] != null) opts["ipam"] = parseJsonOption(opts["ipam"], "ipam", "object");
 			const data = await apiPost("network.create", opts);
@@ -5058,29 +5064,29 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-custom')
 		.description('notification createCustom')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--endpoint <value>', 'endpoint')
 		.option('--headers <value>', 'headers')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["headers"] != null) opts["headers"] = parseJsonOption(opts["headers"], "headers", "object");
 			const data = await apiPost("notification.createCustom", opts);
 			printOutput(data, jsonOutput, false);
@@ -5089,30 +5095,30 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-discord')
 		.description('notification createDiscord')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--webhookUrl <value>', 'webhookUrl')
-		.requiredOption('--decoration', 'decoration')
+		.requiredOption('--decoration [true|false]', 'decoration')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
-			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
+			if (opts["decoration"] != null) opts["decoration"] = parseBooleanOption(opts["decoration"], "decoration");
 			const data = await apiPost("notification.createDiscord", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5120,15 +5126,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-email')
 		.description('notification createEmail')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--smtpServer <value>', 'smtpServer')
 		.requiredOption('--smtpPort <value>', 'smtpPort')
 		.requiredOption('--username <value>', 'username')
@@ -5139,14 +5145,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["smtpPort"] != null) opts["smtpPort"] = Number(opts["smtpPort"]);
 			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.createEmail", opts);
@@ -5156,33 +5162,33 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-gotify')
 		.description('notification createGotify')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--serverUrl <value>', 'serverUrl')
 		.requiredOption('--appToken <value>', 'appToken')
 		.requiredOption('--priority <value>', 'priority')
-		.requiredOption('--decoration', 'decoration')
+		.requiredOption('--decoration [true|false]', 'decoration')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
-			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
+			if (opts["decoration"] != null) opts["decoration"] = parseBooleanOption(opts["decoration"], "decoration");
 			const data = await apiPost("notification.createGotify", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5190,28 +5196,28 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-lark')
 		.description('notification createLark')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--webhookUrl <value>', 'webhookUrl')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.createLark", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5219,15 +5225,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-mattermost')
 		.description('notification createMattermost')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--webhookUrl <value>', 'webhookUrl')
 		.option('--channel <value>', 'channel')
 		.option('--username <value>', 'username')
@@ -5235,14 +5241,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.createMattermost", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5250,15 +5256,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-ntfy')
 		.description('notification createNtfy')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--serverUrl <value>', 'serverUrl')
 		.requiredOption('--topic <value>', 'topic')
 		.requiredOption('--accessToken <value>', 'accessToken')
@@ -5267,14 +5273,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			const data = await apiPost("notification.createNtfy", opts);
 			printOutput(data, jsonOutput, false);
@@ -5283,15 +5289,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-pushover')
 		.description('notification createPushover')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--userKey <value>', 'userKey')
 		.requiredOption('--apiToken <value>', 'apiToken')
 		.option('--priority <value>', 'priority')
@@ -5301,14 +5307,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			if (opts["retry"] != null) opts["retry"] = Number(opts["retry"]);
 			if (opts["expire"] != null) opts["expire"] = Number(opts["expire"]);
@@ -5319,15 +5325,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-resend')
 		.description('notification createResend')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--apiKey <value>', 'apiKey')
 		.requiredOption('--fromAddress <value>', 'fromAddress')
 		.requiredOption('--toAddresses <value>', 'toAddresses')
@@ -5335,14 +5341,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.createResend", opts);
 			printOutput(data, jsonOutput, false);
@@ -5351,29 +5357,29 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-slack')
 		.description('notification createSlack')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--webhookUrl <value>', 'webhookUrl')
 		.requiredOption('--channel <value>', 'channel')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.createSlack", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5381,28 +5387,28 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-teams')
 		.description('notification createTeams')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--webhookUrl <value>', 'webhookUrl')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.createTeams", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5410,15 +5416,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('create-telegram')
 		.description('notification createTelegram')
-		.requiredOption('--appBuildError', 'appBuildError')
-		.requiredOption('--databaseBackup', 'databaseBackup')
-		.requiredOption('--dokployBackup', 'dokployBackup')
-		.requiredOption('--volumeBackup', 'volumeBackup')
-		.requiredOption('--dokployRestart', 'dokployRestart')
+		.requiredOption('--appBuildError [true|false]', 'appBuildError')
+		.requiredOption('--databaseBackup [true|false]', 'databaseBackup')
+		.requiredOption('--dokployBackup [true|false]', 'dokployBackup')
+		.requiredOption('--volumeBackup [true|false]', 'volumeBackup')
+		.requiredOption('--dokployRestart [true|false]', 'dokployRestart')
 		.requiredOption('--name <value>', 'name')
-		.requiredOption('--appDeploy', 'appDeploy')
-		.requiredOption('--dockerCleanup', 'dockerCleanup')
-		.requiredOption('--serverThreshold', 'serverThreshold')
+		.requiredOption('--appDeploy [true|false]', 'appDeploy')
+		.requiredOption('--dockerCleanup [true|false]', 'dockerCleanup')
+		.requiredOption('--serverThreshold [true|false]', 'serverThreshold')
 		.requiredOption('--botToken <value>', 'botToken')
 		.requiredOption('--chatId <value>', 'chatId')
 		.requiredOption('--messageThreadId <value>', 'messageThreadId')
@@ -5426,14 +5432,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.createTelegram", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5515,12 +5521,12 @@ export function registerGeneratedCommands(program: Command) {
 		.command('test-discord-connection')
 		.description('notification testDiscordConnection')
 		.requiredOption('--webhookUrl <value>', 'webhookUrl')
-		.option('--decoration', 'decoration')
+		.option('--decoration [true|false]', 'decoration')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
+			if (opts["decoration"] != null) opts["decoration"] = parseBooleanOption(opts["decoration"], "decoration");
 			const data = await apiPost("notification.testDiscordConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5550,13 +5556,13 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--serverUrl <value>', 'serverUrl')
 		.requiredOption('--appToken <value>', 'appToken')
 		.requiredOption('--priority <value>', 'priority')
-		.option('--decoration', 'decoration')
+		.option('--decoration [true|false]', 'decoration')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
-			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
+			if (opts["decoration"] != null) opts["decoration"] = parseBooleanOption(opts["decoration"], "decoration");
 			const data = await apiPost("notification.testGotifyConnection", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5684,15 +5690,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-custom')
 		.description('notification updateCustom')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--endpoint <value>', 'endpoint')
 		.option('--headers <value>', 'headers')
 		.requiredOption('--notificationId <value>', 'notificationId')
@@ -5702,14 +5708,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["headers"] != null) opts["headers"] = parseJsonOption(opts["headers"], "headers", "object");
 			const data = await apiPost("notification.updateCustom", opts);
 			printOutput(data, jsonOutput, false);
@@ -5718,17 +5724,17 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-discord')
 		.description('notification updateDiscord')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--webhookUrl <value>', 'webhookUrl')
-		.option('--decoration', 'decoration')
+		.option('--decoration [true|false]', 'decoration')
 		.requiredOption('--notificationId <value>', 'notificationId')
 		.requiredOption('--discordId <value>', 'discordId')
 		.option('--organizationId <value>', 'organizationId')
@@ -5736,15 +5742,15 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
-			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
+			if (opts["decoration"] != null) opts["decoration"] = parseBooleanOption(opts["decoration"], "decoration");
 			const data = await apiPost("notification.updateDiscord", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5752,15 +5758,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-email')
 		.description('notification updateEmail')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--smtpServer <value>', 'smtpServer')
 		.option('--smtpPort <value>', 'smtpPort')
 		.option('--username <value>', 'username')
@@ -5774,14 +5780,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["smtpPort"] != null) opts["smtpPort"] = Number(opts["smtpPort"]);
 			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.updateEmail", opts);
@@ -5791,19 +5797,19 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-gotify')
 		.description('notification updateGotify')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--serverUrl <value>', 'serverUrl')
 		.option('--appToken <value>', 'appToken')
 		.option('--priority <value>', 'priority')
-		.option('--decoration', 'decoration')
+		.option('--decoration [true|false]', 'decoration')
 		.requiredOption('--notificationId <value>', 'notificationId')
 		.requiredOption('--gotifyId <value>', 'gotifyId')
 		.option('--organizationId <value>', 'organizationId')
@@ -5811,16 +5817,16 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
-			if (opts["decoration"] != null) opts["decoration"] = opts["decoration"] === true || opts["decoration"] === "true";
+			if (opts["decoration"] != null) opts["decoration"] = parseBooleanOption(opts["decoration"], "decoration");
 			const data = await apiPost("notification.updateGotify", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5828,15 +5834,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-lark')
 		.description('notification updateLark')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--webhookUrl <value>', 'webhookUrl')
 		.requiredOption('--notificationId <value>', 'notificationId')
 		.requiredOption('--larkId <value>', 'larkId')
@@ -5845,14 +5851,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.updateLark", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5860,15 +5866,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-mattermost')
 		.description('notification updateMattermost')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--webhookUrl <value>', 'webhookUrl')
 		.option('--channel <value>', 'channel')
 		.option('--username <value>', 'username')
@@ -5879,14 +5885,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.updateMattermost", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5894,15 +5900,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-ntfy')
 		.description('notification updateNtfy')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--serverUrl <value>', 'serverUrl')
 		.option('--topic <value>', 'topic')
 		.option('--accessToken <value>', 'accessToken')
@@ -5914,14 +5920,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			const data = await apiPost("notification.updateNtfy", opts);
 			printOutput(data, jsonOutput, false);
@@ -5938,15 +5944,15 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--priority <value>', 'priority')
 		.option('--retry <value>', 'retry')
 		.option('--expire <value>', 'expire')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -5954,14 +5960,14 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["priority"] != null) opts["priority"] = Number(opts["priority"]);
 			if (opts["retry"] != null) opts["retry"] = Number(opts["retry"]);
 			if (opts["expire"] != null) opts["expire"] = Number(opts["expire"]);
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.updatePushover", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -5969,15 +5975,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-resend')
 		.description('notification updateResend')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--apiKey <value>', 'apiKey')
 		.option('--fromAddress <value>', 'fromAddress')
 		.option('--toAddresses <value>', 'toAddresses')
@@ -5988,14 +5994,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			if (opts["toAddresses"] != null) opts["toAddresses"] = parseJsonOption(opts["toAddresses"], "toAddresses", "array");
 			const data = await apiPost("notification.updateResend", opts);
 			printOutput(data, jsonOutput, false);
@@ -6004,15 +6010,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-slack')
 		.description('notification updateSlack')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--webhookUrl <value>', 'webhookUrl')
 		.option('--channel <value>', 'channel')
 		.requiredOption('--notificationId <value>', 'notificationId')
@@ -6022,14 +6028,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.updateSlack", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6037,15 +6043,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-teams')
 		.description('notification updateTeams')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--webhookUrl <value>', 'webhookUrl')
 		.requiredOption('--notificationId <value>', 'notificationId')
 		.requiredOption('--teamsId <value>', 'teamsId')
@@ -6054,14 +6060,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.updateTeams", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6069,15 +6075,15 @@ export function registerGeneratedCommands(program: Command) {
 	g_notification
 		.command('update-telegram')
 		.description('notification updateTelegram')
-		.option('--appBuildError', 'appBuildError')
-		.option('--databaseBackup', 'databaseBackup')
-		.option('--dokployBackup', 'dokployBackup')
-		.option('--volumeBackup', 'volumeBackup')
-		.option('--dokployRestart', 'dokployRestart')
+		.option('--appBuildError [true|false]', 'appBuildError')
+		.option('--databaseBackup [true|false]', 'databaseBackup')
+		.option('--dokployBackup [true|false]', 'dokployBackup')
+		.option('--volumeBackup [true|false]', 'volumeBackup')
+		.option('--dokployRestart [true|false]', 'dokployRestart')
 		.option('--name <value>', 'name')
-		.option('--appDeploy', 'appDeploy')
-		.option('--dockerCleanup', 'dockerCleanup')
-		.option('--serverThreshold', 'serverThreshold')
+		.option('--appDeploy [true|false]', 'appDeploy')
+		.option('--dockerCleanup [true|false]', 'dockerCleanup')
+		.option('--serverThreshold [true|false]', 'serverThreshold')
 		.option('--botToken <value>', 'botToken')
 		.option('--chatId <value>', 'chatId')
 		.option('--messageThreadId <value>', 'messageThreadId')
@@ -6088,14 +6094,14 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["appBuildError"] != null) opts["appBuildError"] = opts["appBuildError"] === true || opts["appBuildError"] === "true";
-			if (opts["databaseBackup"] != null) opts["databaseBackup"] = opts["databaseBackup"] === true || opts["databaseBackup"] === "true";
-			if (opts["dokployBackup"] != null) opts["dokployBackup"] = opts["dokployBackup"] === true || opts["dokployBackup"] === "true";
-			if (opts["volumeBackup"] != null) opts["volumeBackup"] = opts["volumeBackup"] === true || opts["volumeBackup"] === "true";
-			if (opts["dokployRestart"] != null) opts["dokployRestart"] = opts["dokployRestart"] === true || opts["dokployRestart"] === "true";
-			if (opts["appDeploy"] != null) opts["appDeploy"] = opts["appDeploy"] === true || opts["appDeploy"] === "true";
-			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = opts["dockerCleanup"] === true || opts["dockerCleanup"] === "true";
-			if (opts["serverThreshold"] != null) opts["serverThreshold"] = opts["serverThreshold"] === true || opts["serverThreshold"] === "true";
+			if (opts["appBuildError"] != null) opts["appBuildError"] = parseBooleanOption(opts["appBuildError"], "appBuildError");
+			if (opts["databaseBackup"] != null) opts["databaseBackup"] = parseBooleanOption(opts["databaseBackup"], "databaseBackup");
+			if (opts["dokployBackup"] != null) opts["dokployBackup"] = parseBooleanOption(opts["dokployBackup"], "dokployBackup");
+			if (opts["volumeBackup"] != null) opts["volumeBackup"] = parseBooleanOption(opts["volumeBackup"], "volumeBackup");
+			if (opts["dokployRestart"] != null) opts["dokployRestart"] = parseBooleanOption(opts["dokployRestart"], "dokployRestart");
+			if (opts["appDeploy"] != null) opts["appDeploy"] = parseBooleanOption(opts["appDeploy"], "appDeploy");
+			if (opts["dockerCleanup"] != null) opts["dockerCleanup"] = parseBooleanOption(opts["dockerCleanup"], "dockerCleanup");
+			if (opts["serverThreshold"] != null) opts["serverThreshold"] = parseBooleanOption(opts["serverThreshold"], "serverThreshold");
 			const data = await apiPost("notification.updateTelegram", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6324,14 +6330,14 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--filePath <value>', 'filePath')
 		.requiredOption('--content <value>', 'content')
 		.option('--type <value>', 'type (create, update, delete)')
-		.option('--enabled', 'enabled')
+		.option('--enabled [true|false]', 'enabled')
 		.option('--applicationId <value>', 'applicationId')
 		.option('--composeId <value>', 'composeId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			const data = await apiPost("patch.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6442,12 +6448,12 @@ export function registerGeneratedCommands(program: Command) {
 		.command('toggle-enabled')
 		.description('patch toggleEnabled')
 		.requiredOption('--patchId <value>', 'patchId')
-		.requiredOption('--enabled', 'enabled')
+		.requiredOption('--enabled [true|false]', 'enabled')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			const data = await apiPost("patch.toggleEnabled", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6458,7 +6464,7 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--patchId <value>', 'patchId')
 		.option('--type <value>', 'type (create, update, delete)')
 		.option('--filePath <value>', 'filePath')
-		.option('--enabled', 'enabled')
+		.option('--enabled [true|false]', 'enabled')
 		.option('--content <value>', 'content')
 		.option('--createdAt <value>', 'createdAt')
 		.option('--updatedAt <value>', 'updatedAt')
@@ -6466,7 +6472,7 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			const data = await apiPost("patch.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6790,7 +6796,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--createdAt <value>', 'createdAt')
 		.option('--environmentId <value>', 'environmentId')
 		.option('--networkIds <value>', 'networkIds')
-		.option('--detachDokployNetwork', 'detachDokployNetwork')
+		.option('--detachDokployNetwork [true|false]', 'detachDokployNetwork')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -6810,7 +6816,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			if (opts["networkIds"] != null) opts["networkIds"] = parseJsonOption(opts["networkIds"], "networkIds", "array");
-			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = opts["detachDokployNetwork"] === true || opts["detachDokployNetwork"] === "true";
+			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = parseBooleanOption(opts["detachDokployNetwork"], "detachDokployNetwork");
 			const data = await apiPost("postgres.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -6931,16 +6937,16 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--sourceEnvironmentId <value>', 'sourceEnvironmentId')
 		.requiredOption('--name <value>', 'name')
 		.option('--description <value>', 'description')
-		.option('--includeServices', 'includeServices')
+		.option('--includeServices [true|false]', 'includeServices')
 		.option('--selectedServices <value>', 'selectedServices')
-		.option('--duplicateInSameProject', 'duplicateInSameProject')
+		.option('--duplicateInSameProject [true|false]', 'duplicateInSameProject')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["includeServices"] != null) opts["includeServices"] = opts["includeServices"] === true || opts["includeServices"] === "true";
+			if (opts["includeServices"] != null) opts["includeServices"] = parseBooleanOption(opts["includeServices"], "includeServices");
 			if (opts["selectedServices"] != null) opts["selectedServices"] = parseJsonOption(opts["selectedServices"], "selectedServices", "array");
-			if (opts["duplicateInSameProject"] != null) opts["duplicateInSameProject"] = opts["duplicateInSameProject"] === true || opts["duplicateInSameProject"] === "true";
+			if (opts["duplicateInSameProject"] != null) opts["duplicateInSameProject"] = parseBooleanOption(opts["duplicateInSameProject"], "duplicateInSameProject");
 			const data = await apiPost("project.duplicate", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7039,13 +7045,13 @@ export function registerGeneratedCommands(program: Command) {
 		.description('redirects create')
 		.requiredOption('--regex <value>', 'regex')
 		.requiredOption('--replacement <value>', 'replacement')
-		.requiredOption('--permanent', 'permanent')
+		.requiredOption('--permanent [true|false]', 'permanent')
 		.requiredOption('--applicationId <value>', 'applicationId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["permanent"] != null) opts["permanent"] = opts["permanent"] === true || opts["permanent"] === "true";
+			if (opts["permanent"] != null) opts["permanent"] = parseBooleanOption(opts["permanent"], "permanent");
 			const data = await apiPost("redirects.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7082,12 +7088,12 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--redirectId <value>', 'redirectId')
 		.requiredOption('--regex <value>', 'regex')
 		.requiredOption('--replacement <value>', 'replacement')
-		.requiredOption('--permanent', 'permanent')
+		.requiredOption('--permanent [true|false]', 'permanent')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["permanent"] != null) opts["permanent"] = opts["permanent"] === true || opts["permanent"] === "true";
+			if (opts["permanent"] != null) opts["permanent"] = parseBooleanOption(opts["permanent"], "permanent");
 			const data = await apiPost("redirects.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7344,7 +7350,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--replicas <value>', 'replicas')
 		.option('--environmentId <value>', 'environmentId')
 		.option('--networkIds <value>', 'networkIds')
-		.option('--detachDokployNetwork', 'detachDokployNetwork')
+		.option('--detachDokployNetwork [true|false]', 'detachDokployNetwork')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -7364,7 +7370,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["ulimitsSwarm"] != null) opts["ulimitsSwarm"] = parseJsonOption(opts["ulimitsSwarm"], "ulimitsSwarm", "array");
 			if (opts["replicas"] != null) opts["replicas"] = Number(opts["replicas"]);
 			if (opts["networkIds"] != null) opts["networkIds"] = parseJsonOption(opts["networkIds"], "networkIds", "array");
-			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = opts["detachDokployNetwork"] === true || opts["detachDokployNetwork"] === "true";
+			if (opts["detachDokployNetwork"] != null) opts["detachDokployNetwork"] = parseBooleanOption(opts["detachDokployNetwork"], "detachDokployNetwork");
 			const data = await apiPost("redis.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7528,14 +7534,14 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--composeId <value>', 'composeId')
 		.option('--serverId <value>', 'serverId')
 		.option('--organizationId <value>', 'organizationId')
-		.option('--enabled', 'enabled')
+		.option('--enabled [true|false]', 'enabled')
 		.option('--timezone <value>', 'timezone')
 		.option('--createdAt <value>', 'createdAt')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			const data = await apiPost("schedule.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7610,14 +7616,14 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--composeId <value>', 'composeId')
 		.option('--serverId <value>', 'serverId')
 		.option('--organizationId <value>', 'organizationId')
-		.option('--enabled', 'enabled')
+		.option('--enabled [true|false]', 'enabled')
 		.option('--timezone <value>', 'timezone')
 		.option('--createdAt <value>', 'createdAt')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			const data = await apiPost("schedule.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7782,13 +7788,13 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--username <value>', 'username')
 		.requiredOption('--sshKeyId <value>', 'sshKeyId')
 		.requiredOption('--serverType <value>', 'serverType (deploy, build)')
-		.option('--enableDockerCleanup', 'enableDockerCleanup')
+		.option('--enableDockerCleanup [true|false]', 'enableDockerCleanup')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
-			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = opts["enableDockerCleanup"] === true || opts["enableDockerCleanup"] === "true";
+			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = parseBooleanOption(opts["enableDockerCleanup"], "enableDockerCleanup");
 			const data = await apiPost("server.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7937,14 +7943,14 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--username <value>', 'username; defaults to the current value')
 		.option('--sshKeyId <value>', 'sshKeyId; defaults to the current value')
 		.option('--serverType <value>', 'serverType (deploy, build); defaults to the current value')
-		.option('--enableDockerCleanup', 'enableDockerCleanup; defaults to the current value')
+		.option('--enableDockerCleanup [true|false]', 'enableDockerCleanup; defaults to the current value')
 		.option('--command <value>', 'command')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
-			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = opts["enableDockerCleanup"] === true || opts["enableDockerCleanup"] === "true";
+			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = parseBooleanOption(opts["enableDockerCleanup"], "enableDockerCleanup");
 			await fillFromCurrentRecord({"endpoint":"server.one","idKey":"serverId","fields":[{"name":"name"},{"name":"description","nullable":true},{"name":"ipAddress"},{"name":"port"},{"name":"username"},{"name":"sshKeyId","nullable":true},{"name":"serverType"},{"name":"enableDockerCleanup","optional":true}]}, opts);
 			const data = await apiPost("server.update", opts);
 			printOutput(data, jsonOutput, false);
@@ -7997,12 +8003,12 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--host <value>', 'host')
 		.requiredOption('--certificateType <value>', 'certificateType (letsencrypt, none, custom)')
 		.option('--letsEncryptEmail <value>', 'letsEncryptEmail')
-		.option('--https', 'https')
+		.option('--https [true|false]', 'https')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["https"] != null) opts["https"] = opts["https"] === true || opts["https"] === "true";
+			if (opts["https"] != null) opts["https"] = parseBooleanOption(opts["https"], "https");
 			const data = await apiPost("settings.assignDomainServer", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8479,13 +8485,13 @@ export function registerGeneratedCommands(program: Command) {
 	g_settings
 		.command('toggle-dashboard')
 		.description('settings toggleDashboard')
-		.option('--enableDashboard', 'enableDashboard')
+		.option('--enableDashboard [true|false]', 'enableDashboard')
 		.option('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enableDashboard"] != null) opts["enableDashboard"] = opts["enableDashboard"] === true || opts["enableDashboard"] === "true";
+			if (opts["enableDashboard"] != null) opts["enableDashboard"] = parseBooleanOption(opts["enableDashboard"], "enableDashboard");
 			const data = await apiPost("settings.toggleDashboard", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8493,12 +8499,12 @@ export function registerGeneratedCommands(program: Command) {
 	g_settings
 		.command('toggle-requests')
 		.description('settings toggleRequests')
-		.requiredOption('--enable', 'enable')
+		.requiredOption('--enable [true|false]', 'enable')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enable"] != null) opts["enable"] = opts["enable"] === true || opts["enable"] === "true";
+			if (opts["enable"] != null) opts["enable"] = parseBooleanOption(opts["enable"], "enable");
 			const data = await apiPost("settings.toggleRequests", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8519,13 +8525,13 @@ export function registerGeneratedCommands(program: Command) {
 	g_settings
 		.command('update-docker-cleanup')
 		.description('settings updateDockerCleanup')
-		.requiredOption('--enableDockerCleanup', 'enableDockerCleanup')
+		.requiredOption('--enableDockerCleanup [true|false]', 'enableDockerCleanup')
 		.option('--serverId <value>', 'serverId')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = opts["enableDockerCleanup"] === true || opts["enableDockerCleanup"] === "true";
+			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = parseBooleanOption(opts["enableDockerCleanup"], "enableDockerCleanup");
 			const data = await apiPost("settings.updateDockerCleanup", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8533,12 +8539,12 @@ export function registerGeneratedCommands(program: Command) {
 	g_settings
 		.command('update-enforce-sso')
 		.description('settings updateEnforceSSO')
-		.requiredOption('--enforceSSO', 'enforceSSO')
+		.requiredOption('--enforceSSO [true|false]', 'enforceSSO')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enforceSSO"] != null) opts["enforceSSO"] = opts["enforceSSO"] === true || opts["enforceSSO"] === "true";
+			if (opts["enforceSSO"] != null) opts["enforceSSO"] = parseBooleanOption(opts["enforceSSO"], "enforceSSO");
 			const data = await apiPost("settings.updateEnforceSSO", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8572,12 +8578,12 @@ export function registerGeneratedCommands(program: Command) {
 	g_settings
 		.command('update-remote-servers-only')
 		.description('settings updateRemoteServersOnly')
-		.requiredOption('--remoteServersOnly', 'remoteServersOnly')
+		.requiredOption('--remoteServersOnly [true|false]', 'remoteServersOnly')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["remoteServersOnly"] != null) opts["remoteServersOnly"] = opts["remoteServersOnly"] === true || opts["remoteServersOnly"] === "true";
+			if (opts["remoteServersOnly"] != null) opts["remoteServersOnly"] = parseBooleanOption(opts["remoteServersOnly"], "remoteServersOnly");
 			const data = await apiPost("settings.updateRemoteServersOnly", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8864,7 +8870,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--oidcConfig <value>', 'oidcConfig')
 		.option('--samlConfig <value>', 'samlConfig')
 		.option('--organizationId <value>', 'organizationId')
-		.option('--overrideUserInfo', 'overrideUserInfo')
+		.option('--overrideUserInfo [true|false]', 'overrideUserInfo')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -8872,7 +8878,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["domains"] != null) opts["domains"] = parseJsonOption(opts["domains"], "domains", "array");
 			if (opts["oidcConfig"] != null) opts["oidcConfig"] = parseJsonOption(opts["oidcConfig"], "oidcConfig", "object");
 			if (opts["samlConfig"] != null) opts["samlConfig"] = parseJsonOption(opts["samlConfig"], "samlConfig", "object");
-			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = opts["overrideUserInfo"] === true || opts["overrideUserInfo"] === "true";
+			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = parseBooleanOption(opts["overrideUserInfo"], "overrideUserInfo");
 			const data = await apiPost("sso.register", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8912,7 +8918,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--oidcConfig <value>', 'oidcConfig')
 		.option('--samlConfig <value>', 'samlConfig')
 		.option('--organizationId <value>', 'organizationId')
-		.option('--overrideUserInfo', 'overrideUserInfo')
+		.option('--overrideUserInfo [true|false]', 'overrideUserInfo')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -8920,7 +8926,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["domains"] != null) opts["domains"] = parseJsonOption(opts["domains"], "domains", "array");
 			if (opts["oidcConfig"] != null) opts["oidcConfig"] = parseJsonOption(opts["oidcConfig"], "oidcConfig", "object");
 			if (opts["samlConfig"] != null) opts["samlConfig"] = parseJsonOption(opts["samlConfig"], "samlConfig", "object");
-			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = opts["overrideUserInfo"] === true || opts["overrideUserInfo"] === "true";
+			if (opts["overrideUserInfo"] != null) opts["overrideUserInfo"] = parseBooleanOption(opts["overrideUserInfo"], "overrideUserInfo");
 			const data = await apiPost("sso.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -8959,13 +8965,13 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--tier <value>', 'tier (legacy, hobby, startup)')
 		.requiredOption('--productId <value>', 'productId')
 		.requiredOption('--serverQuantity <value>', 'serverQuantity')
-		.requiredOption('--isAnnual', 'isAnnual')
+		.requiredOption('--isAnnual [true|false]', 'isAnnual')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["serverQuantity"] != null) opts["serverQuantity"] = Number(opts["serverQuantity"]);
-			if (opts["isAnnual"] != null) opts["isAnnual"] = opts["isAnnual"] === true || opts["isAnnual"] === "true";
+			if (opts["isAnnual"] != null) opts["isAnnual"] = parseBooleanOption(opts["isAnnual"], "isAnnual");
 			const data = await apiPost("stripe.createCheckoutSession", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -9051,12 +9057,12 @@ export function registerGeneratedCommands(program: Command) {
 	g_stripe
 		.command('update-invoice-notifications')
 		.description('stripe updateInvoiceNotifications')
-		.requiredOption('--enabled', 'enabled')
+		.requiredOption('--enabled [true|false]', 'enabled')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			const data = await apiPost("stripe.updateInvoiceNotifications", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -9066,13 +9072,13 @@ export function registerGeneratedCommands(program: Command) {
 		.description('stripe upgradeSubscription')
 		.requiredOption('--tier <value>', 'tier (hobby, startup)')
 		.requiredOption('--serverQuantity <value>', 'serverQuantity')
-		.requiredOption('--isAnnual', 'isAnnual')
+		.requiredOption('--isAnnual [true|false]', 'isAnnual')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["serverQuantity"] != null) opts["serverQuantity"] = Number(opts["serverQuantity"]);
-			if (opts["isAnnual"] != null) opts["isAnnual"] = opts["isAnnual"] === true || opts["isAnnual"] === "true";
+			if (opts["isAnnual"] != null) opts["isAnnual"] = parseBooleanOption(opts["isAnnual"], "isAnnual");
 			const data = await apiPost("stripe.upgradeSubscription", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -9267,17 +9273,17 @@ export function registerGeneratedCommands(program: Command) {
 		.requiredOption('--accessedServices <value>', 'accessedServices')
 		.requiredOption('--accessedGitProviders <value>', 'accessedGitProviders')
 		.requiredOption('--accessedServers <value>', 'accessedServers')
-		.requiredOption('--canCreateProjects', 'canCreateProjects')
-		.requiredOption('--canCreateServices', 'canCreateServices')
-		.requiredOption('--canDeleteProjects', 'canDeleteProjects')
-		.requiredOption('--canDeleteServices', 'canDeleteServices')
-		.requiredOption('--canAccessToDocker', 'canAccessToDocker')
-		.requiredOption('--canAccessToTraefikFiles', 'canAccessToTraefikFiles')
-		.requiredOption('--canAccessToAPI', 'canAccessToAPI')
-		.requiredOption('--canAccessToSSHKeys', 'canAccessToSSHKeys')
-		.requiredOption('--canAccessToGitProviders', 'canAccessToGitProviders')
-		.requiredOption('--canDeleteEnvironments', 'canDeleteEnvironments')
-		.requiredOption('--canCreateEnvironments', 'canCreateEnvironments')
+		.requiredOption('--canCreateProjects [true|false]', 'canCreateProjects')
+		.requiredOption('--canCreateServices [true|false]', 'canCreateServices')
+		.requiredOption('--canDeleteProjects [true|false]', 'canDeleteProjects')
+		.requiredOption('--canDeleteServices [true|false]', 'canDeleteServices')
+		.requiredOption('--canAccessToDocker [true|false]', 'canAccessToDocker')
+		.requiredOption('--canAccessToTraefikFiles [true|false]', 'canAccessToTraefikFiles')
+		.requiredOption('--canAccessToAPI [true|false]', 'canAccessToAPI')
+		.requiredOption('--canAccessToSSHKeys [true|false]', 'canAccessToSSHKeys')
+		.requiredOption('--canAccessToGitProviders [true|false]', 'canAccessToGitProviders')
+		.requiredOption('--canDeleteEnvironments [true|false]', 'canDeleteEnvironments')
+		.requiredOption('--canCreateEnvironments [true|false]', 'canCreateEnvironments')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
@@ -9287,17 +9293,17 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["accessedServices"] != null) opts["accessedServices"] = parseJsonOption(opts["accessedServices"], "accessedServices", "array");
 			if (opts["accessedGitProviders"] != null) opts["accessedGitProviders"] = parseJsonOption(opts["accessedGitProviders"], "accessedGitProviders", "array");
 			if (opts["accessedServers"] != null) opts["accessedServers"] = parseJsonOption(opts["accessedServers"], "accessedServers", "array");
-			if (opts["canCreateProjects"] != null) opts["canCreateProjects"] = opts["canCreateProjects"] === true || opts["canCreateProjects"] === "true";
-			if (opts["canCreateServices"] != null) opts["canCreateServices"] = opts["canCreateServices"] === true || opts["canCreateServices"] === "true";
-			if (opts["canDeleteProjects"] != null) opts["canDeleteProjects"] = opts["canDeleteProjects"] === true || opts["canDeleteProjects"] === "true";
-			if (opts["canDeleteServices"] != null) opts["canDeleteServices"] = opts["canDeleteServices"] === true || opts["canDeleteServices"] === "true";
-			if (opts["canAccessToDocker"] != null) opts["canAccessToDocker"] = opts["canAccessToDocker"] === true || opts["canAccessToDocker"] === "true";
-			if (opts["canAccessToTraefikFiles"] != null) opts["canAccessToTraefikFiles"] = opts["canAccessToTraefikFiles"] === true || opts["canAccessToTraefikFiles"] === "true";
-			if (opts["canAccessToAPI"] != null) opts["canAccessToAPI"] = opts["canAccessToAPI"] === true || opts["canAccessToAPI"] === "true";
-			if (opts["canAccessToSSHKeys"] != null) opts["canAccessToSSHKeys"] = opts["canAccessToSSHKeys"] === true || opts["canAccessToSSHKeys"] === "true";
-			if (opts["canAccessToGitProviders"] != null) opts["canAccessToGitProviders"] = opts["canAccessToGitProviders"] === true || opts["canAccessToGitProviders"] === "true";
-			if (opts["canDeleteEnvironments"] != null) opts["canDeleteEnvironments"] = opts["canDeleteEnvironments"] === true || opts["canDeleteEnvironments"] === "true";
-			if (opts["canCreateEnvironments"] != null) opts["canCreateEnvironments"] = opts["canCreateEnvironments"] === true || opts["canCreateEnvironments"] === "true";
+			if (opts["canCreateProjects"] != null) opts["canCreateProjects"] = parseBooleanOption(opts["canCreateProjects"], "canCreateProjects");
+			if (opts["canCreateServices"] != null) opts["canCreateServices"] = parseBooleanOption(opts["canCreateServices"], "canCreateServices");
+			if (opts["canDeleteProjects"] != null) opts["canDeleteProjects"] = parseBooleanOption(opts["canDeleteProjects"], "canDeleteProjects");
+			if (opts["canDeleteServices"] != null) opts["canDeleteServices"] = parseBooleanOption(opts["canDeleteServices"], "canDeleteServices");
+			if (opts["canAccessToDocker"] != null) opts["canAccessToDocker"] = parseBooleanOption(opts["canAccessToDocker"], "canAccessToDocker");
+			if (opts["canAccessToTraefikFiles"] != null) opts["canAccessToTraefikFiles"] = parseBooleanOption(opts["canAccessToTraefikFiles"], "canAccessToTraefikFiles");
+			if (opts["canAccessToAPI"] != null) opts["canAccessToAPI"] = parseBooleanOption(opts["canAccessToAPI"], "canAccessToAPI");
+			if (opts["canAccessToSSHKeys"] != null) opts["canAccessToSSHKeys"] = parseBooleanOption(opts["canAccessToSSHKeys"], "canAccessToSSHKeys");
+			if (opts["canAccessToGitProviders"] != null) opts["canAccessToGitProviders"] = parseBooleanOption(opts["canAccessToGitProviders"], "canAccessToGitProviders");
+			if (opts["canDeleteEnvironments"] != null) opts["canDeleteEnvironments"] = parseBooleanOption(opts["canDeleteEnvironments"], "canDeleteEnvironments");
+			if (opts["canCreateEnvironments"] != null) opts["canCreateEnvironments"] = parseBooleanOption(opts["canCreateEnvironments"], "canCreateEnvironments");
 			const data = await apiPost("user.assignPermissions", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -9322,7 +9328,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--prefix <value>', 'prefix')
 		.option('--expiresIn <value>', 'expiresIn')
 		.requiredOption('--metadata <value>', 'metadata')
-		.option('--rateLimitEnabled', 'rateLimitEnabled')
+		.option('--rateLimitEnabled [true|false]', 'rateLimitEnabled')
 		.option('--rateLimitTimeWindow <value>', 'rateLimitTimeWindow')
 		.option('--rateLimitMax <value>', 'rateLimitMax')
 		.option('--remaining <value>', 'remaining')
@@ -9334,7 +9340,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["expiresIn"] != null) opts["expiresIn"] = Number(opts["expiresIn"]);
 			if (opts["metadata"] != null) opts["metadata"] = parseJsonOption(opts["metadata"], "metadata", "object");
-			if (opts["rateLimitEnabled"] != null) opts["rateLimitEnabled"] = opts["rateLimitEnabled"] === true || opts["rateLimitEnabled"] === "true";
+			if (opts["rateLimitEnabled"] != null) opts["rateLimitEnabled"] = parseBooleanOption(opts["rateLimitEnabled"], "rateLimitEnabled");
 			if (opts["rateLimitTimeWindow"] != null) opts["rateLimitTimeWindow"] = Number(opts["rateLimitTimeWindow"]);
 			if (opts["rateLimitMax"] != null) opts["rateLimitMax"] = Number(opts["rateLimitMax"]);
 			if (opts["remaining"] != null) opts["remaining"] = Number(opts["remaining"]);
@@ -9629,41 +9635,41 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--id <value>', 'id')
 		.option('--firstName <value>', 'firstName')
 		.option('--lastName <value>', 'lastName')
-		.option('--isRegistered', 'isRegistered')
+		.option('--isRegistered [true|false]', 'isRegistered')
 		.option('--expirationDate <value>', 'expirationDate')
 		.option('--createdAt2 <value>', 'createdAt2')
 		.option('--createdAt <value>', 'createdAt')
-		.option('--twoFactorEnabled', 'twoFactorEnabled')
+		.option('--twoFactorEnabled [true|false]', 'twoFactorEnabled')
 		.option('--email <value>', 'email')
-		.option('--emailVerified', 'emailVerified')
+		.option('--emailVerified [true|false]', 'emailVerified')
 		.option('--image <value>', 'image')
-		.option('--banned', 'banned')
+		.option('--banned [true|false]', 'banned')
 		.option('--banReason <value>', 'banReason')
 		.option('--banExpires <value>', 'banExpires')
 		.option('--updatedAt <value>', 'updatedAt')
-		.option('--enablePaidFeatures', 'enablePaidFeatures')
-		.option('--allowImpersonation', 'allowImpersonation')
-		.option('--enableEnterpriseFeatures', 'enableEnterpriseFeatures')
+		.option('--enablePaidFeatures [true|false]', 'enablePaidFeatures')
+		.option('--allowImpersonation [true|false]', 'allowImpersonation')
+		.option('--enableEnterpriseFeatures [true|false]', 'enableEnterpriseFeatures')
 		.option('--licenseKey <value>', 'licenseKey')
 		.option('--stripeCustomerId <value>', 'stripeCustomerId')
 		.option('--stripeSubscriptionId <value>', 'stripeSubscriptionId')
 		.option('--serversQuantity <value>', 'serversQuantity')
-		.option('--sendInvoiceNotifications', 'sendInvoiceNotifications')
+		.option('--sendInvoiceNotifications [true|false]', 'sendInvoiceNotifications')
 		.option('--password <value>', 'password')
 		.option('--currentPassword <value>', 'currentPassword')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["isRegistered"] != null) opts["isRegistered"] = opts["isRegistered"] === true || opts["isRegistered"] === "true";
-			if (opts["twoFactorEnabled"] != null) opts["twoFactorEnabled"] = opts["twoFactorEnabled"] === true || opts["twoFactorEnabled"] === "true";
-			if (opts["emailVerified"] != null) opts["emailVerified"] = opts["emailVerified"] === true || opts["emailVerified"] === "true";
-			if (opts["banned"] != null) opts["banned"] = opts["banned"] === true || opts["banned"] === "true";
-			if (opts["enablePaidFeatures"] != null) opts["enablePaidFeatures"] = opts["enablePaidFeatures"] === true || opts["enablePaidFeatures"] === "true";
-			if (opts["allowImpersonation"] != null) opts["allowImpersonation"] = opts["allowImpersonation"] === true || opts["allowImpersonation"] === "true";
-			if (opts["enableEnterpriseFeatures"] != null) opts["enableEnterpriseFeatures"] = opts["enableEnterpriseFeatures"] === true || opts["enableEnterpriseFeatures"] === "true";
+			if (opts["isRegistered"] != null) opts["isRegistered"] = parseBooleanOption(opts["isRegistered"], "isRegistered");
+			if (opts["twoFactorEnabled"] != null) opts["twoFactorEnabled"] = parseBooleanOption(opts["twoFactorEnabled"], "twoFactorEnabled");
+			if (opts["emailVerified"] != null) opts["emailVerified"] = parseBooleanOption(opts["emailVerified"], "emailVerified");
+			if (opts["banned"] != null) opts["banned"] = parseBooleanOption(opts["banned"], "banned");
+			if (opts["enablePaidFeatures"] != null) opts["enablePaidFeatures"] = parseBooleanOption(opts["enablePaidFeatures"], "enablePaidFeatures");
+			if (opts["allowImpersonation"] != null) opts["allowImpersonation"] = parseBooleanOption(opts["allowImpersonation"], "allowImpersonation");
+			if (opts["enableEnterpriseFeatures"] != null) opts["enableEnterpriseFeatures"] = parseBooleanOption(opts["enableEnterpriseFeatures"], "enableEnterpriseFeatures");
 			if (opts["serversQuantity"] != null) opts["serversQuantity"] = Number(opts["serversQuantity"]);
-			if (opts["sendInvoiceNotifications"] != null) opts["sendInvoiceNotifications"] = opts["sendInvoiceNotifications"] === true || opts["sendInvoiceNotifications"] === "true";
+			if (opts["sendInvoiceNotifications"] != null) opts["sendInvoiceNotifications"] = parseBooleanOption(opts["sendInvoiceNotifications"], "sendInvoiceNotifications");
 			const data = await apiPost("user.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -9780,10 +9786,10 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose, libsql)')
 		.option('--appName <value>', 'appName')
 		.option('--serviceName <value>', 'serviceName')
-		.option('--turnOff', 'turnOff')
+		.option('--turnOff [true|false]', 'turnOff')
 		.requiredOption('--cronExpression <value>', 'cronExpression')
 		.option('--keepLatestCount <value>', 'keepLatestCount')
-		.option('--enabled', 'enabled')
+		.option('--enabled [true|false]', 'enabled')
 		.option('--applicationId <value>', 'applicationId')
 		.option('--postgresId <value>', 'postgresId')
 		.option('--mariadbId <value>', 'mariadbId')
@@ -9798,9 +9804,9 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["turnOff"] != null) opts["turnOff"] = opts["turnOff"] === true || opts["turnOff"] === "true";
+			if (opts["turnOff"] != null) opts["turnOff"] = parseBooleanOption(opts["turnOff"], "turnOff");
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			const data = await apiPost("volumeBackups.create", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -9867,10 +9873,10 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--serviceType <value>', 'serviceType (application, postgres, mysql, mariadb, mongo, redis, compose, libsql)')
 		.option('--appName <value>', 'appName')
 		.option('--serviceName <value>', 'serviceName')
-		.option('--turnOff', 'turnOff')
+		.option('--turnOff [true|false]', 'turnOff')
 		.requiredOption('--cronExpression <value>', 'cronExpression')
 		.option('--keepLatestCount <value>', 'keepLatestCount')
-		.option('--enabled', 'enabled')
+		.option('--enabled [true|false]', 'enabled')
 		.option('--applicationId <value>', 'applicationId')
 		.option('--postgresId <value>', 'postgresId')
 		.option('--mariadbId <value>', 'mariadbId')
@@ -9886,9 +9892,9 @@ export function registerGeneratedCommands(program: Command) {
 		.action(async (opts: Record<string, any>) => {
 			const jsonOutput = opts.json; delete opts.json;
 
-			if (opts["turnOff"] != null) opts["turnOff"] = opts["turnOff"] === true || opts["turnOff"] === "true";
+			if (opts["turnOff"] != null) opts["turnOff"] = parseBooleanOption(opts["turnOff"], "turnOff");
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
-			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
+			if (opts["enabled"] != null) opts["enabled"] = parseBooleanOption(opts["enabled"], "enabled");
 			const data = await apiPost("volumeBackups.update", opts);
 			printOutput(data, jsonOutput, false);
 		});

@@ -568,8 +568,11 @@ function parseSpec(spec: OpenAPISpec): ParsedSpec {
 // ---------------------------------------------------------------------------
 
 function generateOptionLine(cmd: CommandInfo, opt: OptionInfo): string {
+	// optional value so booleans can be turned off: --flag, --flag false
 	const flag =
-		opt.type === "boolean" ? `--${opt.name}` : `--${opt.name} <value>`;
+		opt.type === "boolean"
+			? `--${opt.name} [true|false]`
+			: `--${opt.name} <value>`;
 	const policyDesc =
 		isAgentSafeBuild &&
 		(cmd.endpoint === "application.create" ||
@@ -607,7 +610,7 @@ function generateCoercion(opt: OptionInfo): string {
 		return `if (opts["${opt.name}"] != null) opts["${opt.name}"] = Number(opts["${opt.name}"]);`;
 	}
 	if (opt.type === "boolean") {
-		return `if (opts["${opt.name}"] != null) opts["${opt.name}"] = opts["${opt.name}"] === true || opts["${opt.name}"] === "true";`;
+		return `if (opts["${opt.name}"] != null) opts["${opt.name}"] = parseBooleanOption(opts["${opt.name}"], "${opt.name}");`;
 	}
 	if (opt.type === "array" || opt.type === "object") {
 		return `if (opts["${opt.name}"] != null) opts["${opt.name}"] = parseJsonOption(opts["${opt.name}"], "${opt.name}", "${opt.type}");`;
@@ -788,6 +791,12 @@ import { sanitizeForAgent } from "${relativeImport("redact.js")}";
 ${agentImports}
 export const AGENT_SAFE_BUILD = ${isAgentSafeBuild ? "true" : "false"};
 ${safetyCommands}
+function parseBooleanOption(value: unknown, name: string) {
+	if (value === true || value === "true") return true;
+	if (value === false || value === "false") return false;
+	throw new Error("Invalid boolean for --" + name + "; expected true or false.");
+}
+
 function parseJsonOption(value: unknown, name: string, kind: "array" | "object") {
 	if (value === null || value === undefined || value === "") return value;
 	if (kind === "array" && (value === null || Array.isArray(value))) return value;
