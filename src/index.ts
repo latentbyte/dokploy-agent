@@ -7,11 +7,11 @@ import chalk from "chalk";
 import { CommanderError, program } from "commander";
 import { cliExitCode, formatJsonError } from "./agent/errors.js";
 import { formatCliError } from "./client.js";
-import { registerApplicationEnvCommands } from "./commands/application-env.js";
 import { registerApplicationLogCommands } from "./commands/application-logs.js";
 import { registerAuthCommand } from "./commands/auth.js";
 import { registerComposeToolCommands } from "./commands/compose-tools.js";
 import { registerDeploymentLogsCommand } from "./commands/deployment-logs.js";
+import { registerServiceEnvCommands } from "./commands/service-env.js";
 import { registerServiceInventoryCommands } from "./commands/service-inventory.js";
 import {
 	AGENT_SAFE_BUILD,
@@ -63,7 +63,7 @@ program
 
 registerAuthCommand(program);
 registerGeneratedCommands(program);
-registerApplicationEnvCommands(program, {
+registerServiceEnvCommands(program, {
 	agentSafe: AGENT_SAFE_BUILD,
 });
 registerApplicationLogCommands(program);

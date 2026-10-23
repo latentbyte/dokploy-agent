@@ -339,6 +339,21 @@ export function assertApplicationRecordWritable(
 	);
 }
 
+// env overlays check the record they already fetched; compose has no expanded
+// allowlist, so it must sit in a deploy project
+export function assertServiceRecordWritable(
+	policy: AgentDeployPolicyConfig,
+	kind: "application" | "compose",
+	id: string,
+	record: any,
+) {
+	if (kind === "application") {
+		assertApplicationRecordWritable(policy, id, record);
+		return;
+	}
+	assertServiceRecordInDeployProject(policy, kind, id, record);
+}
+
 async function assertApplicationWritable(
 	policy: AgentDeployPolicyConfig,
 	applicationId: string | undefined,

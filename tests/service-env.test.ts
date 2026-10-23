@@ -4,16 +4,16 @@ import * as client from "../src/client.js";
 import {
 	annotateEnvironmentVariable,
 	appendEnvironmentVariable,
-	registerApplicationEnvCommands,
+	registerServiceEnvCommands,
 	setEnvironmentVariable,
 	unsetEnvironmentVariable,
-} from "../src/commands/application-env.js";
+} from "../src/commands/service-env.js";
 
 afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-describe("application environment mutations", () => {
+describe("service environment mutations", () => {
 	it("appends a quoted value and comment without changing existing bytes", () => {
 		const existing = "# keep this\r\nSECRET=old-value\r\n";
 		expect(
@@ -83,7 +83,7 @@ describe("application environment mutations", () => {
 		});
 		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue({ ok: true });
 		vi.spyOn(console, "log").mockImplementation(() => {});
-		registerApplicationEnvCommands(program, { agentSafe: false });
+		registerServiceEnvCommands(program, { agentSafe: false });
 
 		await program.parseAsync([
 			"node",
@@ -122,7 +122,7 @@ describe("application environment mutations", () => {
 			env: "FOO=valuable-secret\nPORT=3000\n",
 		});
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-		registerApplicationEnvCommands(program, { agentSafe: false });
+		registerServiceEnvCommands(program, { agentSafe: false });
 
 		await program.parseAsync([
 			"node",
@@ -172,7 +172,7 @@ describe("application environment mutations", () => {
 			expandedApplicationNames: [],
 		});
 		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue({ ok: true });
-		registerApplicationEnvCommands(program, { agentSafe: true });
+		registerServiceEnvCommands(program, { agentSafe: true });
 
 		await program.parseAsync([
 			"node",
@@ -218,7 +218,7 @@ describe("application environment mutations", () => {
 			expandedApplicationNames: [],
 		});
 		const postSpy = vi.spyOn(client, "apiPost");
-		registerApplicationEnvCommands(program, { agentSafe: true });
+		registerServiceEnvCommands(program, { agentSafe: true });
 
 		await expect(
 			program.parseAsync([
@@ -240,6 +240,62 @@ describe("application environment mutations", () => {
 			message: expect.stringContaining("rejects application app-1"),
 		});
 		expect(postSpy).not.toHaveBeenCalled();
+	});
+
+	it("writes compose env alone and keeps compose in the deploy project", async () => {
+		const program = new Command();
+		program.exitOverride();
+		program.command("compose");
+		vi.spyOn(client, "apiGet").mockImplementation(async (_endpoint, opts) => ({
+			env: "SECRET=old-value\nOLD=1\n",
+			environmentId: opts?.composeId === "compose-ok" ? "allowed-env" : "x",
+			environment: { project: { name: "allowed-project" } },
+		}));
+		vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+			projects: [
+				{
+					projectName: "allowed-project",
+					environmentName: "production",
+					environmentId: "allowed-env",
+				},
+			],
+			servers: [],
+			allowAnyServer: true,
+			domainSuffixes: [".example.com"],
+			expandedProjects: [{ projectName: "allowed-project" }],
+			expandedApplicationIds: [],
+			expandedApplicationNames: [],
+		});
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		registerServiceEnvCommands(program, { agentSafe: true });
+		const args = (composeId: string) => [
+			"node",
+			"cli",
+			"compose",
+			"env",
+			"unset",
+			"--composeId",
+			composeId,
+			"--name",
+			"OLD",
+			"--json",
+		];
+
+		await program.parseAsync(args("compose-ok"));
+		expect(postSpy).toHaveBeenCalledWith("compose.saveEnvironment", {
+			composeId: "compose-ok",
+			env: "SECRET=old-value\n",
+		});
+		expect(logSpy.mock.calls.flat().join("\n")).not.toContain("old-value");
+
+		await expect(
+			program.parseAsync(args("compose-other")),
+		).rejects.toMatchObject({
+			code: "AGENT_POLICY_BLOCKED",
+			message: expect.stringContaining("rejects compose compose-other"),
+		});
+		expect(postSpy).toHaveBeenCalledOnce();
 	});
 
 	it("allows expanded projects for environment set", async () => {
@@ -274,7 +330,7 @@ describe("application environment mutations", () => {
 			expandedApplicationNames: [],
 		});
 		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue({ ok: true });
-		registerApplicationEnvCommands(program, { agentSafe: true });
+		registerServiceEnvCommands(program, { agentSafe: true });
 
 		await program.parseAsync([
 			"node",

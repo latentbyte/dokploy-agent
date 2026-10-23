@@ -69,9 +69,9 @@ Returns compose metadata and service summary:
 }
 ```
 
-## `application env` commands
+## `application env` and `compose env` commands
 
-Blind environment mutation for existing applications. Raw existing values stay inside the CLI.
+Blind environment mutation for existing applications and compose services. Raw existing values stay inside the CLI. `compose env` takes the same subcommands with `--composeId` in place of `--applicationId`.
 
 ```bash
 # names and masked previews only
@@ -115,11 +115,11 @@ Safety behavior:
 - comment fails on missing or duplicated keys
 - unset fails on missing keys and leaves comments in place
 - multiline comment input is prefixed line-by-line to prevent assignment injection
-- agent-safe builds enforce configured project and server policy before writes
+- agent-safe builds enforce configured project and server policy before writes; compose must be in a deploy project (expanded allowlists cover applications only)
 - generic `application update` hides env, build-secret, password, and refresh-token fields
 - generic `compose update` hides env and refresh-token fields
 
-Dokploy exposes replacement-style environment writes. These commands perform read-modify-write internally and preserve `buildArgs`, `buildSecrets`, and `createEnvFile`. Concurrent panel edits can still race because Dokploy does not expose compare-and-swap for this operation.
+Dokploy exposes replacement-style environment writes. These commands perform read-modify-write internally. Application writes preserve `buildArgs`, `buildSecrets`, and `createEnvFile`; compose writes send only `env`. Concurrent panel edits can still race because Dokploy does not expose compare-and-swap for this operation.
 
 ## Partial `save-*` updates
 
