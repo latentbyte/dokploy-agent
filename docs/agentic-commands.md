@@ -92,6 +92,12 @@ dokploy-agent application env add \
   --comment "Added for worker startup" \
   --json
 
+# removes every assignment of the key; fails when it does not exist
+dokploy-agent application env unset \
+  --applicationId APP_ID \
+  --name OLD_KEY \
+  --json
+
 # inserts comment lines before one unambiguous existing key
 dokploy-agent application env comment \
   --applicationId APP_ID \
@@ -107,6 +113,7 @@ Safety behavior:
 - add fails on existing keys; set creates or replaces a single key
 - no overwrite mode for add
 - comment fails on missing or duplicated keys
+- unset fails on missing keys and leaves comments in place
 - multiline comment input is prefixed line-by-line to prevent assignment injection
 - agent-safe builds enforce configured project and server policy before writes
 - generic `application update` hides env, build-secret, password, and refresh-token fields

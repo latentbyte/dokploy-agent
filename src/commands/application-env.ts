@@ -33,7 +33,7 @@ interface ApplicationRecord {
 
 const ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
 const ENV_ASSIGNMENT_PATTERN =
-	/^([\t ]*(?:export[\t ]+)?)([A-Za-z_][A-Za-z0-9_.-]*)([\t ]*=[\t ]*)(.*)$/gm;
+	/^([\t ]*(?:export[\t ]+)?)([A-Za-z_][A-Za-z0-9_.-]*)([\t ]*=[\t ]*)([^\r\n]*)$/gm;
 
 function nullableString(value: unknown, field: string): string | null {
 	if (value === null) return null;
@@ -150,6 +150,36 @@ export function setEnvironmentVariable(
 	const separator = match[3] ?? "=";
 	const assignment = `${prefix}${name}${separator}${JSON.stringify(value)}`;
 	return `${document.slice(0, index)}${assignment}${document.slice(index + match[0].length)}`;
+}
+
+export function unsetEnvironmentVariable(
+	document: string,
+	name: string,
+): string {
+	if (!ENV_NAME_PATTERN.test(name)) {
+		throw new Error(`Invalid environment variable name: ${name}`);
+	}
+	const matches = matchingAssignments(document, name);
+	if (matches.length === 0) {
+		throw new Error(`Environment variable ${name} does not exist.`);
+	}
+
+	// remove every assignment of the name, with its line ending
+	let next = document;
+	for (const match of matches.reverse()) {
+		const index = match.index;
+		if (index === undefined) {
+			throw new Error(`Could not locate environment variable ${name}.`);
+		}
+		const end = index + match[0].length;
+		const eolLength = next.startsWith("\r\n", end)
+			? 2
+			: next.startsWith("\n", end)
+				? 1
+				: 0;
+		next = `${next.slice(0, index)}${next.slice(end + eolLength)}`;
+	}
+	return next;
 }
 
 async function readApplication(
@@ -278,6 +308,27 @@ export function registerApplicationEnvCommands(
 			);
 			await saveEnvironment(applicationId, applicationRecord, nextEnv);
 			printResult({ applicationId, name, set: true }, opts.json === true);
+		});
+
+	env
+		.command("unset")
+		.description("remove an environment variable without exposing other values")
+		.requiredOption("--applicationId <value>", "applicationId")
+		.requiredOption("--name <value>", "environment variable name")
+		.option("--json", "Output JSON")
+		.action(async (opts: Record<string, unknown>) => {
+			const applicationId = String(opts.applicationId);
+			const applicationRecord = await readApplication(
+				applicationId,
+				options.agentSafe,
+			);
+			const name = String(opts.name);
+			const nextEnv = unsetEnvironmentVariable(
+				environmentDocument(applicationRecord),
+				name,
+			);
+			await saveEnvironment(applicationId, applicationRecord, nextEnv);
+			printResult({ applicationId, name, unset: true }, opts.json === true);
 		});
 
 	env

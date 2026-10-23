@@ -5,6 +5,8 @@ import {
 	annotateEnvironmentVariable,
 	appendEnvironmentVariable,
 	registerApplicationEnvCommands,
+	setEnvironmentVariable,
+	unsetEnvironmentVariable,
 } from "../src/commands/application-env.js";
 
 afterEach(() => {
@@ -46,6 +48,27 @@ describe("application environment mutations", () => {
 		expect(() =>
 			annotateEnvironmentVariable("FOO=one\nFOO=two\n", "FOO", "note"),
 		).toThrow("duplicated");
+	});
+
+	it("removes every assignment of a name and keeps other bytes", () => {
+		expect(
+			unsetEnvironmentVariable(
+				"# db\r\nFOO=one\r\nBAR=keep\r\nexport FOO=two",
+				"FOO",
+			),
+		).toBe("# db\r\nBAR=keep\r\n");
+		expect(() => unsetEnvironmentVariable("BAR=keep\n", "FOO")).toThrow(
+			"does not exist",
+		);
+		expect(unsetEnvironmentVariable("FOOBAR=1\nFOO=2\n", "FOO")).toBe(
+			"FOOBAR=1\n",
+		);
+	});
+
+	it("keeps CRLF line endings when replacing a value", () => {
+		expect(setEnvironmentVariable("FOO=old\r\nBAR=1\r\n", "FOO", "new")).toBe(
+			'FOO="new"\r\nBAR=1\r\n',
+		);
 	});
 
 	it("preserves companion environment fields when adding", async () => {
