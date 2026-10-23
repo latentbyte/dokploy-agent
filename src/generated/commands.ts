@@ -586,7 +586,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
-			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["bitbucketBuildPath","bitbucketOwner","bitbucketRepository","bitbucketRepositorySlug","bitbucketId","bitbucketBranch"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"bitbucketBuildPath","nullable":true},{"name":"bitbucketOwner","nullable":true},{"name":"bitbucketRepository","nullable":true},{"name":"bitbucketRepositorySlug","nullable":true},{"name":"bitbucketId","nullable":true},{"name":"bitbucketBranch"}]}, opts);
 			const data = await apiPost("application.saveBitbucketProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -608,7 +608,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["isStaticSpa"] != null) opts["isStaticSpa"] = opts["isStaticSpa"] === true || opts["isStaticSpa"] === "true";
-			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["buildType","dockerfile","dockerContextPath","dockerBuildStage","herokuVersion","railpackVersion"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"buildType"},{"name":"dockerfile","nullable":true},{"name":"dockerContextPath","nullable":true},{"name":"dockerBuildStage","nullable":true},{"name":"herokuVersion","nullable":true},{"name":"railpackVersion","nullable":true}]}, opts);
 			const data = await apiPost("application.saveBuildType", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -626,7 +626,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 
-			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["dockerImage","username","password","registryUrl"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"dockerImage","nullable":true},{"name":"username","nullable":true},{"name":"password","nullable":true},{"name":"registryUrl","nullable":true}]}, opts);
 			const data = await apiPost("application.saveDockerProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -644,7 +644,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["createEnvFile"] != null) opts["createEnvFile"] = opts["createEnvFile"] === true || opts["createEnvFile"] === "true";
-			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["env","buildArgs","buildSecrets","createEnvFile"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"env","nullable":true},{"name":"buildArgs","nullable":true},{"name":"buildSecrets","nullable":true},{"name":"createEnvFile"}]}, opts);
 			const data = await apiPost("application.saveEnvironment", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -666,7 +666,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
-			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["giteaBuildPath","giteaOwner","giteaRepository","giteaId","giteaBranch"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"giteaBuildPath","nullable":true},{"name":"giteaOwner","nullable":true},{"name":"giteaRepository","nullable":true},{"name":"giteaId","nullable":true},{"name":"giteaBranch"}]}, opts);
 			const data = await apiPost("application.saveGiteaProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -689,7 +689,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
-			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["repository","owner","buildPath","githubId","branch","triggerType"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"repository","nullable":true},{"name":"owner","nullable":true},{"name":"buildPath","nullable":true},{"name":"githubId","nullable":true},{"name":"branch"},{"name":"triggerType"}]}, opts);
 			const data = await apiPost("application.saveGithubProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -714,7 +714,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["gitlabProjectId"] != null) opts["gitlabProjectId"] = Number(opts["gitlabProjectId"]);
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
-			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["gitlabBuildPath","gitlabOwner","gitlabRepository","gitlabId","gitlabProjectId","gitlabPathNamespace","gitlabBranch"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"gitlabBuildPath","nullable":true},{"name":"gitlabOwner","nullable":true},{"name":"gitlabRepository","nullable":true},{"name":"gitlabId","nullable":true},{"name":"gitlabProjectId","nullable":true},{"name":"gitlabPathNamespace","nullable":true},{"name":"gitlabBranch"}]}, opts);
 			const data = await apiPost("application.saveGitlabProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -735,7 +735,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["watchPaths"] != null) opts["watchPaths"] = parseJsonOption(opts["watchPaths"], "watchPaths", "array");
 			if (opts["enableSubmodules"] != null) opts["enableSubmodules"] = opts["enableSubmodules"] === true || opts["enableSubmodules"] === "true";
-			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fillKeys":["customGitBuildPath","customGitUrl","watchPaths","customGitBranch"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"application.one","idKey":"applicationId","fields":[{"name":"customGitBuildPath","nullable":true},{"name":"customGitUrl","nullable":true},{"name":"watchPaths","nullable":true},{"name":"customGitBranch"}]}, opts);
 			const data = await apiPost("application.saveGitProvider", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -1154,7 +1154,7 @@ export function registerGeneratedCommands(program: Command) {
 			if (opts["enabled"] != null) opts["enabled"] = opts["enabled"] === true || opts["enabled"] === "true";
 			if (opts["keepLatestCount"] != null) opts["keepLatestCount"] = Number(opts["keepLatestCount"]);
 			if (opts["includeEncryptionKey"] != null) opts["includeEncryptionKey"] = opts["includeEncryptionKey"] === true || opts["includeEncryptionKey"] === "true";
-			await fillFromCurrentRecord({"endpoint":"backup.one","idKey":"backupId","fillKeys":["schedule","enabled","prefix","destinationId","database","keepLatestCount","serviceName","metadata","databaseType"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"backup.one","idKey":"backupId","fields":[{"name":"schedule"},{"name":"enabled","nullable":true},{"name":"prefix"},{"name":"destinationId"},{"name":"database"},{"name":"keepLatestCount","nullable":true},{"name":"serviceName","nullable":true},{"name":"metadata","nullable":true},{"name":"databaseType"}]}, opts);
 			const data = await apiPost("backup.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -2192,7 +2192,7 @@ export function registerGeneratedCommands(program: Command) {
 			const jsonOutput = opts.json; delete opts.json;
 
 			if (opts["additionalFlags"] != null) opts["additionalFlags"] = parseJsonOption(opts["additionalFlags"], "additionalFlags", "array");
-			await fillFromCurrentRecord({"endpoint":"destination.one","idKey":"destinationId","fillKeys":["name","accessKey","bucket","region","endpoint","secretAccessKey","provider","additionalFlags"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"destination.one","idKey":"destinationId","fields":[{"name":"name"},{"name":"accessKey"},{"name":"bucket"},{"name":"region"},{"name":"endpoint"},{"name":"secretAccessKey"},{"name":"provider","nullable":true},{"name":"additionalFlags","nullable":true}]}, opts);
 			const data = await apiPost("destination.update", opts);
 			printOutput(data, jsonOutput, false);
 		});
@@ -7937,7 +7937,7 @@ export function registerGeneratedCommands(program: Command) {
 		.option('--username <value>', 'username; defaults to the current value')
 		.option('--sshKeyId <value>', 'sshKeyId; defaults to the current value')
 		.option('--serverType <value>', 'serverType (deploy, build); defaults to the current value')
-		.option('--enableDockerCleanup', 'enableDockerCleanup')
+		.option('--enableDockerCleanup', 'enableDockerCleanup; defaults to the current value')
 		.option('--command <value>', 'command')
 		.option('--json', 'Output raw JSON')
 		.action(async (opts: Record<string, any>) => {
@@ -7945,7 +7945,7 @@ export function registerGeneratedCommands(program: Command) {
 
 			if (opts["port"] != null) opts["port"] = Number(opts["port"]);
 			if (opts["enableDockerCleanup"] != null) opts["enableDockerCleanup"] = opts["enableDockerCleanup"] === true || opts["enableDockerCleanup"] === "true";
-			await fillFromCurrentRecord({"endpoint":"server.one","idKey":"serverId","fillKeys":["name","description","ipAddress","port","username","sshKeyId","serverType"]}, opts);
+			await fillFromCurrentRecord({"endpoint":"server.one","idKey":"serverId","fields":[{"name":"name"},{"name":"description","nullable":true},{"name":"ipAddress"},{"name":"port"},{"name":"username"},{"name":"sshKeyId","nullable":true},{"name":"serverType"},{"name":"enableDockerCleanup","optional":true}]}, opts);
 			const data = await apiPost("server.update", opts);
 			printOutput(data, jsonOutput, false);
 		});

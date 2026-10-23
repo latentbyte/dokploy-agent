@@ -1,10 +1,18 @@
 import { CliError } from "./agent/errors.js";
 import { apiGet } from "./client.js";
 
+export interface RecordField {
+	name: string;
+	/** spec accepts null, so a null current value is kept */
+	nullable?: boolean;
+	/** optional with a spec default; kept so the default cannot reset it */
+	optional?: boolean;
+}
+
 export interface RecordLookup {
 	endpoint: string;
 	idKey: string;
-	fillKeys: readonly string[];
+	fields: readonly RecordField[];
 }
 
 // update endpoints whose spec requires the full field set (often nullable) get
@@ -13,18 +21,22 @@ export async function fillFromCurrentRecord(
 	lookup: RecordLookup,
 	opts: Record<string, any>,
 ): Promise<Record<string, any>> {
-	const missing = lookup.fillKeys.filter((key) => opts[key] === undefined);
+	const missing = lookup.fields.filter(
+		(field) => opts[field.name] === undefined,
+	);
 	if (missing.length === 0) return opts;
 
 	const record = await apiGet(lookup.endpoint, {
 		[lookup.idKey]: opts[lookup.idKey],
 	});
 	const unresolved: string[] = [];
-	for (const key of missing) {
-		if (record && typeof record === "object" && key in record) {
-			opts[key] = record[key];
-		} else {
-			unresolved.push(key);
+	for (const field of missing) {
+		const value =
+			record && typeof record === "object" ? record[field.name] : undefined;
+		if (value !== undefined && (value !== null || field.nullable)) {
+			opts[field.name] = value;
+		} else if (!field.optional) {
+			unresolved.push(field.name);
 		}
 	}
 	if (unresolved.length > 0) {

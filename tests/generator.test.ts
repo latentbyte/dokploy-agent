@@ -457,6 +457,47 @@ describe("generator", () => {
 		expect(postSpy).not.toHaveBeenCalled();
 	});
 
+	it("keeps nulls only where the spec allows them", async () => {
+		const program = new Command();
+		vi.spyOn(client, "apiGet").mockResolvedValue({
+			repository: "repo",
+			owner: "me",
+			buildPath: "/",
+			githubId: null,
+			branch: null,
+			triggerType: "push",
+		});
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+
+		await import("../src/generated/commands.js").then(
+			({ registerGeneratedCommands }) => {
+				registerGeneratedCommands(program);
+			},
+		);
+		const run = (...extra: string[]) =>
+			program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"save-github-provider",
+				"--applicationId",
+				"app-1",
+				...extra,
+			]);
+
+		await expect(run()).rejects.toMatchObject({
+			code: "MISSING_OPTION",
+			message: expect.stringMatching(/--branch;/),
+		});
+		expect(postSpy).not.toHaveBeenCalled();
+
+		await run("--branch", "main");
+		expect(postSpy).toHaveBeenCalledWith(
+			"application.saveGithubProvider",
+			expect.objectContaining({ githubId: null, branch: "main" }),
+		);
+	});
+
 	it("keeps single-field updates required", async () => {
 		const program = new Command();
 		await import("../src/generated/commands.js").then(

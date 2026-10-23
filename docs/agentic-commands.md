@@ -129,7 +129,7 @@ Some Dokploy update endpoints require the full field set even though most fields
 dokploy-agent application save-build-type --applicationId ID --buildType dockerfile --dockerfile Dockerfile.prod --json
 ```
 
-The generator detects these endpoints from the spec (a `<group>Id` update with a required nullable field and at least two required fields). Agent-safe policy checks run before the record is read. If the record has no value for an omitted field, the command fails with `MISSING_OPTION` before writing. Like env writes, this is read-modify-write without compare-and-swap.
+The generator detects these endpoints from the spec (a `<group>Id` update with a required nullable field and at least two required fields). Agent-safe policy checks run before the record is read. Optional fields with a spec default (such as `server update --enableDockerCleanup`) are carried over too, so the default cannot reset them. A current `null` is kept only where the spec accepts `null`; if a field is missing or `null` where a value is required, the command fails with `MISSING_OPTION` before writing. When switching source providers, pass every provider field (`--githubId` and so on), since the old provider's fields are `null` and would be kept. Like env writes, this is read-modify-write without compare-and-swap.
 
 ## JSON errors
 

@@ -141,6 +141,7 @@ interface OptionInfo {
 	description: string;
 	required: boolean;
 	nullable?: boolean;
+	hasDefault?: boolean;
 	type: OptionType;
 	enumValues?: string[];
 }
@@ -262,6 +263,7 @@ function extractOptionsFromSchema(
 			description: desc,
 			required: required.has(name),
 			nullable: prop.anyOf?.some((candidate) => candidate.type === "null"),
+			hasDefault: prop.default !== undefined,
 			type,
 			enumValues,
 		};
@@ -499,7 +501,14 @@ function findRecordLookup(
 	return {
 		endpoint: `${group}.one`,
 		idKey,
-		fillKeys: required.map((opt) => opt.name),
+		fields: [
+			...required.map((opt) =>
+				opt.nullable ? { name: opt.name, nullable: true } : { name: opt.name },
+			),
+			...bodyOptions
+				.filter((opt) => !opt.required && opt.hasDefault)
+				.map((opt) => ({ name: opt.name, optional: true })),
+		],
 	};
 }
 
@@ -570,7 +579,7 @@ function generateOptionLine(cmd: CommandInfo, opt: OptionInfo): string {
 			? `${opt.description}; optional in agent-safe builds, forced to configured agentDeployPolicy project`
 			: opt.description;
 	const fillsFromRecord =
-		cmd.recordLookup?.fillKeys.includes(opt.name) ?? false;
+		cmd.recordLookup?.fields.some((field) => field.name === opt.name) ?? false;
 	const escaped = escapeSingleQuoted(
 		fillsFromRecord
 			? `${policyDesc}; defaults to the current value`
