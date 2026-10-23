@@ -65,7 +65,7 @@ const ENV_DOCUMENT_ASSIGNMENT_PATTERN =
 	/^(\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_.-]*\s*=\s*)(.*)$/;
 // optional quote after the key covers JSON text; NUL covers /proc/*/environ
 const ENV_ASSIGNMENT_PATTERN =
-	/(^|[\s([{,;'"\0-])([A-Za-z_][A-Za-z0-9_.-]*)("?[ \t]*[:=][ \t]*)((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',}\]\0]+))/gm;
+	/(^|[\s([{,;'"\0-])([A-Za-z_][A-Za-z0-9_.-]*)("?\s*[:=]\s*)((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',}\]\0]+))/gm;
 const PRIVATE_KEY_BLOCK_PATTERN =
 	/(-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----)[\s\S]*?(-----END [A-Z0-9 ]*PRIVATE KEY-----)/g;
 // well-known credential formats that need no key name to be recognized
@@ -100,7 +100,14 @@ const STRING_SECRET_PATTERNS: Array<
 			separator: string,
 			value: string,
 		) => {
-			if (!isSensitiveEnvKey(key)) return match;
+			if (!isSensitiveEnvKey(key)) {
+				// quoted values of benign keys (JSON log fields) can embed assignments
+				const quote = value[0];
+				if ((quote === '"' || quote === "'") && value.length > 1) {
+					return `${prefix}${key}${separator}${quote}${redactString(value.slice(1, -1))}${quote}`;
+				}
+				return match;
+			}
 			if (key.toLowerCase() === "authorization") {
 				const bare = stripQuotedValue(value);
 				if (/^(bearer|basic)$/i.test(bare)) return match;

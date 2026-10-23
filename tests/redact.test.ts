@@ -185,11 +185,11 @@ describe("agent redaction", () => {
 
 	it("hides private key blocks", () => {
 		const output = redactString(
-			"key:\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXk\nAAAA\n-----END OPENSSH PRIVATE KEY-----\ndone",
+			"deploy key\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXk\nAAAA\n-----END OPENSSH PRIVATE KEY-----\ndone",
 		);
 
 		expect(output).toBe(
-			"key:\n-----BEGIN OPENSSH PRIVATE KEY-----\n[private key hidden]\n-----END OPENSSH PRIVATE KEY-----\ndone",
+			"deploy key\n-----BEGIN OPENSSH PRIVATE KEY-----\n[private key hidden]\n-----END OPENSSH PRIVATE KEY-----\ndone",
 		);
 	});
 
@@ -207,6 +207,24 @@ describe("agent redaction", () => {
 			"PATH=/bin\0POSTGRES_PASSWORD=hunter2hunter2\0HOME=/root",
 		);
 		expect(environ).toBe("PATH=/bin\0POSTGRES_PASSWORD=hunt***\0HOME=/root");
+	});
+
+	it("redacts assignments nested in quoted values of benign keys", () => {
+		const output = redactString(
+			[
+				'{"level":"info","msg":"starting with API_KEY=abc123def456 now"}',
+				'{"args":"--password=hunter2secret"}',
+				'NOTE="run with TOKEN=abcdef123456"',
+				"password:\n  hunter2secret",
+			].join("\n"),
+		);
+
+		expect(output).toContain('"msg":"starting with API_KEY=abc1*** now"');
+		expect(output).toContain('"args":"--password=hunt***"');
+		expect(output).toContain('NOTE="run with TOKEN=abcd***"');
+		expect(output).not.toContain("abc123def456");
+		expect(output).not.toContain("hunter2secret");
+		expect(output).not.toContain("abcdef123456");
 	});
 
 	it("masks well-known token formats without a key name", () => {
