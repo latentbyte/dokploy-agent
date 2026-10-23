@@ -146,7 +146,7 @@ describe("generator", () => {
 			const content = fs.readFileSync(outPath, "utf8");
 			expect(content).not.toContain('apiGet("libsql.');
 			expect(content).not.toContain('apiGet("settings.getLogCleanupStatus');
-			expect(content).toContain("command('state')");
+			expect(content).toContain("registerAgentSafetyCommands(program");
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
@@ -245,25 +245,13 @@ describe("generator", () => {
 				'apiPost("application.saveGitProvider"',
 			);
 			expect(generatedContent).not.toContain('apiPost("domain.delete"');
-			expect(generatedContent).toContain("guardAgentSafePost");
-			expect(generatedContent).toContain("command('deploy-policy')");
-			expect(generatedContent).toContain("readAgentDeployPolicyConfig");
-			expect(generatedContent).toContain("policy.projects");
-			expect(generatedContent).toContain("policy.servers");
-			expect(generatedContent).toContain("policy.domainSuffixes");
-			expect(generatedContent).toContain("policy.domainNameSuffix");
-			expect(generatedContent).toContain("isApplicationExpandedAllowed");
-			expect(generatedContent).toContain("hasExpandedApplicationAllowlist");
-			expect(generatedContent).toContain("policy.expandedProjects");
-			expect(generatedContent).toContain("policy.expandedApplicationNames");
-			expect(generatedContent).toContain("expandedApplications");
-			expect(generatedContent).toContain("resolveExpandedApplications");
-			expect(generatedContent).toContain("server.domainSuffixes");
-			expect(generatedContent).toContain("matchingAgentDomainSuffix");
-			expect(generatedContent).toContain("assertAgentDomainHostUnused");
-			expect(generatedContent).toContain("domain is already in use in Dokploy");
-			expect(generatedContent).toContain("allowed wildcard domains");
-			expect(generatedContent).toContain("must end with");
+			expect(generatedContent).toContain(
+				'await guardAgentSafePost("application.update", opts);',
+			);
+			expect(generatedContent).toMatch(/from "[^"]*\/agent\/policy\.js"/);
+			expect(generatedContent).toContain(
+				"registerAgentSafetyCommands(program, AGENT_SAFETY_REPORT)",
+			);
 			expect(fs.readFileSync(generatedPath, "utf8")).toBe(before);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });

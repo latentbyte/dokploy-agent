@@ -4,17 +4,8 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import { CliError } from "../agent/errors.js";
-import { apiPost, apiGet } from "../client.js";
+import { apiGet, apiPost } from "../client.js";
 import { sanitizeForAgent } from "../redact.js";
-
-interface SafetyEntry {
-	endpoint: string;
-	group: string;
-	action: string;
-	method: string;
-	reason: string;
-	risk?: string;
-}
 
 export const AGENT_SAFE_BUILD = false;
 
