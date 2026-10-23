@@ -55,7 +55,6 @@ export const AGENT_EXPANDED_APPLICATION_ENDPOINTS = [
 	"application.markRunning",
 	"application.move",
 	"application.refreshToken",
-	"application.reload",
 	"application.saveBitbucketProvider",
 	"application.saveBuildType",
 	"application.saveDockerProvider",
@@ -64,8 +63,6 @@ export const AGENT_EXPANDED_APPLICATION_ENDPOINTS = [
 	"application.saveGithubProvider",
 	"application.saveGitProvider",
 	"application.saveGitlabProvider",
-	"application.start",
-	"application.stop",
 	"application.updateTraefikConfig",
 ] as const;
 
@@ -90,6 +87,21 @@ const AGENT_DEPLOY_SERVICE_MUTATIONS = [
 	"compose.update",
 ] as const;
 
+// start/stop/reload on any writable service; reload also takes appName, which
+// must match the target so a permitted id cannot restart another service
+const AGENT_SERVICE_LIFECYCLE_MUTATIONS = [
+	"application.reload",
+	"application.start",
+	"application.stop",
+	"compose.start",
+	"compose.stop",
+	...AGENT_DATABASE_KINDS.flatMap((kind) => [
+		`${kind}.reload`,
+		`${kind}.start`,
+		`${kind}.stop`,
+	]),
+];
+
 const AGENT_DEPLOY_DOMAIN_MUTATIONS = ["domain.create"] as const;
 
 // POST endpoints agents may call; each is guarded by guardAgentSafePost
@@ -97,6 +109,7 @@ export const SAFE_POST_ENDPOINTS: ReadonlySet<string> = new Set([
 	"application.create",
 	...AGENT_DEPLOY_SERVICE_MUTATIONS,
 	...AGENT_EXPANDED_APPLICATION_ENDPOINTS,
+	...AGENT_SERVICE_LIFECYCLE_MUTATIONS,
 	"compose.create",
 	...AGENT_DEPLOY_DOMAIN_MUTATIONS,
 	"mounts.create",
@@ -114,6 +127,9 @@ const AGENT_DEPLOY_SERVICE_MUTATION_SET: ReadonlySet<string> = new Set(
 );
 const AGENT_DEPLOY_DOMAIN_MUTATION_SET: ReadonlySet<string> = new Set(
 	AGENT_DEPLOY_DOMAIN_MUTATIONS,
+);
+const AGENT_SERVICE_LIFECYCLE_MUTATION_SET: ReadonlySet<string> = new Set(
+	AGENT_SERVICE_LIFECYCLE_MUTATIONS,
 );
 const AGENT_EXPANDED_APPLICATION_MUTATIONS: ReadonlySet<string> = new Set(
 	AGENT_EXPANDED_APPLICATION_ENDPOINTS,
@@ -366,6 +382,24 @@ async function assertApplicationWritable(
 	return application;
 }
 
+async function assertAgentServiceLifecycleAllowed(
+	policy: AgentDeployPolicyConfig,
+	endpoint: string,
+	opts: Record<string, any>,
+) {
+	const kind = endpoint.split(".")[0] as AgentServiceKind;
+	const id = stringValue(opts[`${kind}Id`]);
+	const service =
+		kind === "application"
+			? await assertApplicationWritable(policy, id)
+			: await assertAgentServiceInDeployProject(policy, kind, id);
+	if (endpoint.endsWith(".reload") && opts.appName !== service?.appName) {
+		throw agentPolicyBlocked(
+			`agent-safe ${endpoint} requires appName to match ${kind} ${id}`,
+		);
+	}
+}
+
 function databaseKindForEndpoint(endpoint: string) {
 	const kind = endpoint.split(".")[0];
 	return AGENT_DATABASE_KIND_SET.has(kind)
@@ -594,6 +628,10 @@ export async function guardAgentSafePost(
 			databaseKind,
 			opts[`${databaseKind}Id`],
 		);
+		return;
+	}
+	if (AGENT_SERVICE_LIFECYCLE_MUTATION_SET.has(endpoint)) {
+		await assertAgentServiceLifecycleAllowed(policy, endpoint, opts);
 		return;
 	}
 	if (AGENT_EXPANDED_APPLICATION_MUTATIONS.has(endpoint)) {

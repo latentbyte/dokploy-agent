@@ -639,7 +639,7 @@ describe("generator", () => {
 					"node",
 					"cli",
 					"application",
-					"stop",
+					"clean-queues",
 					"--applicationId",
 					"app-blocked",
 				]),
@@ -654,11 +654,11 @@ describe("generator", () => {
 				"node",
 				"cli",
 				"application",
-				"stop",
+				"clean-queues",
 				"--applicationId",
 				"app-allowed",
 			]);
-			expect(postSpy).toHaveBeenCalledWith("application.stop", {
+			expect(postSpy).toHaveBeenCalledWith("application.cleanQueues", {
 				applicationId: "app-allowed",
 			});
 			expect(getSpy).toHaveBeenCalledWith("application.one", {
@@ -669,13 +669,90 @@ describe("generator", () => {
 				"node",
 				"cli",
 				"application",
-				"stop",
+				"clean-queues",
 				"--applicationId",
 				"app-catalog",
 			]);
-			expect(postSpy).toHaveBeenCalledWith("application.stop", {
+			expect(postSpy).toHaveBeenCalledWith("application.cleanQueues", {
 				applicationId: "app-catalog",
 			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
+	it("allows lifecycle operations on deploy-project services", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [{ serverId: "srv-allowed" }],
+				domainSuffixes: [".example.com"],
+				expandedProjects: [],
+				expandedApplicationIds: [],
+				expandedApplicationNames: [],
+			});
+			vi.spyOn(client, "apiGet").mockImplementation(async (_endpoint, opts) => {
+				const id = Object.values(opts ?? {})[0];
+				return {
+					appName: `${id}-name`,
+					environmentId: id === "other" ? "env-2" : "env-1",
+					environment: {
+						name: "production",
+						project: { name: "agent-project" },
+					},
+					serverId: "srv-allowed",
+				};
+			});
+			const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+			registerGeneratedCommands(program);
+			const run = (...args: string[]) =>
+				program.parseAsync(["node", "cli", ...args]);
+
+			await run("application", "start", "--applicationId", "app-1");
+			await run("compose", "stop", "--composeId", "compose-1");
+			await run(
+				"postgres",
+				"reload",
+				"--postgresId",
+				"pg-1",
+				"--appName",
+				"pg-1-name",
+			);
+			expect(postSpy.mock.calls.map((call) => call[0])).toEqual([
+				"application.start",
+				"compose.stop",
+				"postgres.reload",
+			]);
+
+			await expect(
+				run("compose", "start", "--composeId", "other"),
+			).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("rejects compose other"),
+			});
+			await expect(
+				run(
+					"postgres",
+					"reload",
+					"--postgresId",
+					"pg-1",
+					"--appName",
+					"someone-else",
+				),
+			).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("appName to match postgres pg-1"),
+			});
+			expect(postSpy).toHaveBeenCalledTimes(3);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}

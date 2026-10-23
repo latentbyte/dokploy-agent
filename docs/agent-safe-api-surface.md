@@ -63,10 +63,10 @@ Classification tables (`MUTATING_GET_ENDPOINTS`, `SECRET_READ_GET_ENDPOINTS`, `S
 
 These commands are exposed only in agent-safe builds and are guarded at runtime:
 
-- `application`: create, deploy, redeploy, update
-- `compose`: create, deploy, isolated-deployment, update
+- `application`: create, deploy, redeploy, update, start, stop, reload
+- `compose`: create, deploy, isolated-deployment, update, start, stop
 - `domain`: create
-- `libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`: create, deploy
+- `libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`: create, deploy, start, stop, reload
 - `application` expanded operations for explicitly allowlisted application IDs
 - `mounts create` and `port create` for explicitly allowlisted applications
 - `volume-backups`: create, run-manually
@@ -79,6 +79,7 @@ Runtime policy:
 - omitted `serverId` on create defaults to the first configured server; with `servers: "*"`, it remains omitted so Dokploy selects its local server
 - updates, deploys, and domain creation first resolve the target service and require it to belong to one configured project/environment
 - database deploys resolve the database and enforce the same project and server policy
+- start, stop, and reload resolve the target service the same way; applications may also be expanded-allowlisted. Reload requires `appName` to equal the target's `appName`, so a permitted ID cannot restart a different container
 - `agentDeployPolicy.expandedProjects` enables additional application lifecycle, source-provider, build, environment, queue, move, and Traefik operations for applications inside named projects
 - omit `applicationNames` on an expanded project to allow every application in that project; set `applicationNames` to restrict to matching Dokploy `name` or `appName` (case-insensitive) inside that project only
 - optional `projectId` matches first when present; optional `environmentNames` further restricts by environment name
@@ -92,7 +93,7 @@ Runtime policy:
 - mount and port creation requires an expanded-allowlisted application; mounts for other service types stay blocked
 - volume backup create and run-manually resolve the parent service first; applications may be in a configured project or the expanded allowlist, while compose and database parents stay governed by `projects[]`
 - volume backup update and delete stay blocked
-- expanded operations include start, stop, reload, delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
+- expanded operations include delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.apps.example.net` for `*.apps.example.net`
 - before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects
 - domain update and delete stay blocked, so agents cannot move or remove existing domains
