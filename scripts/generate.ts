@@ -1520,6 +1520,25 @@ ${isAgentSafeBuild ? "\tregisterAgentSafetyCommands(program);\n" : ""}${groupBlo
 `;
 }
 
+// resource ID keys are the `<group>Id`-style params of `<group>.one` lookups;
+// redaction keeps them visible so new upstream resources work without allowlisting
+function collectResourceIdKeys(spec: OpenAPISpec): string[] {
+	const keys = new Set<string>();
+	for (const [pathKey, methods] of Object.entries(spec.paths)) {
+		if (!/^\/[A-Za-z]+\.one$/.test(pathKey)) continue;
+		for (const param of methods.get?.parameters ?? []) {
+			if (/^[a-z][A-Za-z0-9]*Id$/.test(param.name)) keys.add(param.name);
+		}
+	}
+	return [...keys].sort();
+}
+
+function generateResourceIdsFile(keys: string[]): string {
+	return `// Auto-generated from openapi.json by scripts/generate.ts. Do not edit.
+export const DOKPLOY_RESOURCE_ID_KEYS: readonly string[] = ${JSON.stringify(keys, null, "\t")};
+`;
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -1539,6 +1558,10 @@ const generatedFile = generateFile(parsed.commands, report, blacklist).replace(
 	"",
 );
 fs.writeFileSync(OUT_PATH, generatedFile);
+fs.writeFileSync(
+	path.join(path.dirname(OUT_PATH), "resource-ids.ts"),
+	generateResourceIdsFile(collectResourceIdKeys(spec)),
+);
 
 const target = isAgentSafeBuild ? "agent-safe" : "full";
 const generatedCount = isAgentSafeBuild

@@ -1,3 +1,5 @@
+import { DOKPLOY_RESOURCE_ID_KEYS } from "./generated/resource-ids.js";
+
 export interface SanitizeOptions {
 	logOutput?: boolean;
 	maxLogLines?: number;
@@ -33,7 +35,9 @@ const SECRET_KEY_PARTS = new Set([
 ]);
 const LOG_KEY_PATTERN = /(?:log|logs|stdout|stderr|message|output)/i;
 const PUBLIC_IDENTIFIER_KEYS = new Set([
+	...DOKPLOY_RESOURCE_ID_KEYS.map((key) => key.toLowerCase()),
 	"id",
+	"containerid",
 	"applicationid",
 	"composeid",
 	"deploymentid",
@@ -59,8 +63,14 @@ const ENV_KEY_PATTERN =
 const ENV_DOCUMENT_KEYS = new Set(["env", "previewenv"]);
 const ENV_DOCUMENT_ASSIGNMENT_PATTERN =
 	/^(\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_.-]*\s*=\s*)(.*)$/;
+// optional quote after the key covers JSON text; NUL covers /proc/*/environ
 const ENV_ASSIGNMENT_PATTERN =
-	/(^|[\s([{,;'-])([A-Za-z_][A-Za-z0-9_.-]*)(\s*[:=]\s*)((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',}\]]+))/gm;
+	/(^|[\s([{,;'"\0-])([A-Za-z_][A-Za-z0-9_.-]*)("?[ \t]*[:=][ \t]*)((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',}\]\0]+))/gm;
+const PRIVATE_KEY_BLOCK_PATTERN =
+	/(-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----)[\s\S]*?(-----END [A-Z0-9 ]*PRIVATE KEY-----)/g;
+// well-known credential formats that need no key name to be recognized
+const TOKEN_PREFIX_PATTERN =
+	/\b(?:sk-[A-Za-z0-9_-]{20,}|(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{10,}|whsec_[A-Za-z0-9]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{20,}|xox[abeoprs]-[A-Za-z0-9-]{10,}|(?:AKIA|ASIA)[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|npm_[A-Za-z0-9]{36})\b/g;
 
 function stripQuotedValue(value: string): string {
 	if (value.length < 2) return value;
@@ -76,6 +86,11 @@ function stripQuotedValue(value: string): string {
 const STRING_SECRET_PATTERNS: Array<
 	[RegExp, (match: string, ...groups: string[]) => string]
 > = [
+	[
+		PRIVATE_KEY_BLOCK_PATTERN,
+		(_match, begin: string, end: string) =>
+			`${begin}\n[private key hidden]\n${end}`,
+	],
 	[
 		ENV_ASSIGNMENT_PATTERN,
 		(
@@ -106,6 +121,7 @@ const STRING_SECRET_PATTERNS: Array<
 		/\beyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\b/g,
 		(match) => maskSecret(match),
 	],
+	[TOKEN_PREFIX_PATTERN, (match) => maskSecret(match)],
 ];
 
 export function maskSecret(value: unknown): string {

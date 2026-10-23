@@ -40,7 +40,21 @@ describe("agent redaction", () => {
 			githubId: "github-123456",
 			gitProvider: { gitProviderId: "provider-123456" },
 			serverId: "server-123456",
-			organizationId: "org-***",
+			organizationId: "org-123456",
+		});
+	});
+
+	it("keeps spec-derived resource IDs visible but masks credential IDs", () => {
+		const output = sanitizeForAgent({
+			dnsProviderId: "dns-123456",
+			vaultProviderId: "vault-123456",
+			config: { accessKeyId: "AKIA-ish-id", clientId: "client-123456" },
+		});
+
+		expect(output).toEqual({
+			dnsProviderId: "dns-123456",
+			vaultProviderId: "vault-123456",
+			config: { accessKeyId: "AKIA***", clientId: "clie***" },
 		});
 	});
 
@@ -87,7 +101,12 @@ describe("agent redaction", () => {
 		expect(isPublicIdentifierKey("registryId")).toBe(true);
 		expect(isPublicIdentifierKey("buildRegistryId")).toBe(true);
 		expect(isPublicIdentifierKey("rollbackRegistryId")).toBe(true);
-		expect(isPublicIdentifierKey("organizationId")).toBe(false);
+		expect(isPublicIdentifierKey("organizationId")).toBe(true);
+		expect(isPublicIdentifierKey("dnsProviderId")).toBe(true);
+		expect(isPublicIdentifierKey("vaultProviderId")).toBe(true);
+		expect(isPublicIdentifierKey("networkId")).toBe(true);
+		expect(isPublicIdentifierKey("accessKeyId")).toBe(false);
+		expect(isPublicIdentifierKey("clientId")).toBe(false);
 		expect(isSensitiveKey("dbPwd")).toBe(true);
 		expect(isSensitiveKey("valid")).toBe(false);
 		expect(isSensitiveEnvKey("POSTGRESPASSWORD")).toBe(true);
@@ -162,6 +181,51 @@ describe("agent redaction", () => {
 		expect(output).toContain("DOKPLOY_API_KEY=abcd***");
 		expect(output).toContain("Bearer eyJa***");
 		expect(output).not.toContain("abcd1234");
+	});
+
+	it("hides private key blocks", () => {
+		const output = redactString(
+			"key:\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXk\nAAAA\n-----END OPENSSH PRIVATE KEY-----\ndone",
+		);
+
+		expect(output).toBe(
+			"key:\n-----BEGIN OPENSSH PRIVATE KEY-----\n[private key hidden]\n-----END OPENSSH PRIVATE KEY-----\ndone",
+		);
+	});
+
+	it("redacts JSON text and NUL-separated environments", () => {
+		const json = redactString(
+			'{"db_password": "hunter2hunter2", "config":{"apiToken":"cf-token-value"}, "name": "web"}',
+		);
+		expect(json).toContain('"db_password": hunt***');
+		expect(json).toContain('"apiToken":cf-t***');
+		expect(json).toContain('"name": "web"');
+		expect(json).not.toContain("hunter2hunter2");
+		expect(json).not.toContain("cf-token-value");
+
+		const environ = redactString(
+			"PATH=/bin\0POSTGRES_PASSWORD=hunter2hunter2\0HOME=/root",
+		);
+		expect(environ).toBe("PATH=/bin\0POSTGRES_PASSWORD=hunt***\0HOME=/root");
+	});
+
+	it("masks well-known token formats without a key name", () => {
+		const tokens = [
+			"sk-proj-abcdefghijklmnopqrstuvwxyz",
+			"sk_live_abcdefghijklmnop",
+			"ghp_abcdefghijklmnopqrstuvwxyz0123",
+			"AKIAIOSFODNN7EXAMPLE",
+			"xoxb-1234567890-abcdefghij",
+		];
+		const output = redactString(`values: ${tokens.join(" ")}`);
+
+		for (const token of tokens) {
+			expect(output).not.toContain(token);
+			expect(output).toContain(`${token.slice(0, 4)}***`);
+		}
+		expect(redactString("sk-learn and ghp_short stay")).toBe(
+			"sk-learn and ghp_short stay",
+		);
 	});
 
 	it("limits log output to the tail", () => {
