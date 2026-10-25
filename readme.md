@@ -1,6 +1,6 @@
 # Dokploy CLI (agent-safe fork)
 
-Fork of [Dokploy/cli](https://github.com/Dokploy/cli), a command-line tool to manage your Dokploy server remotely. It provides **545 commands** auto-generated from the Dokploy OpenAPI spec, covering every API endpoint.
+This is an unofficial fork of the upstream [Dokploy CLI](https://github.com/Dokploy/cli) for [Dokploy](https://github.com/Dokploy/dokploy). It is not affiliated with or supported by the Dokploy team. The upstream CLI is a command-line tool to manage your Dokploy server remotely. It provides **545 commands** auto-generated from the Dokploy OpenAPI spec, covering every API endpoint.
 
 This fork adds `dokploy-agent`, an agent-safe build for AI coding agents:
 
@@ -21,6 +21,8 @@ cd dokploy-agent
 just deps
 just install   # agent-safe build -> ~/.local/bin/dokploy-agent
 ```
+
+`just install` installs only the `dokploy-agent` command; it does not install the full upstream `dokploy` command. The examples below use the upstream name `dokploy`; with this install, run them as `dokploy-agent` (blocked commands exit with code 2).
 
 `just install` keeps `node_modules` linked to the checkout, so keep the clone in place and rerun `just install` after pulling. For the unrestricted CLI, run `just build` and use `node dist/index.js` (or `pnpm run dev -- <group> <action>`).
 
