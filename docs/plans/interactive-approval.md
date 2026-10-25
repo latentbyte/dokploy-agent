@@ -46,7 +46,7 @@ Backends, tried in order; the first one available wins:
 
 | Backend | Detect | Confirm | Typed confirm |
 | --- | --- | --- | --- |
-| macOS | `process.platform === "darwin"` and `osascript` present | `display dialog` with Deny as the default button | `display dialog ... default answer ""` |
+| macOS | `process.platform === "darwin"` and `osascript` present | JXA `NSAlert` with a colored diff in a scrollable monospaced view, Deny as the default button | `display dialog ... default answer ""` |
 | Windows | `win32`, `powershell.exe` | `System.Windows.Forms.MessageBox` | `Microsoft.VisualBasic.Interaction.InputBox` |
 | Linux, zenity | `DISPLAY` or `WAYLAND_DISPLAY` set, and `zenity` on PATH | `zenity --question` | `zenity --entry` |
 | Linux, kdialog | same, with `kdialog` | `kdialog --yesno` | `kdialog --inputbox` |

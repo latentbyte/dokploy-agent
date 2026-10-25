@@ -6,7 +6,9 @@ import {
 	DEFAULT_APPROVAL_TIMEOUT_SECONDS,
 } from "../client.js";
 import {
+	type ApprovalDialog,
 	type ApprovalResult,
+	type DialogLine,
 	detectApprovalBackend,
 	runApprovalInvocation,
 } from "./approval-backends.js";
@@ -21,12 +23,18 @@ export interface ApprovalTarget {
 	server?: string;
 }
 
+export interface ApprovalLine {
+	kind: "text" | "add" | "remove";
+	text: string;
+}
+
 export interface ApprovalRequest {
 	endpoint: string;
 	title: string;
 	target: ApprovalTarget;
-	// dialog only; may hold the new values the agent supplied
-	lines: string[];
+	// dialog only; may hold the new values the agent supplied. add/remove
+	// lines render as a diff, so callers pass the bare text without +/-
+	lines: ApprovalLine[];
 	// written to the audit log, so names only, never values
 	audit: Record<string, unknown>;
 	// agent-supplied explanation; shown and logged as unverified
@@ -57,36 +65,72 @@ function reasonLines(reason: string | undefined): string[] {
 		: lines;
 }
 
-// first line stays plain text so kdialog does not switch to rich text
-export function formatApprovalMessage(
+const DIFF_MARKERS = { text: "  ", add: "+ ", remove: "- " };
+
+function section(heading: string, lines: DialogLine[]): DialogLine[] {
+	return [
+		{ kind: "text", text: "" },
+		{ kind: "heading", text: heading },
+		...lines,
+	];
+}
+
+function notes(texts: string[]): DialogLine[] {
+	return texts.map((text) => ({ kind: "note", text }));
+}
+
+export function buildApprovalDialog(
 	request: ApprovalRequest,
 	blockedReason: string,
+	timeoutSeconds: number,
 	requestedFrom = process.cwd(),
-): string {
+): ApprovalDialog {
 	const { target } = request;
 	const location = [target.project, target.environment]
 		.filter(Boolean)
 		.join("/");
-	const lines = request.lines.slice(0, MAX_LINES).map(truncate);
+	const changes: DialogLine[] = request.lines
+		.slice(0, MAX_LINES)
+		.map((line) => ({
+			kind: line.kind,
+			text: truncate(`${DIFF_MARKERS[line.kind]}${line.text}`),
+		}));
 	if (request.lines.length > MAX_LINES) {
-		lines.push(`(${request.lines.length - MAX_LINES} more lines not shown)`);
+		changes.push({
+			kind: "note",
+			text: `(${request.lines.length - MAX_LINES} more lines not shown)`,
+		});
 	}
-	return [
-		"An agent asks to run a change outside its policy.",
-		"",
-		request.title,
-		`${target.kind}: ${target.name ?? target.id} (${target.id})`,
-		...(location ? [`project: ${location}`] : []),
-		`server: ${target.server ?? "local"}`,
-		"",
-		...lines,
-		"",
-		"agent's reason (unverified):",
-		...reasonLines(request.reason),
-		"",
-		`requested from (unverified): ${truncate(requestedFrom)}`,
-		`blocked because: ${truncate(blockedReason)}`,
-	].join("\n");
+	const targetLines: DialogLine[] = [
+		{
+			kind: "text",
+			text: `${target.kind}: ${target.name ?? target.id} (${target.id})`,
+		},
+		...(location
+			? [{ kind: "text" as const, text: `project: ${location}` }]
+			: []),
+		{ kind: "text", text: `server: ${target.server ?? "local"}` },
+	];
+	return {
+		title: "dokploy-agent approval",
+		heading: `Approve ${request.title}?`,
+		intro: `An agent asks to run a change outside its policy. Denied automatically after ${timeoutSeconds}s.`,
+		timeoutSeconds,
+		lines: [
+			{ kind: "heading", text: "TARGET" },
+			...targetLines,
+			...section("CHANGE", changes),
+			...section(
+				"AGENT'S REASON (unverified)",
+				notes(reasonLines(request.reason)),
+			),
+			...section(
+				"REQUESTED FROM (unverified)",
+				notes([truncate(requestedFrom)]),
+			),
+			...section("BLOCKED BECAUSE", notes([truncate(blockedReason)])),
+		],
+	};
 }
 
 function approvalLogPath(): string {
@@ -127,11 +171,9 @@ export async function requireUserApproval(
 	const timeoutSeconds =
 		config?.timeoutSeconds ?? DEFAULT_APPROVAL_TIMEOUT_SECONDS;
 	const result = await runApprovalInvocation(
-		backend.invocation({
-			title: "dokploy-agent approval",
-			message: formatApprovalMessage(request, blocked.message),
-			timeoutSeconds,
-		}),
+		backend.invocation(
+			buildApprovalDialog(request, blocked.message, timeoutSeconds),
+		),
 		timeoutSeconds,
 	);
 	appendApprovalLog(request, result);

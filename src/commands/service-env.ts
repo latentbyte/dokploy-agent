@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import {
+	type ApprovalLine,
 	type ApprovalRequest,
 	requireUserApproval,
 } from "../agent/approval.js";
@@ -309,9 +310,26 @@ function sameEnvState(
 	);
 }
 
-function currentPreview(document: string, name: string): string | undefined {
-	const [match] = matchingAssignments(document, name);
-	return match && maskSecret(unquoteEnvValue(match.assignment.value));
+// current assignments as masked diff lines; values never reach the dialog
+function maskedAssignments(
+	document: string,
+	name: string,
+	kind: ApprovalLine["kind"],
+): ApprovalLine[] {
+	return matchingAssignments(document, name).map(({ assignment }) => ({
+		kind,
+		text: `${name}=${maskSecret(unquoteEnvValue(assignment.value))}`,
+	}));
+}
+
+function commentDiff(comment: string): ApprovalLine[] {
+	return commentLines(comment, "\n")
+		.split("\n")
+		.map((text) => ({ kind: "add", text }));
+}
+
+function quotedAssignment(name: string, value: string): ApprovalLine {
+	return { kind: "add", text: `${name}=${JSON.stringify(value)}` };
 }
 
 function envApprovalRequest(
@@ -320,7 +338,7 @@ function envApprovalRequest(
 	record: ServiceRecord,
 	operation: string,
 	name: string,
-	lines: string[],
+	lines: ApprovalLine[],
 	reason: unknown,
 ): ApprovalRequest {
 	return {
@@ -350,11 +368,11 @@ function printResult(data: unknown, jsonOutput: boolean): void {
 }
 
 type EnvEdit = (document: string, opts: Record<string, unknown>) => string;
-// dialog lines for the human; may show the value the agent supplied
+// dialog diff for the human; may show the value the agent supplied
 type EnvDescribe = (
 	document: string,
 	opts: Record<string, unknown>,
-) => string[];
+) => ApprovalLine[];
 
 function registerEnvCommands(
 	group: Command,
@@ -421,8 +439,14 @@ function registerEnvCommands(
 							"url",
 							name,
 							[
-								`read scheme, host, port, and database of ${name}`,
-								"credentials and query string stay hidden",
+								{
+									kind: "text",
+									text: `read scheme, host, port, and database of ${name}`,
+								},
+								{
+									kind: "text",
+									text: "credentials and query string stay hidden",
+								},
 							],
 							opts.reason,
 						),
@@ -510,10 +534,8 @@ function registerEnvCommands(
 				typeof opts.comment === "string" ? opts.comment : undefined,
 			),
 		(_document, opts) => [
-			`add ${opts.name}=${JSON.stringify(String(opts.value))}`,
-			...(typeof opts.comment === "string"
-				? [`with comment: ${JSON.stringify(opts.comment)}`]
-				: []),
+			...(typeof opts.comment === "string" ? commentDiff(opts.comment) : []),
+			quotedAssignment(String(opts.name), String(opts.value)),
 		],
 		[["--comment <value>", "comment placed before the new variable"]],
 	);
@@ -527,15 +549,10 @@ function registerEnvCommands(
 		"set",
 		(document, opts) =>
 			setEnvironmentVariable(document, String(opts.name), String(opts.value)),
-		(document, opts) => {
-			const current = currentPreview(document, String(opts.name));
-			return [
-				current === undefined
-					? `add ${opts.name} (not set yet)`
-					: `replace ${opts.name} (current: ${current})`,
-				`new value: ${JSON.stringify(String(opts.value))}`,
-			];
-		},
+		(document, opts) => [
+			...maskedAssignments(document, String(opts.name), "remove"),
+			quotedAssignment(String(opts.name), String(opts.value)),
+		],
 	);
 	mutation(
 		"unset",
@@ -543,13 +560,8 @@ function registerEnvCommands(
 		[["--name <value>", "environment variable name"]],
 		"unset",
 		(document, opts) => unsetEnvironmentVariable(document, String(opts.name)),
-		(document, opts) => {
-			const name = String(opts.name);
-			const count = matchingAssignments(document, name).length;
-			return [
-				`remove ${name} (${count} assignment${count === 1 ? "" : "s"}, current: ${currentPreview(document, name)})`,
-			];
-		},
+		(document, opts) =>
+			maskedAssignments(document, String(opts.name), "remove"),
 	);
 	mutation(
 		"comment",
@@ -565,8 +577,9 @@ function registerEnvCommands(
 				String(opts.name),
 				String(opts.text),
 			),
-		(_document, opts) => [
-			`comment before ${opts.name}: ${JSON.stringify(String(opts.text))}`,
+		(document, opts) => [
+			...commentDiff(String(opts.text)),
+			...maskedAssignments(document, String(opts.name), "text"),
 		],
 	);
 }

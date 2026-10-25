@@ -7,10 +7,31 @@ import * as fs from "node:fs";
 
 export type ApprovalResult = "approved" | "denied" | "timeout" | "unavailable";
 
+// styling hint only; the text itself carries any +/- markers so plain-text
+// backends lose nothing
+export type DialogLineKind = "heading" | "text" | "note" | "add" | "remove";
+
+export interface DialogLine {
+	kind: DialogLineKind;
+	text: string;
+}
+
 export interface ApprovalDialog {
 	title: string;
-	message: string;
+	heading: string;
+	intro: string;
+	lines: DialogLine[];
 	timeoutSeconds: number;
+}
+
+// first line stays plain text so kdialog does not switch to rich text
+export function plainDialogText(dialog: ApprovalDialog): string {
+	return [
+		dialog.intro,
+		"",
+		dialog.heading,
+		...dialog.lines.map((line) => line.text),
+	].join("\n");
 }
 
 export interface ApprovalInvocation {
@@ -57,27 +78,67 @@ function baseEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 	return { PATH: "/usr/bin:/bin", ...pick(env, ["HOME", "USER", "LANG"]) };
 }
 
-// argv carries the text, so names and values never become AppleScript source
-const MACOS_SCRIPT = [
-	"on run argv",
-	'set r to display dialog (item 1 of argv) with title (item 2 of argv) buttons {"Deny", "Approve"} default button "Deny" cancel button "Deny" with icon caution giving up after ((item 3 of argv) as integer)',
-	'if gave up of r then return "timeout"',
-	'if button returned of r is "Approve" then return "approved"',
-	'return "denied"',
-	"end run",
-];
+// JXA builds a native NSAlert with a styled, scrollable text view. The dialog
+// arrives as one JSON argv item and is only ever parsed as data, so names and
+// values never become script source. Return answers Deny; abortModal fires
+// the native timeout
+const MACOS_SCRIPT = String.raw`ObjC.import("Cocoa");
+function run(argv) {
+	const spec = JSON.parse(argv[0]);
+	const app = $.NSApplication.sharedApplication;
+	app.setActivationPolicy($.NSApplicationActivationPolicyAccessory);
+	const alert = $.NSAlert.alloc.init;
+	alert.icon = $.NSImage.imageNamed("NSCaution");
+	alert.messageText = spec.heading;
+	alert.informativeText = spec.intro;
+	alert.addButtonWithTitle("Deny");
+	alert.addButtonWithTitle("Approve");
+	const width = 560;
+	const height = Math.min(Math.max(spec.lines.length * 16 + 16, 80), 360);
+	const view = $.NSTextView.alloc.initWithFrame($.NSMakeRect(0, 0, width, height));
+	view.editable = false;
+	view.textContainerInset = $.NSMakeSize(6, 6);
+	view.string = spec.lines.map((line) => line.text).join("\n");
+	const store = view.textStorage;
+	const mono = $.NSFont.monospacedSystemFontOfSizeWeight(12, 0);
+	const fonts = { heading: $.NSFont.boldSystemFontOfSize(11) };
+	const colors = {
+		heading: $.NSColor.secondaryLabelColor,
+		note: $.NSColor.secondaryLabelColor,
+		add: $.NSColor.systemGreenColor,
+		remove: $.NSColor.systemRedColor,
+	};
+	let at = 0;
+	for (const line of spec.lines) {
+		const range = $.NSMakeRange(at, line.text.length);
+		const color = colors[line.kind] || $.NSColor.labelColor;
+		store.addAttributeValueRange($.NSFontAttributeName, fonts[line.kind] || mono, range);
+		store.addAttributeValueRange($.NSForegroundColorAttributeName, color, range);
+		if (line.kind === "add" || line.kind === "remove") {
+			store.addAttributeValueRange($.NSBackgroundColorAttributeName, color.colorWithAlphaComponent(0.14), range);
+		}
+		at += line.text.length + 1;
+	}
+	const scroll = $.NSScrollView.alloc.initWithFrame($.NSMakeRect(0, 0, width, height));
+	scroll.hasVerticalScroller = true;
+	scroll.borderType = $.NSBezelBorder;
+	scroll.documentView = view;
+	alert.accessoryView = scroll;
+	alert.layout;
+	alert.window.title = spec.title;
+	app.activateIgnoringOtherApps(true);
+	app.performSelectorWithObjectAfterDelayInModes("abortModal", $(), spec.timeoutSeconds, $(["NSModalPanelRunLoopMode"]));
+	const response = Number(alert.runModal);
+	if (response === -1001) return "timeout";
+	return response === 1001 ? "approved" : "denied";
+}`;
 
 export function macosBackend(env: NodeJS.ProcessEnv): ApprovalBackend {
 	return {
 		name: "macos",
 		invocation: (dialog) => ({
 			command: OSASCRIPT,
-			args: [
-				...MACOS_SCRIPT.flatMap((line) => ["-e", line]),
-				dialog.message,
-				dialog.title,
-				String(dialog.timeoutSeconds),
-			],
+			args: ["-l", "JavaScript", "-e", MACOS_SCRIPT, JSON.stringify(dialog)],
 			env: baseEnv(env),
 			parse: (status, stdout) => {
 				const out = stdout.trim();
@@ -124,7 +185,7 @@ export function windowsBackend(env: NodeJS.ProcessEnv): ApprovalBackend {
 					"LOCALAPPDATA",
 				]),
 				DOKPLOY_APPROVAL_TITLE: dialog.title,
-				DOKPLOY_APPROVAL_MESSAGE: `${dialog.message}\n\nYes approves, No denies.`,
+				DOKPLOY_APPROVAL_MESSAGE: `${plainDialogText(dialog)}\n\nYes approves, No denies.`,
 			},
 			parse: (status, stdout) => {
 				const out = stdout.trim();
@@ -151,7 +212,7 @@ export function zenityBackend(
 				"--title",
 				dialog.title,
 				"--text",
-				dialog.message,
+				plainDialogText(dialog),
 				"--ok-label",
 				"Approve",
 				"--cancel-label",
@@ -182,7 +243,7 @@ export function kdialogBackend(
 				"--no-label",
 				"Deny",
 				"--warningyesno",
-				dialog.message,
+				plainDialogText(dialog),
 			],
 			env: { ...baseEnv(env), ...pick(env, LINUX_PASSTHROUGH_ENV) },
 			parse: (status) => (status === 0 ? "approved" : "denied"),

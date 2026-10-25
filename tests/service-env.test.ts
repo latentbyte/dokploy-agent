@@ -456,7 +456,7 @@ describe("environment approval outside the deploy policy", () => {
 		vi.mocked(backends.detectApprovalBackend).mockReturnValue({
 			name: "macos",
 			invocation: (dialog) => {
-				dialogs.push(dialog.message);
+				dialogs.push(backends.plainDialogText(dialog));
 				return {
 					command: process.execPath,
 					args: ["-e", `process.stdout.write(${JSON.stringify(result)})`],
@@ -512,10 +512,11 @@ describe("environment approval outside the deploy policy", () => {
 		expect(dialogs).toHaveLength(1);
 		expect(dialogs[0]).toContain("application: web / web-a1b2c3 (app-1)");
 		expect(dialogs[0]).toContain("project: storefront/production");
-		expect(dialogs[0]).toContain("replace API_URL (current: ");
-		expect(dialogs[0]).toContain('new value: "https://new.example.com"');
+		expect(dialogs[0]).toMatch(
+			/\n- API_URL=http\*\*\* \(23 chars\)\n\+ API_URL="https:\/\/new\.example\.com"\n/,
+		);
 		expect(dialogs[0]).toContain(
-			"agent's reason (unverified):\npoint the app at the new API host",
+			"AGENT'S REASON (unverified)\npoint the app at the new API host",
 		);
 		expect(dialogs[0]).not.toContain("old-value");
 		expect(dialogs[0]).not.toContain("https://old.example.com");

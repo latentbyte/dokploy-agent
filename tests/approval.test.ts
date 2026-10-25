@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	type ApprovalRequest,
-	formatApprovalMessage,
+	buildApprovalDialog,
 	requireUserApproval,
 } from "../src/agent/approval.js";
 import * as backends from "../src/agent/approval-backends.js";
@@ -18,9 +18,15 @@ afterEach(() => {
 	vi.mocked(backends.detectApprovalBackend).mockReturnValue(undefined);
 });
 
-const dialog = {
+const hostile = 'value "; do shell script "rm -rf ~" --\nnext line $(id)`';
+const dialog: backends.ApprovalDialog = {
 	title: "dokploy-agent approval",
-	message: 'value "; do shell script "rm -rf ~" --\nnext line $(id)',
+	heading: "Approve env set on application?",
+	intro: "An agent asks to run a change outside its policy.",
+	lines: [
+		{ kind: "remove", text: "- API_KEY=ab***" },
+		{ kind: "add", text: `+ API_KEY=${JSON.stringify(hostile)}` },
+	],
 	timeoutSeconds: 30,
 };
 
@@ -28,7 +34,7 @@ const request: ApprovalRequest = {
 	endpoint: "application.saveEnvironment",
 	title: "env set on application",
 	target: { kind: "application", id: "app-1", name: "web" },
-	lines: ['new value: "s3cret-value"'],
+	lines: [{ kind: "add", text: 'API_KEY="s3cret-value"' }],
 	audit: { operation: "set", names: ["API_KEY"] },
 };
 
@@ -144,16 +150,13 @@ describe("approval backend invocations", () => {
 		DISPLAY: ":0",
 	};
 
-	it("passes macOS text through argv, not script source", () => {
+	it("passes macOS text as one JSON argv item, not script source", () => {
 		const invocation = actual.macosBackend(hostileEnv).invocation(dialog);
 		expect(invocation.command).toBe("/usr/bin/osascript");
-		const scriptArgs = invocation.args.slice(0, -3);
+		expect(invocation.args.slice(0, 2)).toEqual(["-l", "JavaScript"]);
+		const scriptArgs = invocation.args.slice(0, -1);
 		expect(scriptArgs.join("\n")).not.toContain("rm -rf");
-		expect(invocation.args.slice(-3)).toEqual([
-			dialog.message,
-			dialog.title,
-			"30",
-		]);
+		expect(JSON.parse(invocation.args.at(-1) as string)).toEqual(dialog);
 		expect(invocation.env).toEqual({
 			PATH: "/usr/bin:/bin",
 			HOME: "/home/user",
@@ -163,7 +166,9 @@ describe("approval backend invocations", () => {
 	it("passes Windows text through env vars", () => {
 		const invocation = actual.windowsBackend(hostileEnv).invocation(dialog);
 		expect(invocation.args.join("\n")).not.toContain("rm -rf");
-		expect(invocation.env.DOKPLOY_APPROVAL_MESSAGE).toContain(dialog.message);
+		expect(invocation.env.DOKPLOY_APPROVAL_MESSAGE).toContain(
+			actual.plainDialogText(dialog),
+		);
 		expect(invocation.env.PATH).toBeUndefined();
 		expect(invocation.parse(0, "unavailable\r\n")).toBe("unavailable");
 		expect(invocation.parse(0, "approved\r\n")).toBe("approved");
@@ -270,9 +275,12 @@ describe("requireUserApproval", () => {
 	});
 });
 
-describe("formatApprovalMessage", () => {
-	it("shows target, change, and the original reason with bounded lines", () => {
-		const message = formatApprovalMessage(
+describe("buildApprovalDialog", () => {
+	const text = (built: backends.ApprovalDialog) =>
+		actual.plainDialogText(built);
+
+	it("shows target, diff, and the original reason with bounded lines", () => {
+		const built = buildApprovalDialog(
 			{
 				...request,
 				target: {
@@ -280,39 +288,56 @@ describe("formatApprovalMessage", () => {
 					project: "storefront",
 					environment: "production",
 				},
-				lines: ["x".repeat(500), ...Array.from({ length: 25 }, () => "y")],
+				lines: [
+					{ kind: "remove", text: "x".repeat(500) },
+					...Array.from({ length: 25 }, () => ({
+						kind: "add" as const,
+						text: "y",
+					})),
+				],
 			},
 			"agent-safe deploy policy rejects app-1",
+			45,
 		);
+		const message = text(built);
 		expect(message.split("\n")[0]).toBe(
-			"An agent asks to run a change outside its policy.",
+			"An agent asks to run a change outside its policy. Denied automatically after 45s.",
 		);
+		expect(built.heading).toBe("Approve env set on application?");
+		expect(built.timeoutSeconds).toBe(45);
 		expect(message).toContain("application: web (app-1)");
 		expect(message).toContain("project: storefront/production");
-		expect(message).toContain(`${"x".repeat(197)}...`);
+		expect(message).toContain(`CHANGE\n- ${"x".repeat(195)}...\n+ y\n`);
 		expect(message).toContain("(6 more lines not shown)");
 		expect(message).toContain(
-			"blocked because: agent-safe deploy policy rejects app-1",
+			"BLOCKED BECAUSE\nagent-safe deploy policy rejects app-1",
 		);
-		expect(message).toContain("agent's reason (unverified):\n(none given)");
-		expect(message).toContain(`requested from (unverified): ${process.cwd()}`);
+		expect(message).toContain("AGENT'S REASON (unverified)\n(none given)");
+		expect(message).toContain(`REQUESTED FROM (unverified)\n${process.cwd()}`);
+		const kinds = built.lines.map((line) => line.kind);
+		expect(kinds.filter((kind) => kind === "remove")).toHaveLength(1);
+		expect(kinds.filter((kind) => kind === "add")).toHaveLength(19);
+		expect(kinds.filter((kind) => kind === "heading")).toHaveLength(5);
 	});
 
 	it("shows the agent's reason clipped to bounded lines", () => {
-		const message = formatApprovalMessage(
-			{
-				...request,
-				reason: `rotate the key\r\n${Array.from({ length: 12 }, (_, i) => `step ${i}`).join("\n")}`,
-			},
-			"blocked",
-			"/work/repo",
+		const message = text(
+			buildApprovalDialog(
+				{
+					...request,
+					reason: `rotate the key\r\n${Array.from({ length: 12 }, (_, i) => `step ${i}`).join("\n")}`,
+				},
+				"blocked",
+				30,
+				"/work/repo",
+			),
 		);
 		expect(message).toContain(
-			"agent's reason (unverified):\nrotate the key\nstep 0\n",
+			"AGENT'S REASON (unverified)\nrotate the key\nstep 0\n",
 		);
 		expect(message).toContain("step 6\n...\n");
 		expect(message).not.toContain("step 7");
 		expect(message).not.toContain("\r");
-		expect(message).toContain("requested from (unverified): /work/repo");
+		expect(message).toContain("REQUESTED FROM (unverified)\n/work/repo");
 	});
 });
