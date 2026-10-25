@@ -2,7 +2,6 @@ name: agent-safe
 
 on:
   push:
-    branches-ignore: [main]
   pull_request:
   workflow_dispatch:
 

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Fork of `Dokploy/cli` (origin `hamidzr/dokploy-cli`). TypeScript ESM CLI on commander + axios, Node >=18, pnpm. Adds an agent-safe build (`dokploy-agent`) with a client-side policy layer on top of the upstream generated command surface.
+Fork of `Dokploy/cli` (origin `latentbyte/dokploy-agent`, public). TypeScript ESM CLI on commander + axios, Node >=18, pnpm. Adds an agent-safe build (`dokploy-agent`) with a client-side policy layer on top of the upstream generated command surface.
 
 ## Commands
 
@@ -35,6 +35,7 @@ Fork of `Dokploy/cli` (origin `hamidzr/dokploy-cli`). TypeScript ESM CLI on comm
 - Agent-safe builds must not leak secrets: route new output through `sanitizeForAgent`; env commands are blind (write without echoing values)
 - `agentDeployPolicy` lives in the same config file as the API token; keep docs/examples token-free. Field reference: `env.example` and `AgentDeployPolicyConfig` in `src/client.ts`
 - `chore: sync OpenAPI specification` commits come from upstream; upstream merges land as `chore: merge upstream <ver>`. Keep fork changes out of upstream-owned files where possible to ease merges
-- Push to `main` triggers `.github/workflows/onPushToMain.yml` (npm publish of `@dokploy/cli` if version is new). Do not bump `package.json` version or push without explicit request
-- CI: `tests.yml` (check/build/test on ubuntu+windows) and `agent-safe.yml` (asserts `application delete` is blocked with exit 2) run on non-main pushes and PRs
+- No npm publishing; the package is `private`. Do not bump `package.json` version or push without explicit request
+- Public repo: never commit real hostnames, server names, or Dokploy IDs; use `example.com`/`example.net` placeholders in docs and tests
+- CI: `test.yml` (check/build/test on ubuntu+windows) and `agent-safe.yml` (asserts `application delete` is blocked with exit 2) run on every push and PR
 - Canonical consumer skill: `~/dotfiles/templates/agents/skills/dokploy/SKILL.md`. Update it when the `dokploy-agent` command surface or policy semantics change

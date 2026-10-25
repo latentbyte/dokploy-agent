@@ -1,12 +1,28 @@
-# Dokploy CLI
+# Dokploy CLI (agent-safe fork)
 
-Dokploy CLI is a command-line tool to manage your Dokploy server remotely. It provides **545 commands** auto-generated from the Dokploy OpenAPI spec, covering every API endpoint.
+Fork of [Dokploy/cli](https://github.com/Dokploy/cli), a command-line tool to manage your Dokploy server remotely. It provides **545 commands** auto-generated from the Dokploy OpenAPI spec, covering every API endpoint.
+
+This fork adds `dokploy-agent`, an agent-safe build for AI coding agents:
+
+- destructive and secret-reading endpoints are blocked client-side (exit code 2, `AGENT_POLICY_BLOCKED`)
+- writes are scoped by an `agentDeployPolicy` in your config (projects, servers, domain suffixes, app names)
+- output is redacted for secrets; env commands write without echoing values
+- extra machine-friendly commands: `service list`, `application logs`, `compose effective`, `deployment read-logs`
+
+See [docs/agent-safe-api-surface.md](docs/agent-safe-api-surface.md) for the policy and [docs/agentic-commands.md](docs/agentic-commands.md) for command schemas. Config fields are documented in [env.example](env.example).
 
 ## Installation
 
+Not published to npm. Install from source (needs Node >=18, pnpm, and [just](https://github.com/casey/just)):
+
 ```bash
-npm install -g @dokploy/cli
+git clone https://github.com/latentbyte/dokploy-agent.git
+cd dokploy-agent
+just deps
+just install   # agent-safe build -> ~/.local/bin/dokploy-agent
 ```
+
+`just install` keeps `node_modules` linked to the checkout, so keep the clone in place and rerun `just install` after pulling. For the unrestricted CLI, run `just build` and use `node dist/index.js` (or `pnpm run dev -- <group> <action>`).
 
 ## Authentication
 
@@ -148,11 +164,11 @@ Commands are auto-generated from `openapi.json`. To update:
 
 ## Contributing
 
-If you want to contribute to Dokploy CLI, please check out our [Contributing Guide](https://github.com/Dokploy/cli/blob/main/CONTRIBUTING.md).
+If you want to contribute to Dokploy CLI, please check out our [Contributing Guide](CONTRIBUTING.md).
 
 ## Support
 
-If you encounter any issues or have any questions, please [open an issue](https://github.com/Dokploy/cli/issues) in our GitHub repository.
+If you encounter any issues or have any questions, please [open an issue](https://github.com/latentbyte/dokploy-agent/issues) in this repository. Issues with the upstream CLI belong in [Dokploy/cli](https://github.com/Dokploy/cli/issues).
 
 ## License
 

@@ -2,13 +2,13 @@
 
 Thanks for your interest in contributing to Dokploy CLI!
 
-Before you start, please discuss the feature/bug via [GitHub issues](https://github.com/Dokploy/cli/issues).
+Before you start, please discuss the feature/bug via [GitHub issues](https://github.com/latentbyte/dokploy-agent/issues).
 
 ## Setup
 
 ```bash
-git clone https://github.com/Dokploy/cli.git
-cd cli
+git clone https://github.com/latentbyte/dokploy-agent.git
+cd dokploy-agent
 pnpm install
 ```
 
