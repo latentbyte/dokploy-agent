@@ -9,7 +9,7 @@
 - **Blocked by default:** destructive and secret-reading endpoints are refused locally with exit code 2 and `AGENT_POLICY_BLOCKED`, before any request is sent
 - **Scoped writes:** creates, deploys, and domain changes are limited by an `agentDeployPolicy` in your config (projects, servers, domain suffixes, app names)
 - **No secret leaks:** output is redacted; env commands add, set, unset, or comment keys without ever printing values; `env url` shows only a URL's host, port, and database
-- **Ask instead of refuse:** env writes and `env url` reads on services outside the policy open a native OS approval dialog (macOS, Windows, Linux with zenity or kdialog) showing the exact change; the write happens only after you click Approve. Headless hosts keep the hard block
+- **Ask instead of refuse:** env writes and `env url` reads on services outside the policy open a native OS approval dialog (macOS, Windows, Linux with zenity or kdialog) showing the exact change (a colored diff on macOS); the write happens only after you click Approve. Headless hosts keep the hard block
 - **Agent-friendly commands:** `service list`, `application logs`, `compose effective|summary`, `deployment read-logs`, and `agent-safety` to inspect the policy itself, all with `--json`
 
 ## Install
