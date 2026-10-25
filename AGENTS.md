@@ -37,5 +37,5 @@ Fork of `Dokploy/cli` (origin `latentbyte/dokploy-agent`, public). TypeScript ES
 - `chore: sync OpenAPI specification` commits come from upstream; upstream merges land as `chore: merge upstream <ver>`. Keep fork changes out of upstream-owned files where possible to ease merges
 - No npm publishing; the package is `private`. Do not bump `package.json` version or push without explicit request
 - Public repo: never commit real hostnames, server names, or Dokploy IDs; use `example.com`/`example.net` placeholders in docs and tests
-- CI: `test.yml` (check/build/test on ubuntu+windows) and `agent-safe.yml` (asserts `application delete` is blocked with exit 2) run on every push and PR
+- CI: `test.yml` (check/build/test on ubuntu+windows) and `agent-safe.yml` (asserts `project remove` is blocked with exit 2) run on every push and PR
 - Canonical consumer skill: `~/dotfiles/templates/agents/skills/dokploy/SKILL.md`. Update it when the `dokploy-agent` command surface or policy semantics change
