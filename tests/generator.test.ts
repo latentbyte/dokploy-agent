@@ -1653,7 +1653,9 @@ describe("generator", () => {
 					environmentId: id === "app-agent" ? "env-1" : "env-2",
 					environment: {
 						name: "production",
-						project: { name: id === "app-expanded" ? "my-app" : "agent-project" },
+						project: {
+							name: id === "app-expanded" ? "my-app" : "agent-project",
+						},
 					},
 					serverId: "srv-allowed",
 				};
