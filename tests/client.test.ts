@@ -296,6 +296,42 @@ describe("readAgentDeployPolicyConfig", () => {
 		});
 	});
 
+	it("should enable approval by default", async () => {
+		writePolicyConfig(basePolicy);
+
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+
+		expect(readAgentDeployPolicyConfig().approval).toEqual({
+			enabled: true,
+			timeoutSeconds: 90,
+		});
+	});
+
+	it("should read approval opt-out and timeout", async () => {
+		writePolicyConfig({
+			...basePolicy,
+			approval: { enabled: false, timeoutSeconds: 30 },
+		});
+
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+
+		expect(readAgentDeployPolicyConfig().approval).toEqual({
+			enabled: false,
+			timeoutSeconds: 30,
+		});
+	});
+
+	it("should reject invalid approval settings", async () => {
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+
+		writePolicyConfig({ ...basePolicy, approval: { enabled: "no" } });
+		expect(() => readAgentDeployPolicyConfig()).toThrow("must be a boolean");
+		writePolicyConfig({ ...basePolicy, approval: { timeoutSeconds: 1 } });
+		expect(() => readAgentDeployPolicyConfig()).toThrow("from 5 to 600");
+		writePolicyConfig({ ...basePolicy, approval: true });
+		expect(() => readAgentDeployPolicyConfig()).toThrow("must be an object");
+	});
+
 	it("should read expanded application allowlist", async () => {
 		writePolicyConfig({
 			...basePolicy,

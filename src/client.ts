@@ -60,7 +60,15 @@ export interface AgentDeployPolicyConfig {
 	expandedApplicationIds: string[];
 	/** @deprecated prefer expandedProjects; kept as legacy global name fallback */
 	expandedApplicationNames: string[];
+	approval?: AgentApprovalConfig;
 }
+
+export interface AgentApprovalConfig {
+	enabled: boolean;
+	timeoutSeconds: number;
+}
+
+export const DEFAULT_APPROVAL_TIMEOUT_SECONDS = 90;
 
 export interface AuthConfig {
 	token: string;
@@ -399,6 +407,36 @@ export function readAgentDeployPolicyConfig(): AgentDeployPolicyConfig {
 		expandedProjects,
 		expandedApplicationIds,
 		expandedApplicationNames,
+		approval: parseApprovalConfig(policy.approval),
+	};
+}
+
+// approval is on unless disabled; headless hosts still get hard blocks
+function parseApprovalConfig(value: unknown): AgentApprovalConfig {
+	if (value === undefined) {
+		return { enabled: true, timeoutSeconds: DEFAULT_APPROVAL_TIMEOUT_SECONDS };
+	}
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new Error("agentDeployPolicy.approval must be an object.");
+	}
+	const { enabled, timeoutSeconds } = value as Record<string, unknown>;
+	if (enabled !== undefined && typeof enabled !== "boolean") {
+		throw new Error("agentDeployPolicy.approval.enabled must be a boolean.");
+	}
+	if (
+		timeoutSeconds !== undefined &&
+		(typeof timeoutSeconds !== "number" ||
+			!Number.isInteger(timeoutSeconds) ||
+			timeoutSeconds < 5 ||
+			timeoutSeconds > 600)
+	) {
+		throw new Error(
+			"agentDeployPolicy.approval.timeoutSeconds must be an integer from 5 to 600.",
+		);
+	}
+	return {
+		enabled: enabled !== false,
+		timeoutSeconds: timeoutSeconds ?? DEFAULT_APPROVAL_TIMEOUT_SECONDS,
 	};
 }
 
