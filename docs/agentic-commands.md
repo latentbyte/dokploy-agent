@@ -117,6 +117,7 @@ Safety behavior:
 - multiline comment input is prefixed line-by-line to prevent assignment injection
 - agent-safe builds enforce configured project and server policy before writes; compose and databases must be in a deploy project (expanded allowlists cover applications only)
 - a write on a service outside the policy opens a native approval dialog for the user and blocks until they answer (default 90s). Approve writes; otherwise exit 2 with `AGENT_APPROVAL_DENIED` or `AGENT_APPROVAL_TIMEOUT`. Hosts without a dialog (SSH, CI, headless) and configs with `agentDeployPolicy.approval.enabled: false` keep `AGENT_POLICY_BLOCKED`. `AGENT_APPROVAL_STALE` (exit 1) means the env changed while the dialog was open and nothing was written; rerun to review again
+- every mutation accepts `--reason <text>`. When a write needs approval, the dialog shows it (up to 500 chars, 8 lines) as the agent's unverified explanation next to the CLI-derived target and diff. Always pass it on writes that may fall outside the policy
 - agents should batch related changes into as few calls as practical and tell the user a dialog is coming, since each write outside the policy is a separate prompt
 - generic `application update` hides env, build-secret, password, and refresh-token fields
 - generic `compose update` hides env and refresh-token fields

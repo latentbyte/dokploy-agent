@@ -161,7 +161,7 @@ Writes on a service outside the policy are not refused outright. The CLI opens a
 - one approval covers one request. The CLI computes the write before prompting, re-reads the service after approval, and aborts with `AGENT_APPROVAL_STALE` (exit 1) if the env or companion fields changed meanwhile
 - results: approval runs the write; `AGENT_APPROVAL_DENIED` and `AGENT_APPROVAL_TIMEOUT` exit 2; with no backend, or with `agentDeployPolicy.approval.enabled: false`, the original `AGENT_POLICY_BLOCKED` stays
 - every prompt is logged to `$XDG_STATE_HOME/dokploy-agent/approvals.jsonl` (default `~/.local/state`): time, endpoint, target, key names, result. Values are never logged
-- the dialog shows the target, key names, masked current values, and the new value the agent supplied
+- the dialog shows the target, key names, masked current values, and the new value the agent supplied. Below those CLI-derived facts it shows the agent's `--reason` text and the working directory, both labeled unverified; the audit log records both
 - limits: the policy is a cooperative guard. An agent that can edit the config file, script the desktop UI, or call the API with the token directly can get around it
 
 Currently gated: env `add`, `set`, `unset`, and `comment`. Plan for further endpoints: [docs/plans/interactive-approval.md](plans/interactive-approval.md).

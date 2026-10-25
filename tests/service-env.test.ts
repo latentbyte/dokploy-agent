@@ -458,7 +458,11 @@ describe("environment approval outside the deploy policy", () => {
 		const dialogs = answerDialog("approved");
 		const { program, postSpy } = setup([outsideApp, outsideApp]);
 
-		await program.parseAsync(setArgs);
+		await program.parseAsync([
+			...setArgs,
+			"--reason",
+			"point the app at the new API host",
+		]);
 
 		expect(postSpy).toHaveBeenCalledWith("application.saveEnvironment", {
 			applicationId: "app-1",
@@ -472,6 +476,9 @@ describe("environment approval outside the deploy policy", () => {
 		expect(dialogs[0]).toContain("project: storefront/production");
 		expect(dialogs[0]).toContain("replace API_URL (current: ");
 		expect(dialogs[0]).toContain('new value: "https://new.example.com"');
+		expect(dialogs[0]).toContain(
+			"agent's reason (unverified):\npoint the app at the new API host",
+		);
 		expect(dialogs[0]).not.toContain("old-value");
 		expect(dialogs[0]).not.toContain("https://old.example.com");
 	});

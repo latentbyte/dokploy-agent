@@ -282,6 +282,7 @@ function envApprovalRequest(
 	operation: string,
 	name: string,
 	lines: string[],
+	reason: unknown,
 ): ApprovalRequest {
 	return {
 		endpoint: `${kind}.saveEnvironment`,
@@ -297,6 +298,7 @@ function envApprovalRequest(
 		},
 		lines,
 		audit: { operation, names: [name] },
+		reason: typeof reason === "string" ? reason : undefined,
 	};
 }
 
@@ -360,6 +362,10 @@ function registerEnvCommands(
 		for (const [flag, help] of flags) command.requiredOption(flag, help);
 		for (const [flag, help] of optional) command.option(flag, help);
 		command
+			.option(
+				"--reason <text>",
+				"why this change is needed; shown in the approval dialog when the service is outside the agent policy",
+			)
 			.option("--json", "Output JSON")
 			.action(async (opts: Record<string, unknown>) => {
 				const id = String(opts[idKey]);
@@ -380,6 +386,7 @@ function registerEnvCommands(
 							name,
 							String(opts.name),
 							describe(document, opts),
+							opts.reason,
 						),
 						blocked,
 					);

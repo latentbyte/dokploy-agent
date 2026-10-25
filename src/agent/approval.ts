@@ -29,10 +29,14 @@ export interface ApprovalRequest {
 	lines: string[];
 	// written to the audit log, so names only, never values
 	audit: Record<string, unknown>;
+	// agent-supplied explanation; shown and logged as unverified
+	reason?: string;
 }
 
 const MAX_LINE_CHARS = 200;
 const MAX_LINES = 20;
+const MAX_REASON_CHARS = 500;
+const MAX_REASON_LINES = 8;
 
 function truncate(line: string): string {
 	return line.length > MAX_LINE_CHARS
@@ -40,10 +44,24 @@ function truncate(line: string): string {
 		: line;
 }
 
+function reasonLines(reason: string | undefined): string[] {
+	const text = reason?.replaceAll("\r", "").trim();
+	if (!text) return ["(none given)"];
+	const clipped =
+		text.length > MAX_REASON_CHARS
+			? `${text.slice(0, MAX_REASON_CHARS - 3)}...`
+			: text;
+	const lines = clipped.split("\n");
+	return lines.length > MAX_REASON_LINES
+		? [...lines.slice(0, MAX_REASON_LINES), "..."]
+		: lines;
+}
+
 // first line stays plain text so kdialog does not switch to rich text
 export function formatApprovalMessage(
 	request: ApprovalRequest,
 	blockedReason: string,
+	requestedFrom = process.cwd(),
 ): string {
 	const { target } = request;
 	const location = [target.project, target.environment]
@@ -63,6 +81,10 @@ export function formatApprovalMessage(
 		"",
 		...lines,
 		"",
+		"agent's reason (unverified):",
+		...reasonLines(request.reason),
+		"",
+		`requested from (unverified): ${truncate(requestedFrom)}`,
 		`blocked because: ${truncate(blockedReason)}`,
 	].join("\n");
 }
@@ -81,6 +103,8 @@ function appendApprovalLog(request: ApprovalRequest, result: ApprovalResult) {
 		endpoint: request.endpoint,
 		target: request.target,
 		...request.audit,
+		reason: request.reason,
+		cwd: process.cwd(),
 		result,
 	};
 	fs.appendFileSync(logPath, `${JSON.stringify(entry)}\n`, { mode: 0o600 });

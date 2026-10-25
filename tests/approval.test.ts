@@ -237,12 +237,18 @@ describe("requireUserApproval", () => {
 		vi.mocked(backends.detectApprovalBackend).mockReturnValue(
 			fakeBackend("approved"),
 		);
-		await requireUserApproval(config, request, blocked);
+		await requireUserApproval(
+			config,
+			{ ...request, reason: "rotate the leaked key" },
+			blocked,
+		);
 		const entry = auditLog().at(-1);
 		expect(entry).toMatchObject({
 			endpoint: "application.saveEnvironment",
 			operation: "set",
 			names: ["API_KEY"],
+			reason: "rotate the leaked key",
+			cwd: process.cwd(),
 			result: "approved",
 		});
 		expect(JSON.stringify(auditLog())).not.toContain("s3cret-value");
@@ -288,5 +294,25 @@ describe("formatApprovalMessage", () => {
 		expect(message).toContain(
 			"blocked because: agent-safe deploy policy rejects app-1",
 		);
+		expect(message).toContain("agent's reason (unverified):\n(none given)");
+		expect(message).toContain(`requested from (unverified): ${process.cwd()}`);
+	});
+
+	it("shows the agent's reason clipped to bounded lines", () => {
+		const message = formatApprovalMessage(
+			{
+				...request,
+				reason: `rotate the key\r\n${Array.from({ length: 12 }, (_, i) => `step ${i}`).join("\n")}`,
+			},
+			"blocked",
+			"/work/repo",
+		);
+		expect(message).toContain(
+			"agent's reason (unverified):\nrotate the key\nstep 0\n",
+		);
+		expect(message).toContain("step 6\n...\n");
+		expect(message).not.toContain("step 7");
+		expect(message).not.toContain("\r");
+		expect(message).toContain("requested from (unverified): /work/repo");
 	});
 });
