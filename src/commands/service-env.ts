@@ -1,6 +1,20 @@
 import type { Command } from "commander";
-import { assertServiceRecordWritable } from "../agent/policy.js";
-import { apiGet, apiPost, readAgentDeployPolicyConfig } from "../client.js";
+import {
+	type ApprovalRequest,
+	requireUserApproval,
+} from "../agent/approval.js";
+import { CliError, cliErrorCode } from "../agent/errors.js";
+import {
+	AGENT_DATABASE_KINDS,
+	type AgentServiceKind,
+	assertServiceRecordWritable,
+} from "../agent/policy.js";
+import {
+	type AgentDeployPolicyConfig,
+	apiGet,
+	apiPost,
+	readAgentDeployPolicyConfig,
+} from "../client.js";
 import {
 	type EnvLine,
 	parseEnvDocument,
@@ -17,11 +31,13 @@ interface EnvironmentEntry {
 	preview: string;
 }
 
-type ServiceRecord = Record<string, unknown>;
-type EnvServiceKind = "application" | "compose";
+type ServiceRecord = Record<string, any>;
+type EnvServiceKind = AgentServiceKind;
 
 interface EnvTarget {
 	idKey: string;
+	// fields the save resends; a change while the approval dialog is open aborts
+	stateFields: string[];
 	save(id: string, record: ServiceRecord, env: string): Promise<void>;
 }
 
@@ -33,11 +49,23 @@ function nullableString(value: unknown, field: string): string | null {
 	throw new Error(`Dokploy application response is missing ${field}.`);
 }
 
+function databaseTarget(kind: EnvServiceKind): EnvTarget {
+	const idKey = `${kind}Id`;
+	return {
+		idKey,
+		stateFields: ["env"],
+		async save(id, _record, env) {
+			await apiPost(`${kind}.saveEnvironment`, { [idKey]: id, env });
+		},
+	};
+}
+
 // Dokploy saveEnvironment replaces the document; companion fields are resent
 // unchanged so env edits do not clobber them
 const ENV_TARGETS: Record<EnvServiceKind, EnvTarget> = {
 	application: {
 		idKey: "applicationId",
+		stateFields: ["env", "buildArgs", "buildSecrets", "createEnvFile"],
 		async save(applicationId, application, env) {
 			if (typeof application.createEnvFile !== "boolean") {
 				throw new Error(
@@ -55,10 +83,14 @@ const ENV_TARGETS: Record<EnvServiceKind, EnvTarget> = {
 	},
 	compose: {
 		idKey: "composeId",
+		stateFields: ["env"],
 		async save(composeId, _compose, env) {
 			await apiPost("compose.saveEnvironment", { composeId, env });
 		},
 	},
+	...(Object.fromEntries(
+		AGENT_DATABASE_KINDS.map((kind) => [kind, databaseTarget(kind)]),
+	) as Record<(typeof AGENT_DATABASE_KINDS)[number], EnvTarget>),
 };
 
 function environmentDocument(kind: EnvServiceKind, record: ServiceRecord) {
@@ -185,14 +217,21 @@ export function unsetEnvironmentVariable(
 	return next;
 }
 
+async function fetchService(
+	kind: EnvServiceKind,
+	id: string,
+): Promise<ServiceRecord> {
+	return (await apiGet(`${kind}.one`, {
+		[ENV_TARGETS[kind].idKey]: id,
+	})) as ServiceRecord;
+}
+
 async function readService(
 	kind: EnvServiceKind,
 	id: string,
 	agentSafe: boolean,
 ): Promise<ServiceRecord> {
-	const record = (await apiGet(`${kind}.one`, {
-		[ENV_TARGETS[kind].idKey]: id,
-	})) as ServiceRecord;
+	const record = await fetchService(kind, id);
 	if (agentSafe) {
 		assertServiceRecordWritable(
 			readAgentDeployPolicyConfig(),
@@ -204,6 +243,63 @@ async function readService(
 	return record;
 }
 
+// a perimeter miss becomes the error to prompt about; other failures throw
+function policyDenial(
+	policy: AgentDeployPolicyConfig,
+	kind: EnvServiceKind,
+	id: string,
+	record: ServiceRecord,
+): CliError | undefined {
+	try {
+		assertServiceRecordWritable(policy, kind, id, record);
+		return undefined;
+	} catch (error) {
+		if (cliErrorCode(error) === "AGENT_POLICY_BLOCKED")
+			return error as CliError;
+		throw error;
+	}
+}
+
+function sameEnvState(
+	kind: EnvServiceKind,
+	before: ServiceRecord,
+	after: ServiceRecord,
+): boolean {
+	return ENV_TARGETS[kind].stateFields.every(
+		(field) => before[field] === after[field],
+	);
+}
+
+function currentPreview(document: string, name: string): string | undefined {
+	const [match] = matchingAssignments(document, name);
+	return match && maskSecret(unquoteEnvValue(match.assignment.value));
+}
+
+function envApprovalRequest(
+	kind: EnvServiceKind,
+	id: string,
+	record: ServiceRecord,
+	operation: string,
+	name: string,
+	lines: string[],
+): ApprovalRequest {
+	return {
+		endpoint: `${kind}.saveEnvironment`,
+		title: `env ${operation} on ${kind}`,
+		target: {
+			kind,
+			id,
+			name:
+				[record.name, record.appName].filter(Boolean).join(" / ") || undefined,
+			project: record.environment?.project?.name,
+			environment: record.environment?.name,
+			server: record.server?.name ?? record.serverId ?? undefined,
+		},
+		lines,
+		audit: { operation, names: [name] },
+	};
+}
+
 function printResult(data: unknown, jsonOutput: boolean): void {
 	if (jsonOutput) {
 		console.log(JSON.stringify(data, null, 2));
@@ -213,6 +309,11 @@ function printResult(data: unknown, jsonOutput: boolean): void {
 }
 
 type EnvEdit = (document: string, opts: Record<string, unknown>) => string;
+// dialog lines for the human; may show the value the agent supplied
+type EnvDescribe = (
+	document: string,
+	opts: Record<string, unknown>,
+) => string[];
 
 function registerEnvCommands(
 	group: Command,
@@ -249,6 +350,7 @@ function registerEnvCommands(
 		flags: Array<[string, string]>,
 		resultKey: string,
 		edit: EnvEdit,
+		describe: EnvDescribe,
 		optional: Array<[string, string]> = [],
 	) => {
 		const command = env
@@ -261,8 +363,34 @@ function registerEnvCommands(
 			.option("--json", "Output JSON")
 			.action(async (opts: Record<string, unknown>) => {
 				const id = String(opts[idKey]);
-				const record = await readService(kind, id, options.agentSafe);
-				const nextEnv = edit(environmentDocument(kind, record), opts);
+				const record = await fetchService(kind, id);
+				const policy = options.agentSafe
+					? readAgentDeployPolicyConfig()
+					: undefined;
+				const blocked = policy && policyDenial(policy, kind, id, record);
+				const document = environmentDocument(kind, record);
+				const nextEnv = edit(document, opts);
+				if (blocked) {
+					await requireUserApproval(
+						policy.approval,
+						envApprovalRequest(
+							kind,
+							id,
+							record,
+							name,
+							String(opts.name),
+							describe(document, opts),
+						),
+						blocked,
+					);
+					const current = await fetchService(kind, id);
+					if (!sameEnvState(kind, record, current)) {
+						throw new CliError(
+							"AGENT_APPROVAL_STALE",
+							`${kind} ${id} environment changed while the approval dialog was open; nothing was written, retry to review the new state`,
+						);
+					}
+				}
 				await save(id, record, nextEnv);
 				printResult(
 					{ [idKey]: id, name: opts.name, [resultKey]: true },
@@ -286,6 +414,12 @@ function registerEnvCommands(
 				String(opts.value),
 				typeof opts.comment === "string" ? opts.comment : undefined,
 			),
+		(_document, opts) => [
+			`add ${opts.name}=${JSON.stringify(String(opts.value))}`,
+			...(typeof opts.comment === "string"
+				? [`with comment: ${JSON.stringify(opts.comment)}`]
+				: []),
+		],
 		[["--comment <value>", "comment placed before the new variable"]],
 	);
 	mutation(
@@ -298,6 +432,15 @@ function registerEnvCommands(
 		"set",
 		(document, opts) =>
 			setEnvironmentVariable(document, String(opts.name), String(opts.value)),
+		(document, opts) => {
+			const current = currentPreview(document, String(opts.name));
+			return [
+				current === undefined
+					? `add ${opts.name} (not set yet)`
+					: `replace ${opts.name} (current: ${current})`,
+				`new value: ${JSON.stringify(String(opts.value))}`,
+			];
+		},
 	);
 	mutation(
 		"unset",
@@ -305,6 +448,13 @@ function registerEnvCommands(
 		[["--name <value>", "environment variable name"]],
 		"unset",
 		(document, opts) => unsetEnvironmentVariable(document, String(opts.name)),
+		(document, opts) => {
+			const name = String(opts.name);
+			const count = matchingAssignments(document, name).length;
+			return [
+				`remove ${name} (${count} assignment${count === 1 ? "" : "s"}, current: ${currentPreview(document, name)})`,
+			];
+		},
 	);
 	mutation(
 		"comment",
@@ -320,6 +470,9 @@ function registerEnvCommands(
 				String(opts.name),
 				String(opts.text),
 			),
+		(_document, opts) => [
+			`comment before ${opts.name}: ${JSON.stringify(String(opts.text))}`,
+		],
 	);
 }
 

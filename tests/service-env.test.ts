@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import * as backends from "../src/agent/approval-backends.js";
 import * as client from "../src/client.js";
 import {
 	annotateEnvironmentVariable,
@@ -365,6 +366,220 @@ describe("service environment mutations", () => {
 			buildArgs: null,
 			buildSecrets: null,
 			createEnvFile: false,
+		});
+	});
+});
+
+describe("environment approval outside the deploy policy", () => {
+	const policy = (approval?: client.AgentApprovalConfig) => ({
+		projects: [
+			{
+				projectName: "allowed-project",
+				environmentName: "production",
+				environmentId: "allowed-env",
+			},
+		],
+		servers: [],
+		allowAnyServer: true,
+		domainSuffixes: [".example.com"],
+		expandedProjects: [],
+		expandedApplicationIds: [],
+		expandedApplicationNames: [],
+		approval,
+	});
+	const outsideApp = {
+		name: "web",
+		appName: "web-a1b2c3",
+		env: "API_URL=https://old.example.com\nSECRET=old-value\n",
+		buildArgs: null,
+		buildSecrets: null,
+		createEnvFile: false,
+		environmentId: "other-env",
+		environment: { name: "production", project: { name: "storefront" } },
+	};
+	const setArgs = [
+		"node",
+		"cli",
+		"application",
+		"env",
+		"set",
+		"--applicationId",
+		"app-1",
+		"--name",
+		"API_URL",
+		"--value",
+		"https://new.example.com",
+		"--json",
+	];
+
+	// records the dialog and answers with the given result
+	function answerDialog(result: backends.ApprovalResult) {
+		const dialogs: string[] = [];
+		vi.mocked(backends.detectApprovalBackend).mockReturnValue({
+			name: "macos",
+			invocation: (dialog) => {
+				dialogs.push(dialog.message);
+				return {
+					command: process.execPath,
+					args: ["-e", `process.stdout.write(${JSON.stringify(result)})`],
+					env: {},
+					parse: (_status, stdout) => stdout as backends.ApprovalResult,
+				};
+			},
+		});
+		return dialogs;
+	}
+
+	function setup(
+		records: Record<string, unknown>[],
+		approval?: client.AgentApprovalConfig,
+		group = "application",
+	) {
+		const program = new Command();
+		program.exitOverride();
+		program.command(group);
+		const getSpy = vi.spyOn(client, "apiGet");
+		for (const record of records) getSpy.mockResolvedValueOnce(record);
+		vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue(
+			policy(approval),
+		);
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		registerServiceEnvCommands(program, { agentSafe: true });
+		return { program, postSpy, getSpy };
+	}
+
+	afterEach(() => {
+		vi.mocked(backends.detectApprovalBackend).mockReset();
+		vi.mocked(backends.detectApprovalBackend).mockReturnValue(undefined);
+	});
+
+	it("writes after the user approves and shows the change", async () => {
+		const dialogs = answerDialog("approved");
+		const { program, postSpy } = setup([outsideApp, outsideApp]);
+
+		await program.parseAsync(setArgs);
+
+		expect(postSpy).toHaveBeenCalledWith("application.saveEnvironment", {
+			applicationId: "app-1",
+			env: 'API_URL="https://new.example.com"\nSECRET=old-value\n',
+			buildArgs: null,
+			buildSecrets: null,
+			createEnvFile: false,
+		});
+		expect(dialogs).toHaveLength(1);
+		expect(dialogs[0]).toContain("application: web / web-a1b2c3 (app-1)");
+		expect(dialogs[0]).toContain("project: storefront/production");
+		expect(dialogs[0]).toContain("replace API_URL (current: ");
+		expect(dialogs[0]).toContain('new value: "https://new.example.com"');
+		expect(dialogs[0]).not.toContain("old-value");
+		expect(dialogs[0]).not.toContain("https://old.example.com");
+	});
+
+	it("writes nothing when the user denies", async () => {
+		answerDialog("denied");
+		const { program, postSpy } = setup([outsideApp]);
+
+		await expect(program.parseAsync(setArgs)).rejects.toMatchObject({
+			code: "AGENT_APPROVAL_DENIED",
+			exitCode: 2,
+		});
+		expect(postSpy).not.toHaveBeenCalled();
+	});
+
+	it("aborts when the environment changed while the dialog was open", async () => {
+		answerDialog("approved");
+		const { program, postSpy } = setup([
+			outsideApp,
+			{ ...outsideApp, env: `${outsideApp.env}NEW=1\n` },
+		]);
+
+		await expect(program.parseAsync(setArgs)).rejects.toMatchObject({
+			code: "AGENT_APPROVAL_STALE",
+		});
+		expect(postSpy).not.toHaveBeenCalled();
+	});
+
+	it("keeps the hard block when approval is disabled", async () => {
+		const dialogs = answerDialog("approved");
+		const { program, postSpy } = setup([outsideApp], {
+			enabled: false,
+			timeoutSeconds: 90,
+		});
+
+		await expect(program.parseAsync(setArgs)).rejects.toMatchObject({
+			code: "AGENT_POLICY_BLOCKED",
+			message: expect.stringContaining("rejects application app-1"),
+		});
+		expect(dialogs).toHaveLength(0);
+		expect(postSpy).not.toHaveBeenCalled();
+	});
+
+	it("validates the edit before prompting", async () => {
+		const dialogs = answerDialog("approved");
+		const { program } = setup([outsideApp]);
+
+		await expect(
+			program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"env",
+				"add",
+				"--applicationId",
+				"app-1",
+				"--name",
+				"SECRET",
+				"--value",
+				"x",
+			]),
+		).rejects.toThrow("already exists");
+		expect(dialogs).toHaveLength(0);
+	});
+
+	it("does not prompt inside the deploy project", async () => {
+		const dialogs = answerDialog("denied");
+		const inside = { ...outsideApp, environmentId: "allowed-env" };
+		inside.environment = {
+			name: "production",
+			project: { name: "allowed-project" },
+		};
+		const { program, postSpy } = setup([inside]);
+
+		await program.parseAsync(setArgs);
+		expect(dialogs).toHaveLength(0);
+		expect(postSpy).toHaveBeenCalledOnce();
+	});
+
+	it("edits database env through saveEnvironment with only id and env", async () => {
+		answerDialog("denied");
+		const database = {
+			name: "db",
+			env: "POSTGRES_EXTRA=1\n",
+			environmentId: "allowed-env",
+			environment: { name: "production", project: { name: "allowed-project" } },
+		};
+		const { program, postSpy, getSpy } = setup(
+			[database],
+			undefined,
+			"postgres",
+		);
+
+		await program.parseAsync([
+			"node",
+			"cli",
+			"postgres",
+			"env",
+			"unset",
+			"--postgresId",
+			"pg-1",
+			"--name",
+			"POSTGRES_EXTRA",
+		]);
+		expect(getSpy).toHaveBeenCalledWith("postgres.one", { postgresId: "pg-1" });
+		expect(postSpy).toHaveBeenCalledWith("postgres.saveEnvironment", {
+			postgresId: "pg-1",
+			env: "",
 		});
 	});
 });

@@ -22,6 +22,7 @@ Fork of `Dokploy/cli` (origin `latentbyte/dokploy-agent`, public). TypeScript ES
 - `scripts/generate.ts`: OpenAPI -> commands generator. Classifies endpoints using tables imported from `src/agent/policy.ts` and emits the safety report plus calls to `guardAgentSafePost`. Also writes `src/generated/resource-ids.ts` (public ID keys for redaction)
 - `src/agent/policy.ts`: agent-safe classification tables (`SAFE_POST_ENDPOINTS`, `MUTATING_GET_ENDPOINTS`, `SECRET_READ_GET_ENDPOINTS`, `AGENT_PROTECTED_UPDATE_FIELDS`, `AGENT_EXPANDED_APPLICATION_ENDPOINTS`) and runtime guards (`guardAgentSafePost`, `assertApplicationRecordWritable`). Overlays reuse these instead of re-implementing checks
 - `src/agent/safety-commands.ts`: `logs`, `state`, `agent-safety *` metadata commands
+- `src/agent/approval.ts`, `src/agent/approval-backends.ts`: native OS approval dialog that turns a perimeter denial into a user prompt (env overlays today). `tests/setup.ts` mocks `detectApprovalBackend` for every test so none opens a real dialog; keep that when adding tests
 - `scripts/build-agent-safe.ts`: copies `src` to `tmp/`, generates with `--agent-safe`, compiles into `dist/`. The committed `src/generated/commands.ts` is always the full build
 - `docs/agent-command-blacklist.json`: built-in hidden-command list, read by the generator (token reduction, not safety)
 - `docs/agent-safe-api-surface.md`, `docs/agentic-commands.md`: hand-maintained; update when policy or overlay commands change

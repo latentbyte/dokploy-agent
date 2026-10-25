@@ -140,13 +140,33 @@ Example config shape. Use `"servers": "*"` instead of the array when agents may 
 }
 ```
 
-Custom blind environment mutations are also exposed for applications inside configured projects:
+Custom blind environment mutations are also exposed for applications, compose services, and databases (`libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`) inside configured projects. Applications may also be expanded-allowlisted:
 
-- `application env list` returns names and masked previews
-- `application env add` appends only when the key does not exist
-- `application env comment` inserts sanitized comment lines before one existing key
+- `<kind> env list` returns names and masked previews
+- `<kind> env add` appends only when the key does not exist
+- `<kind> env set` creates or replaces one key; `<kind> env unset` removes every assignment of one key
+- `<kind> env comment` inserts sanitized comment lines before one existing key
 
-These are CLI overlays around `application.one` and `application.saveEnvironment`. Existing values never appear in output. Generic agent-safe `application.update` omits replacement-style env, build-secret, password, and refresh-token fields. Generic agent-safe `compose.update` omits env and refresh-token fields.
+These are CLI overlays around `<kind>.one` and `<kind>.saveEnvironment`; the generated `save-environment` commands stay blocked.
+
+Writes on a service outside the policy are not refused outright. The CLI opens a native approval dialog (see [Interactive approval](#interactive-approval)) and writes only after the user approves. `env list` outside the policy stays blocked.
+
+## Interactive approval
+
+`src/agent/approval.ts` and `src/agent/approval-backends.ts` turn selected policy denials into a user prompt that the agent cannot answer:
+
+- backends: macOS `/usr/bin/osascript`, Windows PowerShell MessageBox (only in an interactive desktop session), Linux `zenity` or `kdialog` from `/usr/bin` or `/bin` when `DISPLAY` or `WAYLAND_DISPLAY` is set. No dialog over SSH (`SSH_CONNECTION`, `SSH_TTY`)
+- binaries come from fixed paths and run with a minimal env, so `PATH` or loader overrides cannot swap in a fake approver. Dialog text travels through argv or env vars, never script source
+- Deny is the default button; the dialog gives up after `agentDeployPolicy.approval.timeoutSeconds` (default 90)
+- one approval covers one request. The CLI computes the write before prompting, re-reads the service after approval, and aborts with `AGENT_APPROVAL_STALE` (exit 1) if the env or companion fields changed meanwhile
+- results: approval runs the write; `AGENT_APPROVAL_DENIED` and `AGENT_APPROVAL_TIMEOUT` exit 2; with no backend, or with `agentDeployPolicy.approval.enabled: false`, the original `AGENT_POLICY_BLOCKED` stays
+- every prompt is logged to `$XDG_STATE_HOME/dokploy-agent/approvals.jsonl` (default `~/.local/state`): time, endpoint, target, key names, result. Values are never logged
+- the dialog shows the target, key names, masked current values, and the new value the agent supplied
+- limits: the policy is a cooperative guard. An agent that can edit the config file, script the desktop UI, or call the API with the token directly can get around it
+
+Currently gated: env `add`, `set`, `unset`, and `comment`. Plan for further endpoints: [docs/plans/interactive-approval.md](plans/interactive-approval.md).
+
+Env overlay output never includes existing values. Generic agent-safe `application.update` omits replacement-style env, build-secret, password, and refresh-token fields. Generic agent-safe `compose.update` omits env and refresh-token fields.
 
 No other generated `apiPost` commands are safe for now.
 

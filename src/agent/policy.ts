@@ -138,8 +138,8 @@ export const AGENT_DATABASE_KINDS = [
 	"redis",
 ] as const;
 
-type AgentDatabaseKind = (typeof AGENT_DATABASE_KINDS)[number];
-type AgentServiceKind = "application" | "compose" | AgentDatabaseKind;
+export type AgentDatabaseKind = (typeof AGENT_DATABASE_KINDS)[number];
+export type AgentServiceKind = "application" | "compose" | AgentDatabaseKind;
 
 const AGENT_DEPLOY_SERVICE_MUTATIONS = [
 	"application.deploy",
@@ -423,11 +423,11 @@ export function assertApplicationRecordWritable(
 	);
 }
 
-// env overlays check the record they already fetched; compose has no expanded
-// allowlist, so it must sit in a deploy project
+// env overlays check the record they already fetched; compose and databases
+// have no expanded allowlist, so they must sit in a deploy project
 export function assertServiceRecordWritable(
 	policy: AgentDeployPolicyConfig,
-	kind: "application" | "compose",
+	kind: AgentServiceKind,
 	id: string,
 	record: any,
 ) {

@@ -1,6 +1,6 @@
 # Plan: interactive user approval for blocked agent writes
 
-Status: proposed. Nothing implemented yet.
+Status: steps 1 and 2 implemented (approval layer, env overlay with database targets), with their docs. Typed confirmation is deferred to phase 2 with the Tier B endpoints. Steps 3 onward are open.
 
 ## Goal
 
