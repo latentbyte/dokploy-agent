@@ -64,9 +64,9 @@ Error codes, all exit 2: `AGENT_APPROVAL_DENIED`, `AGENT_APPROVAL_TIMEOUT`. A `u
 
 Audit: every request and its decision is appended as JSONL to `$XDG_STATE_HOME/dokploy-agent/approvals.jsonl` (default `~/.local/state`): time, endpoint, target IDs and names, key names, result. Values are never written.
 
-Config: `agentDeployPolicy.approval: { enabled: boolean, timeoutSeconds?: number }`. It defaults to off. The default timeout is 90s, which keeps the dialog inside a typical 120s agent tool timeout. Document it in `env.example` and in `AgentDeployPolicyConfig`.
+Config: `agentDeployPolicy.approval: { enabled?: boolean, timeoutSeconds?: number }`. Approval is on whenever a backend is available (a GUI session is detected). Set `enabled: false` to opt out and keep the hard blocks. Headless hosts get `unavailable`, so they behave as today without any config. Each approval covers exactly one request: there are no sessions, no "approve this target for N minutes", and no cached grants. The default timeout is 90s, which keeps the dialog inside a typical 120s agent tool timeout. Document it in `env.example` and in `AgentDeployPolicyConfig`.
 
-Testing: backends are chosen through an injectable module seam that vitest mocks (`vi.mock("../src/agent/approval.js")`). There is no runtime env override. Each backend's argv construction is unit tested, including an injection test that passes quotes, newlines, and `"; do shell script` inside names and values. No test spawns a real dialog, so the ubuntu and windows CI jobs never block. The `agent-safe.yml` assertion (`project remove` exits 2 with `AGENT_POLICY_BLOCKED`) must keep passing: approval is off by default and CI has no config enabling it. Extend that job to assert that the default stays off.
+Testing: backends are chosen through an injectable module seam that vitest mocks (`vi.mock("../src/agent/approval.js")`). There is no runtime env override. Each backend's argv construction is unit tested, including an injection test that passes quotes, newlines, and `"; do shell script` inside names and values. No test spawns a real dialog, so the ubuntu and windows CI jobs never block. The `agent-safe.yml` assertion (`project remove` exits 2 with `AGENT_POLICY_BLOCKED`) must keep passing: CI runners have no GUI session, so the backend is `unavailable`. Extend that job to assert the `unavailable` fallback message. Because approval is on by default wherever a GUI exists, any test that spawns an agent-safe build on a developer machine must point `DOKPLOY_CONFIG_PATH` at a temp config with `approval.enabled: false`. Today `tests/cli.test.ts` spawns only the full build with the real env, which has no policy layer, so it is unaffected.
 
 ## Env setting and updating (phase 1)
 
@@ -133,9 +133,12 @@ Tier C, stays hard-blocked:
 6. Public repo: tests and docs use `example.com` placeholders and fake IDs only.
 7. Manual check on macOS: one real dialog per result type against a disposable app. Linux zenity check in a VM if available.
 
-## Open questions
+## Decisions
 
-1. Approve once per request only, or also "approve for this target for N minutes"? Proposed: once only for phase 1.
-2. Should approval mode default to on when a GUI is detected? Proposed: off, opt-in through config.
-3. Biometric backend (Swift `LocalAuthentication` helper on macOS, Windows Hello) for Tier B? Proposed: defer.
-4. Headless remote approval (push notification with approve and deny actions) for SSH-only agents? Proposed: defer, but keep the backend interface ready for it.
+- Approval is per request only. No time-boxed or per-target grants.
+- Approval is on by default when a GUI backend is available; `approval.enabled: false` opts out.
+
+## Deferred (keep in scope for later phases)
+
+- Biometric backend (Swift `LocalAuthentication` helper on macOS, Windows Hello) for Tier B. This closes the UI-scripting gap noted under the threat model.
+- Headless remote approval for SSH-only agents: a push notification with approve and deny actions (for example ntfy or a phone app), answered out of band. The `ApprovalRequest` and `ApprovalResult` interface already fits it. It needs an approver-side secret the agent cannot read, so it must not live in the agent-readable config.
