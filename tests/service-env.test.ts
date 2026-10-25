@@ -5,6 +5,7 @@ import * as client from "../src/client.js";
 import {
 	annotateEnvironmentVariable,
 	appendEnvironmentVariable,
+	environmentUrlParts,
 	registerServiceEnvCommands,
 	setEnvironmentVariable,
 	unsetEnvironmentVariable,
@@ -125,6 +126,43 @@ describe("service environment mutations", () => {
 			buildSecrets: "TOKEN=build-secret",
 			createEnvFile: true,
 		});
+	});
+
+	it("extracts URL parts without credentials or query", () => {
+		expect(
+			environmentUrlParts(
+				'DATABASE_URL="postgres://user:hunter2@db.example.net:5432/app?sslpassword=x"\n',
+				"DATABASE_URL",
+			),
+		).toEqual({
+			scheme: "postgres",
+			host: "db.example.net",
+			port: "5432",
+			database: "app",
+		});
+		expect(
+			environmentUrlParts(
+				"HOOK=https://hooks.example.com/services/T0/B0/token\n",
+				"HOOK",
+			),
+		).toEqual({
+			scheme: "https",
+			host: "hooks.example.com",
+			port: null,
+			database: null,
+		});
+	});
+
+	it("rejects non-URL values without echoing them", () => {
+		let error: unknown;
+		try {
+			environmentUrlParts("SECRET=not-a-url-hunter2\n", "SECRET");
+		} catch (caught) {
+			error = caught;
+		}
+		expect(error).toMatchObject({ code: "INVALID_ENV_URL" });
+		expect(String((error as Error).message)).not.toContain("hunter2");
+		expect(() => environmentUrlParts("A=1\n", "B")).toThrow("does not exist");
 	});
 
 	it("lists only names and masked previews", async () => {
@@ -556,6 +594,103 @@ describe("environment approval outside the deploy policy", () => {
 		await program.parseAsync(setArgs);
 		expect(dialogs).toHaveLength(0);
 		expect(postSpy).toHaveBeenCalledOnce();
+	});
+
+	it("lists env outside the deploy policy without prompting", async () => {
+		const dialogs = answerDialog("denied");
+		const { program } = setup([outsideApp]);
+
+		await program.parseAsync([
+			"node",
+			"cli",
+			"application",
+			"env",
+			"list",
+			"--applicationId",
+			"app-1",
+		]);
+		expect(dialogs).toHaveLength(0);
+		const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+		expect(output).toContain('"name":"SECRET"');
+		expect(output).not.toContain("old-value");
+	});
+
+	const dbApp = {
+		...outsideApp,
+		env: "DATABASE_URL=postgres://app:hunter2@db.example.net:5432/app\n",
+	};
+	const urlArgs = [
+		"node",
+		"cli",
+		"application",
+		"env",
+		"url",
+		"--applicationId",
+		"app-1",
+		"--name",
+		"DATABASE_URL",
+		"--reason",
+		"check which database host prod uses",
+	];
+
+	it("reads URL parts after the user approves", async () => {
+		const dialogs = answerDialog("approved");
+		const { program } = setup([dbApp]);
+
+		await program.parseAsync(urlArgs);
+		expect(dialogs).toHaveLength(1);
+		expect(dialogs[0]).toContain(
+			"read scheme, host, port, and database of DATABASE_URL",
+		);
+		expect(dialogs[0]).toContain("check which database host prod uses");
+		expect(dialogs[0]).not.toContain("hunter2");
+		const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+		expect(JSON.parse(output)).toEqual({
+			applicationId: "app-1",
+			name: "DATABASE_URL",
+			scheme: "postgres",
+			host: "db.example.net",
+			port: "5432",
+			database: "app",
+		});
+		expect(output).not.toContain("hunter2");
+	});
+
+	it("prints nothing when the user denies the URL read", async () => {
+		answerDialog("denied");
+		const { program } = setup([dbApp]);
+
+		await expect(program.parseAsync(urlArgs)).rejects.toMatchObject({
+			code: "AGENT_APPROVAL_DENIED",
+		});
+		expect(console.log).not.toHaveBeenCalled();
+	});
+
+	it("keeps the URL read blocked without a dialog backend", async () => {
+		const { program } = setup([dbApp]);
+
+		await expect(program.parseAsync(urlArgs)).rejects.toMatchObject({
+			code: "AGENT_POLICY_BLOCKED",
+		});
+		expect(console.log).not.toHaveBeenCalled();
+	});
+
+	it("reads URL parts inside the deploy project without prompting", async () => {
+		const dialogs = answerDialog("denied");
+		const { program } = setup([
+			{
+				...dbApp,
+				environmentId: "allowed-env",
+				environment: {
+					name: "production",
+					project: { name: "allowed-project" },
+				},
+			},
+		]);
+
+		await program.parseAsync(urlArgs);
+		expect(dialogs).toHaveLength(0);
+		expect(console.log).toHaveBeenCalledOnce();
 	});
 
 	it("edits database env through saveEnvironment with only id and env", async () => {

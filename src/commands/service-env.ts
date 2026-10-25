@@ -217,6 +217,62 @@ export function unsetEnvironmentVariable(
 	return next;
 }
 
+export interface EnvironmentUrlParts {
+	scheme: string;
+	host: string;
+	port: string | null;
+	database: string | null;
+}
+
+// only database URLs name a database in the path; other paths may hold tokens
+const DATABASE_URL_SCHEMES = new Set([
+	"postgres",
+	"postgresql",
+	"mysql",
+	"mariadb",
+	"mongodb",
+	"mongodb+srv",
+	"redis",
+	"rediss",
+]);
+
+// non-secret parts of a URL value; credentials, query, and fragment stay hidden
+export function environmentUrlParts(
+	document: string,
+	name: string,
+): EnvironmentUrlParts {
+	if (!ENV_NAME_PATTERN.test(name)) {
+		throw new Error(`Invalid environment variable name: ${name}`);
+	}
+	const matches = matchingAssignments(document, name);
+	if (matches.length === 0) {
+		throw new Error(`Environment variable ${name} does not exist.`);
+	}
+	if (matches.length > 1) {
+		throw new Error(
+			`Environment variable ${name} is duplicated; refusing ambiguous read.`,
+		);
+	}
+	const [line] = matches as [Assignment];
+	let url: URL | undefined;
+	try {
+		url = new URL(unquoteEnvValue(line.assignment.value));
+	} catch {
+		url = undefined;
+	}
+	if (!url?.hostname) {
+		throw new CliError(
+			"INVALID_ENV_URL",
+			`Environment variable ${name} is not a URL with a host.`,
+		);
+	}
+	const scheme = url.protocol.replace(/:$/, "");
+	const database = DATABASE_URL_SCHEMES.has(scheme)
+		? url.pathname.replace(/^\//, "") || null
+		: null;
+	return { scheme, host: url.hostname, port: url.port || null, database };
+}
+
 async function fetchService(
 	kind: EnvServiceKind,
 	id: string,
@@ -224,23 +280,6 @@ async function fetchService(
 	return (await apiGet(`${kind}.one`, {
 		[ENV_TARGETS[kind].idKey]: id,
 	})) as ServiceRecord;
-}
-
-async function readService(
-	kind: EnvServiceKind,
-	id: string,
-	agentSafe: boolean,
-): Promise<ServiceRecord> {
-	const record = await fetchService(kind, id);
-	if (agentSafe) {
-		assertServiceRecordWritable(
-			readAgentDeployPolicyConfig(),
-			kind,
-			id,
-			record,
-		);
-	}
-	return record;
 }
 
 // a perimeter miss becomes the error to prompt about; other failures throw
@@ -336,7 +375,8 @@ function registerEnvCommands(
 		.option("--json", "Output JSON")
 		.action(async (opts: Record<string, unknown>) => {
 			const id = String(opts[idKey]);
-			const record = await readService(kind, id, options.agentSafe);
+			// masked previews only, so any service is readable
+			const record = await fetchService(kind, id);
 			printResult(
 				{
 					[idKey]: id,
@@ -344,6 +384,54 @@ function registerEnvCommands(
 				},
 				opts.json === true,
 			);
+		});
+
+	env
+		.command("url")
+		.description(
+			"show scheme, host, port, and database of a URL variable; credentials stay hidden",
+		)
+		.requiredOption(`--${idKey} <value>`, idKey)
+		.requiredOption("--name <value>", "environment variable name")
+		.option(
+			"--reason <text>",
+			"why this read is needed; shown in the approval dialog when the service is outside the agent policy",
+		)
+		.option("--json", "Output JSON")
+		.action(async (opts: Record<string, unknown>) => {
+			const id = String(opts[idKey]);
+			const name = String(opts.name);
+			const record = await fetchService(kind, id);
+			const parts = environmentUrlParts(
+				environmentDocument(kind, record),
+				name,
+			);
+			const policy = options.agentSafe
+				? readAgentDeployPolicyConfig()
+				: undefined;
+			const blocked = policy && policyDenial(policy, kind, id, record);
+			if (blocked) {
+				await requireUserApproval(
+					policy.approval,
+					{
+						...envApprovalRequest(
+							kind,
+							id,
+							record,
+							"url",
+							name,
+							[
+								`read scheme, host, port, and database of ${name}`,
+								"credentials and query string stay hidden",
+							],
+							opts.reason,
+						),
+						endpoint: `${kind}.one`,
+					},
+					blocked,
+				);
+			}
+			printResult({ [idKey]: id, name, ...parts }, opts.json === true);
 		});
 
 	const mutation = (

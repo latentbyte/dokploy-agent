@@ -142,14 +142,15 @@ Example config shape. Use `"servers": "*"` instead of the array when agents may 
 
 Custom blind environment mutations are also exposed for applications, compose services, and databases (`libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`) inside configured projects. Applications may also be expanded-allowlisted:
 
-- `<kind> env list` returns names and masked previews
+- `<kind> env list` returns names and masked previews, for any service the token can read
+- `<kind> env url --name KEY` returns the scheme, host, port, and (database schemes only) database of a URL value; userinfo, query, and fragment stay hidden
 - `<kind> env add` appends only when the key does not exist
 - `<kind> env set` creates or replaces one key; `<kind> env unset` removes every assignment of one key
 - `<kind> env comment` inserts sanitized comment lines before one existing key
 
 These are CLI overlays around `<kind>.one` and `<kind>.saveEnvironment`; the generated `save-environment` commands stay blocked.
 
-Writes on a service outside the policy are not refused outright. The CLI opens a native approval dialog (see [Interactive approval](#interactive-approval)) and writes only after the user approves. `env list` outside the policy stays blocked.
+Writes on a service outside the policy are not refused outright. The CLI opens a native approval dialog (see [Interactive approval](#interactive-approval)) and writes only after the user approves. `env url` outside the policy prompts the same way before printing.
 
 ## Interactive approval
 
@@ -164,9 +165,9 @@ Writes on a service outside the policy are not refused outright. The CLI opens a
 - the dialog shows the target, key names, masked current values, and the new value the agent supplied. Below those CLI-derived facts it shows the agent's `--reason` text and the working directory, both labeled unverified; the audit log records both
 - limits: the policy is a cooperative guard. An agent that can edit the config file, script the desktop UI, or call the API with the token directly can get around it
 
-Currently gated: env `add`, `set`, `unset`, and `comment`. Plan for further endpoints: [docs/plans/interactive-approval.md](plans/interactive-approval.md).
+Currently gated: env `add`, `set`, `unset`, `comment`, and `url`. Plan for further endpoints: [docs/plans/interactive-approval.md](plans/interactive-approval.md).
 
-Env overlay output never includes existing values. Generic agent-safe `application.update` omits replacement-style env, build-secret, password, and refresh-token fields. Generic agent-safe `compose.update` omits env and refresh-token fields.
+Env overlay output never includes existing values; `env url` prints only the non-secret URL parts above. Generic agent-safe `application.update` omits replacement-style env, build-secret, password, and refresh-token fields. Generic agent-safe `compose.update` omits env and refresh-token fields.
 
 No other generated `apiPost` commands are safe for now.
 
