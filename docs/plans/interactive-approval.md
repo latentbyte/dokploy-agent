@@ -23,7 +23,7 @@ First target: environment variable writes (`env add|set|unset|comment`) on servi
 - Residual risks, documented rather than solved:
   - The agent can edit the JSONC config, which also holds `agentDeployPolicy`. It can already widen the perimeter that way, so approval adds no new hole.
   - On macOS, an agent whose terminal has Accessibility permission can click dialogs through System Events UI scripting. A later biometric backend closes this gap.
-  - The full `dokploy` CLI uses the same token. Client-side policy is a cooperative guard, not a security boundary.
+  - `just install` ships only `dokploy-agent`, but the API token sits in the same agent-readable config, so an agent could call the API directly. Client-side policy is a cooperative guard, not a security boundary.
 
 ## Approval layer (OS-independent)
 
@@ -58,6 +58,7 @@ Rules every backend follows:
 - Deny is the default button. When the timeout expires, the child process is killed and the result is `timeout`.
 - Each backend parses only exit codes or stdout tokens it controls. Anything unexpected counts as `denied`.
 - `unavailable` (SSH session, CI, no GUI) falls back to today's `AGENT_POLICY_BLOCKED`, so headless installs behave exactly as before.
+- Windows detection also requires an interactive desktop session (`[Environment]::UserInteractive` and a non-zero session ID). Service-context processes, such as CI runners, report `unavailable` instead of blocking on an invisible MessageBox.
 
 Error codes, all exit 2: `AGENT_APPROVAL_DENIED`, `AGENT_APPROVAL_TIMEOUT`. A `unavailable` result keeps `AGENT_POLICY_BLOCKED`, with the message noting that no approval UI was found.
 
@@ -65,7 +66,7 @@ Audit: every request and its decision is appended as JSONL to `$XDG_STATE_HOME/d
 
 Config: `agentDeployPolicy.approval: { enabled: boolean, timeoutSeconds?: number }`. It defaults to off. The default timeout is 90s, which keeps the dialog inside a typical 120s agent tool timeout. Document it in `env.example` and in `AgentDeployPolicyConfig`.
 
-Testing: backends are chosen through an injectable module seam that vitest mocks (`vi.mock("../src/agent/approval.js")`). There is no runtime env override. Each backend's argv construction is unit tested, including an injection test that passes quotes, newlines, and `"; do shell script` inside names and values.
+Testing: backends are chosen through an injectable module seam that vitest mocks (`vi.mock("../src/agent/approval.js")`). There is no runtime env override. Each backend's argv construction is unit tested, including an injection test that passes quotes, newlines, and `"; do shell script` inside names and values. No test spawns a real dialog, so the ubuntu and windows CI jobs never block. The `agent-safe.yml` assertion (`project remove` exits 2 with `AGENT_POLICY_BLOCKED`) must keep passing: approval is off by default and CI has no config enabling it. Extend that job to assert that the default stays off.
 
 ## Env setting and updating (phase 1)
 
@@ -128,8 +129,9 @@ Tier C, stays hard-blocked:
 2. Env overlay: prompt on perimeter miss, stale check, database targets. Tests through the existing harness with the approval module mocked: approved, denied, timeout, unavailable, stale.
 3. `env apply --stdin` batch.
 4. Generator: `APPROVABLE_ENDPOINTS`, real commands for approvable stubs, catch in `guardAgentSafePost`. Safety report gets a new `approval` classification, so `agent-safety allowed|disallowed` shows which commands need a prompt.
-5. Docs: `agent-safe-api-surface.md`, `agentic-commands.md`, `just api-surface`, `env.example`, and the dokploy skill (agents should expect a blocking prompt and the new exit codes).
-6. Manual check on macOS: one real dialog per result type against a disposable app. Linux zenity check in a VM if available.
+5. Docs: `readme.md` ("What it adds" section; it also still says env commands only add or comment, but `set` and `unset` exist), `agent-safe-api-surface.md`, `agentic-commands.md`, `just api-surface`, `env.example`, and the dokploy skill (agents should expect a blocking prompt and the new exit codes).
+6. Public repo: tests and docs use `example.com` placeholders and fake IDs only.
+7. Manual check on macOS: one real dialog per result type against a disposable app. Linux zenity check in a VM if available.
 
 ## Open questions
 
