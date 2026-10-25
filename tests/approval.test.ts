@@ -56,6 +56,41 @@ function fakeBackend(answer: string): backends.ApprovalBackend {
 	};
 }
 
+// dialog that answers after delayMs; its reminder appends to markerPath
+function slowBackend(
+	answer: string,
+	delayMs: number,
+	markerPath: string,
+): backends.ApprovalBackend {
+	return {
+		...fakeBackend(answer),
+		invocation: (dialog) => ({
+			...fakeBackend(answer).invocation(dialog),
+			args: [
+				"-e",
+				`setTimeout(() => process.stdout.write(${JSON.stringify(answer)}), ${delayMs})`,
+			],
+		}),
+		reminder: (dialog, remainingSeconds) => ({
+			command: process.execPath,
+			args: [
+				"-e",
+				`require("node:fs").appendFileSync(${JSON.stringify(markerPath)}, ${JSON.stringify(`${dialog.heading} ${remainingSeconds}s\n`)})`,
+			],
+			env: {},
+		}),
+	};
+}
+
+async function waitForFile(file: string, ms: number): Promise<boolean> {
+	const end = Date.now() + ms;
+	while (Date.now() < end) {
+		if (fs.existsSync(file)) return true;
+		await new Promise((resolve) => setTimeout(resolve, 25));
+	}
+	return fs.existsSync(file);
+}
+
 function auditLog(): Array<Record<string, unknown>> {
 	const logPath = path.join(
 		process.env.XDG_STATE_HOME as string,
@@ -199,6 +234,39 @@ describe("approval backend invocations", () => {
 		expect(parse(null, "")).toBe("denied");
 	});
 
+	it("passes reminder text as data and keeps env minimal", () => {
+		const macos = actual
+			.macosBackend(hostileEnv)
+			.reminder?.(dialog, 15) as backends.ReminderInvocation;
+		expect(macos.command).toBe("/usr/bin/osascript");
+		expect(macos.args.slice(0, -1).join("\n")).not.toContain("Approve env");
+		expect(JSON.parse(macos.args.at(-1) as string)).toEqual({
+			title: "dokploy-agent approval waiting",
+			body: "Approve env set on application? Denied automatically in 15s.",
+		});
+		expect(macos.env).toEqual({ PATH: "/usr/bin:/bin", HOME: "/home/user" });
+		const zenity = actual
+			.zenityBackend("/usr/bin/zenity", hostileEnv)
+			.reminder?.(dialog, 15) as backends.ReminderInvocation;
+		expect(zenity.args.slice(0, 2)).toEqual(["--notification", "--no-markup"]);
+		expect(zenity.env.LD_PRELOAD).toBeUndefined();
+		const kdialog = actual
+			.kdialogBackend("/usr/bin/kdialog", hostileEnv)
+			.reminder?.(dialog, 15) as backends.ReminderInvocation;
+		expect(kdialog.args).toContain("--passivepopup");
+		expect(actual.windowsBackend(hostileEnv).reminder).toBeUndefined();
+	});
+
+	it("ignores a missing reminder binary", () => {
+		expect(() =>
+			actual.runReminderInvocation({
+				command: "/nonexistent/notify",
+				args: [],
+				env: {},
+			}),
+		).not.toThrow();
+	});
+
 	it("reports a missing binary as unavailable", async () => {
 		await expect(
 			actual.runApprovalInvocation(
@@ -272,6 +340,45 @@ describe("requireUserApproval", () => {
 		await expect(
 			requireUserApproval(config, request, blocked),
 		).rejects.toMatchObject({ code: "AGENT_APPROVAL_TIMEOUT", exitCode: 2 });
+	});
+});
+
+describe("approval reminder", () => {
+	const blocked = agentPolicyBlocked("agent-safe deploy policy rejects app-1");
+	const marker = () =>
+		path.join(
+			fs.mkdtempSync(path.join(process.env.XDG_STATE_HOME as string, "r-")),
+			"reminded",
+		);
+
+	it("notifies halfway through an unanswered dialog", async () => {
+		const file = marker();
+		vi.mocked(backends.detectApprovalBackend).mockReturnValue(
+			slowBackend("approved", 1500, file),
+		);
+		await requireUserApproval(
+			{ enabled: true, timeoutSeconds: 2 },
+			request,
+			blocked,
+		);
+		expect(await waitForFile(file, 2000)).toBe(true);
+		expect(fs.readFileSync(file, "utf8")).toBe(
+			"Approve env set on application? 1s\n",
+		);
+	});
+
+	it("stays silent when the user answers first", async () => {
+		const file = marker();
+		vi.mocked(backends.detectApprovalBackend).mockReturnValue(
+			slowBackend("approved", 0, file),
+		);
+		await requireUserApproval(
+			{ enabled: true, timeoutSeconds: 4 },
+			request,
+			blocked,
+		);
+		await new Promise((resolve) => setTimeout(resolve, 2500));
+		expect(fs.existsSync(file)).toBe(false);
 	});
 });
 

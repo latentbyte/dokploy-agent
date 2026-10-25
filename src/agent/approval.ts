@@ -11,6 +11,7 @@ import {
 	type DialogLine,
 	detectApprovalBackend,
 	runApprovalInvocation,
+	runReminderInvocation,
 } from "./approval-backends.js";
 import { agentPolicyBlocked, CliError } from "./errors.js";
 
@@ -170,12 +171,25 @@ export async function requireUserApproval(
 	}
 	const timeoutSeconds =
 		config?.timeoutSeconds ?? DEFAULT_APPROVAL_TIMEOUT_SECONDS;
-	const result = await runApprovalInvocation(
-		backend.invocation(
-			buildApprovalDialog(request, blocked.message, timeoutSeconds),
-		),
-		timeoutSeconds,
-	);
+	const dialog = buildApprovalDialog(request, blocked.message, timeoutSeconds);
+	// halfway nudge for a dialog buried behind other windows or on another space
+	const remainingSeconds = Math.ceil(timeoutSeconds / 2);
+	const reminder = backend.reminder?.(dialog, remainingSeconds);
+	const reminderTimer = reminder
+		? setTimeout(
+				() => runReminderInvocation(reminder),
+				(timeoutSeconds - remainingSeconds) * 1000,
+			)
+		: undefined;
+	let result: ApprovalResult;
+	try {
+		result = await runApprovalInvocation(
+			backend.invocation(dialog),
+			timeoutSeconds,
+		);
+	} finally {
+		clearTimeout(reminderTimer);
+	}
 	appendApprovalLog(request, result);
 	if (result === "approved") return;
 	if (result === "unavailable") {

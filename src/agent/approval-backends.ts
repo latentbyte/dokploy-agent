@@ -43,9 +43,24 @@ export interface ApprovalInvocation {
 	parse(status: number | null, stdout: string): ApprovalResult;
 }
 
+// fire-and-forget desktop notification; output and exit status are ignored
+export type ReminderInvocation = Omit<ApprovalInvocation, "parse">;
+
 export interface ApprovalBackend {
 	name: "macos" | "windows" | "zenity" | "kdialog";
 	invocation(dialog: ApprovalDialog): ApprovalInvocation;
+	// nudges a user who has not answered yet; backends without one stay silent
+	reminder?(
+		dialog: ApprovalDialog,
+		remainingSeconds: number,
+	): ReminderInvocation;
+}
+
+function reminderText(dialog: ApprovalDialog, remainingSeconds: number) {
+	return {
+		title: "dokploy-agent approval waiting",
+		body: `${dialog.heading} Denied automatically in ${remainingSeconds}s.`,
+	};
 }
 
 export interface DetectOptions {
@@ -133,6 +148,14 @@ function run(argv) {
 	return response === 1001 ? "approved" : "denied";
 }`;
 
+// same argv-as-data rule as the dialog script
+const MACOS_REMINDER_SCRIPT = `function run(argv) {
+	const spec = JSON.parse(argv[0]);
+	const app = Application.currentApplication();
+	app.includeStandardAdditions = true;
+	app.displayNotification(spec.body, { withTitle: spec.title, soundName: "Ping" });
+}`;
+
 export function macosBackend(env: NodeJS.ProcessEnv): ApprovalBackend {
 	return {
 		name: "macos",
@@ -146,6 +169,17 @@ export function macosBackend(env: NodeJS.ProcessEnv): ApprovalBackend {
 				if (status === 0 && out === "timeout") return "timeout";
 				return "denied";
 			},
+		}),
+		reminder: (dialog, remainingSeconds) => ({
+			command: OSASCRIPT,
+			args: [
+				"-l",
+				"JavaScript",
+				"-e",
+				MACOS_REMINDER_SCRIPT,
+				JSON.stringify(reminderText(dialog, remainingSeconds)),
+			],
+			env: baseEnv(env),
 		}),
 	};
 }
@@ -224,6 +258,14 @@ export function zenityBackend(
 			parse: (status) =>
 				status === 0 ? "approved" : status === 5 ? "timeout" : "denied",
 		}),
+		reminder: (dialog, remainingSeconds) => {
+			const { title, body } = reminderText(dialog, remainingSeconds);
+			return {
+				command,
+				args: ["--notification", "--no-markup", "--text", `${title}\n${body}`],
+				env: { ...baseEnv(env), ...pick(env, LINUX_PASSTHROUGH_ENV) },
+			};
+		},
 	};
 }
 
@@ -248,6 +290,14 @@ export function kdialogBackend(
 			env: { ...baseEnv(env), ...pick(env, LINUX_PASSTHROUGH_ENV) },
 			parse: (status) => (status === 0 ? "approved" : "denied"),
 		}),
+		reminder: (dialog, remainingSeconds) => {
+			const { title, body } = reminderText(dialog, remainingSeconds);
+			return {
+				command,
+				args: ["--title", title, "--passivepopup", body, "10"],
+				env: { ...baseEnv(env), ...pick(env, LINUX_PASSTHROUGH_ENV) },
+			};
+		},
 	};
 }
 
@@ -307,4 +357,18 @@ export function runApprovalInvocation(
 			resolve(timedOut ? "timeout" : invocation.parse(status, stdout));
 		});
 	});
+}
+
+export function runReminderInvocation(invocation: ReminderInvocation): void {
+	try {
+		const child = spawn(invocation.command, invocation.args, {
+			env: invocation.env,
+			stdio: "ignore",
+		});
+		child.on("error", () => {});
+		// a lingering popup must not hold the CLI open after the dialog closes
+		child.unref();
+	} catch {
+		// best effort; the dialog itself still enforces the deadline
+	}
 }
