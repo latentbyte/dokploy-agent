@@ -1,6 +1,6 @@
 # Plan: interactive user approval for blocked agent writes
 
-Status: steps 1 and 2 implemented (approval layer, env overlay with database targets), with their docs. Typed confirmation is deferred to phase 2 with the Tier B endpoints. Steps 3 onward are open.
+Status: steps 1 and 2 implemented (approval layer, env overlay with database targets), with their docs, plus `--reason` and the requester hint in the dialog. The async queue below is designed but not built; settle it before step 4. Typed confirmation is deferred to phase 2 with the Tier B endpoints. Steps 3 onward are open.
 
 ## Goal
 
@@ -123,12 +123,52 @@ Tier C, stays hard-blocked:
 - server-wide blast radius: `server.*` writes, `settings.*`, `network.*`, `forwardAuth.*`, `cluster.*`
 - identity, credentials, exfiltration: `sso`, `scim`, `user`, `custom-role`, `organization`, `ai.saveCustomProviders`, `stripe`, `dnsProvider.*`, `registry.*`, `destination.*`, `vaultProvider.*`, `certificates.*`
 
+## Agent context in the prompt (implemented)
+
+With several agents running, the user cannot rely on chat history to know why a dialog appeared, so the explanation travels with the request:
+
+- every env mutation takes `--reason <text>`. The dialog shows it under "agent's reason (unverified)" (up to 500 chars, 8 lines), after the CLI-derived target and diff, which are the trusted part
+- the dialog shows the working directory as "requested from (unverified)", which usually identifies the project or worktree. Parent process names were left out: the wrapper `exec`s node, so the parent is just the agent's shell
+- the audit log records both. The CLI does not require `--reason`; the dokploy skill tells agents to always pass it
+- phase 2 endpoints get the same option from the generator
+
+## Async approvals (design, not built)
+
+Blocking dialogs do not scale to several agents: prompts stack up and take focus, and each agent idles until the timeout. Move to a queue, keep the blocking dialog as a mode.
+
+Flow:
+
+1. A write that needs approval stores a pending request and exits right away with `AGENT_APPROVAL_PENDING` (exit 2) and a request ID. Stored: the exact API payload, the pre-write record snapshot (for the stale check), the target, the dialog lines, `--reason`, cwd, and the time.
+2. The agent goes on with other work, then runs `dokploy-agent approval wait <id> [--timeout <s>]` or `approval status <id>`. Results: `approved` (the write ran), `denied`, `expired`, `stale`, or `failed` with the API error.
+3. The user reviews whenever they choose: a human-side review command (`dokploy-approvals` or similar, not exposed in the agent build) lists pending requests with target, diff, reason, and requester. It supports approve, deny, and approving several at once. A notifier can show "N approvals pending" without taking focus.
+4. The approving side runs the stored payload itself, after re-checking the record snapshot. The agent never re-sends the request, so nothing can change between approval and execution.
+5. Requests expire (default 1 hour) and every state change goes to the audit log.
+
+Storage: `$XDG_STATE_HOME/dokploy-agent/approvals/<id>.json`, mode 0600, one file per request. Written atomically (temp file and rename) so concurrent agents do not collide.
+
+Trust: the queue lives in files the agent's user can write, so a local queue alone stops honest mistakes but not an agent that sets out to forge an approval. The same is true of today's dialog (UI scripting). Ways to raise the bar, in order of cost:
+
+- review command runs only from an interactive TTY and is left out of the agent build. This stops accidents, not attacks
+- the approver signs each decision with a key the agent cannot use: a macOS Keychain or Secure Enclave key with user-presence access control (Touch ID), or Windows Hello. The executor verifies the signature, and only the approver executes
+- the remote approver (phone push, deferred below) holds its key off the machine
+
+Review surfaces, all on the same queue:
+
+- native dialog (today's backends) for single-request blocking mode
+- terminal review command (first async surface)
+- local web page with full diffs and reasoning. Viewing is fine; Approve must be gated by a passkey (WebAuthn user verification), because a plain localhost endpoint or button can be reached by `curl` or by an agent driving the browser. WebAuthn's OS prompt (Touch ID, Windows Hello) needs the user present on every OS
+- phone push (deferred)
+
+Config: `approval.mode: "dialog" | "queue"`. Default stays `dialog` until the queue and its review command exist; then reconsider.
+
+Interaction with step 4: generated approvable endpoints call a single `requireUserApproval`-style entry that either blocks (dialog) or enqueues (queue), so the generator does not bake in blocking semantics.
+
 ## Steps
 
 1. `src/agent/approval.ts`: interface, four backends plus none, timeout, audit log, config parsing. Unit tests for argv construction, injection, and timeout.
 2. Env overlay: prompt on perimeter miss, stale check, database targets. Tests through the existing harness with the approval module mocked: approved, denied, timeout, unavailable, stale.
 3. `env apply --stdin` batch.
-4. Generator: `APPROVABLE_ENDPOINTS`, real commands for approvable stubs, catch in `guardAgentSafePost`. Safety report gets a new `approval` classification, so `agent-safety allowed|disallowed` shows which commands need a prompt.
+4. Generator (after the async design is settled): `APPROVABLE_ENDPOINTS`, real commands for approvable stubs, catch in `guardAgentSafePost`. Safety report gets a new `approval` classification, so `agent-safety allowed|disallowed` shows which commands need a prompt.
 5. Docs: `readme.md` ("What it adds" section; it also still says env commands only add or comment, but `set` and `unset` exist), `agent-safe-api-surface.md`, `agentic-commands.md`, `just api-surface`, `env.example`, and the dokploy skill (agents should expect a blocking prompt and the new exit codes).
 6. Public repo: tests and docs use `example.com` placeholders and fake IDs only.
 7. Manual check on macOS: one real dialog per result type against a disposable app. Linux zenity check in a VM if available.
