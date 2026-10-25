@@ -1,30 +1,68 @@
-# Dokploy CLI (agent-safe fork)
+# dokploy-agent
 
-This is an unofficial fork of the upstream [Dokploy CLI](https://github.com/Dokploy/cli) for [Dokploy](https://github.com/Dokploy/dokploy). It is not affiliated with or supported by the Dokploy team. The upstream CLI is a command-line tool to manage your Dokploy server remotely. It provides **545 commands** auto-generated from the Dokploy OpenAPI spec, covering every API endpoint.
+> Unofficial fork of the [Dokploy CLI](https://github.com/Dokploy/cli) for [Dokploy](https://github.com/Dokploy/dokploy). Not affiliated with or supported by the Dokploy team.
 
-This fork adds `dokploy-agent`, an agent-safe build for AI coding agents:
+`dokploy-agent` lets AI coding agents (Claude Code, Codex, and similar) operate a Dokploy server without being able to wreck it. It is the upstream CLI's full generated command surface with a client-side safety policy on top: agents can inspect everything, deploy into projects you choose, and nothing else.
 
-- destructive and secret-reading endpoints are blocked client-side (exit code 2, `AGENT_POLICY_BLOCKED`)
-- writes are scoped by an `agentDeployPolicy` in your config (projects, servers, domain suffixes, app names)
-- output is redacted for secrets; env commands write without echoing values
-- extra machine-friendly commands: `service list`, `application logs`, `compose effective`, `deployment read-logs`
+## What it adds
 
-See [docs/agent-safe-api-surface.md](docs/agent-safe-api-surface.md) for the policy and [docs/agentic-commands.md](docs/agentic-commands.md) for command schemas. Config fields are documented in [env.example](env.example).
+- **Blocked by default:** destructive and secret-reading endpoints are refused locally with exit code 2 and `AGENT_POLICY_BLOCKED`, before any request is sent
+- **Scoped writes:** creates, deploys, and domain changes are limited by an `agentDeployPolicy` in your config (projects, servers, domain suffixes, app names)
+- **No secret leaks:** output is redacted; env commands add or comment keys without ever printing values
+- **Agent-friendly commands:** `service list`, `application logs`, `compose effective|summary`, `deployment read-logs`, and `agent-safety` to inspect the policy itself, all with `--json`
 
-## Installation
+## Install
 
-Not published to npm. Install from source (needs Node >=18, pnpm, and [just](https://github.com/casey/just)):
+Not on npm yet. Install from source (needs Node >=18, pnpm, and [just](https://github.com/casey/just)):
 
 ```bash
 git clone https://github.com/latentbyte/dokploy-agent.git
 cd dokploy-agent
 just deps
-just install   # agent-safe build -> ~/.local/bin/dokploy-agent
+just install   # -> ~/.local/bin/dokploy-agent
 ```
 
-`just install` installs only the `dokploy-agent` command; it does not install the full upstream `dokploy` command. The examples below use the upstream name `dokploy`; with this install, run them as `dokploy-agent` (blocked commands exit with code 2).
+This installs only `dokploy-agent`, not the unrestricted upstream `dokploy` command. `node_modules` stays linked to the clone, so keep it in place; to update, `git pull` and rerun `just install`.
 
-`just install` keeps `node_modules` linked to the checkout, so keep the clone in place and rerun `just install` after pulling. For the unrestricted CLI, run `just build` and use `node dist/index.js` (or `pnpm run dev -- <group> <action>`).
+## Configure
+
+Credentials and policy live in one JSONC file: `~/.config/dokploy/config.json` (or `$XDG_CONFIG_HOME/dokploy/config.json`, or `DOKPLOY_CONFIG_PATH`). Keep it mode `0600`; it holds your API token.
+
+```jsonc
+{
+  "url": "https://dokploy.example.com",
+  "token": "YOUR_API_KEY",
+  "agentDeployPolicy": {
+    // where agents may create and deploy services
+    "projects": [
+      { "projectName": "agent-sandbox", "environmentName": "production", "environmentId": "ENV_ID" }
+    ],
+    // "*" for any server, or a list of { "serverId": "..." }
+    "servers": "*",
+    // domains agents may create, one label deep
+    "domainSuffixes": ["*.apps.example.com"]
+  }
+}
+```
+
+Reads work without a policy; writes fail until one is configured. Apps outside `projects` stay read-only unless you grant them via `expandedProjects`. Find IDs with `dokploy-agent service list --json`. Full field reference: [env.example](env.example) and [docs/agent-safe-api-surface.md](docs/agent-safe-api-surface.md).
+
+## Try it
+
+```bash
+dokploy-agent agent-safety summary         # counts of allowed / blocked commands
+dokploy-agent agent-safety deploy-policy   # what writes your policy permits
+dokploy-agent service list --json          # every service across projects
+dokploy-agent project remove --json        # blocked: exit 2, AGENT_POLICY_BLOCKED
+```
+
+Command schemas for agents: [docs/agentic-commands.md](docs/agentic-commands.md). Issues with this fork: [latentbyte/dokploy-agent](https://github.com/latentbyte/dokploy-agent/issues).
+
+---
+
+# Upstream Dokploy CLI
+
+The rest of this README comes from the upstream project. Examples use the upstream command name `dokploy`; with this install, run them as `dokploy-agent` (blocked commands exit with code 2). For the unrestricted CLI, run `just build` and use `node dist/index.js`.
 
 ## Authentication
 
