@@ -264,6 +264,8 @@ Custom deployment log support:
 - if all candidate log files are missing, the command exits with a clear error instead of returning `tail` noise
 - always use `--tail`, `--search`, and output limits for agent use
 
+`deployment.wait` is a read-only CLI overlay that polls `deployment.all` / `deployment.allByCompose` until the matching deployments finish. It prints redacted titles and error messages, never logs.
+
 Safe after redaction and output limits in the agent-safe build:
 
 - `application.read-logs` (get)

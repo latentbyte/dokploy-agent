@@ -11,6 +11,7 @@ import { registerApplicationLogCommands } from "./commands/application-logs.js";
 import { registerAuthCommand } from "./commands/auth.js";
 import { registerComposeToolCommands } from "./commands/compose-tools.js";
 import { registerDeploymentLogsCommand } from "./commands/deployment-logs.js";
+import { registerDeploymentWaitCommand } from "./commands/deployment-wait.js";
 import { registerServiceEnvCommands } from "./commands/service-env.js";
 import { registerServiceInventoryCommands } from "./commands/service-inventory.js";
 import {
@@ -68,6 +69,7 @@ registerServiceEnvCommands(program, {
 });
 registerApplicationLogCommands(program);
 registerDeploymentLogsCommand(program);
+registerDeploymentWaitCommand(program);
 registerServiceInventoryCommands(program);
 registerComposeToolCommands(program);
 

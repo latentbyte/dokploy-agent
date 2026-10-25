@@ -152,6 +152,51 @@ Any other field in the same call (`--branch`, `--buildPath`, `--enableSubmodules
 
 The generator detects these endpoints from the spec (a `<group>Id` update with a required nullable field and at least two required fields). Agent-safe policy checks run before the record is read. Optional fields with a spec default (such as `server update --enableDockerCleanup`) are carried over too, so the default cannot reset them. A current `null` is kept only where the spec accepts `null`; if a field is missing or `null` where a value is required, the command fails with `MISSING_OPTION` before writing. When switching source providers, pass every provider field (`--githubId` and so on), since the old provider's fields are `null` and would be kept. Like env writes, this is read-modify-write without compare-and-swap.
 
+## `deployment wait`
+
+Blocks until the matching deployment of every listed service finishes. Use it instead of hand-rolled polling loops after a deploy or a git push.
+
+```bash
+# after a push that autodeploys two services
+dokploy-agent deployment wait --applicationId APP_ID --composeId COMPOSE_ID \
+  --commit "$(git rev-parse HEAD)" --json
+
+# right after `application deploy` / `redeploy`
+dokploy-agent deployment wait --applicationId APP_ID --json
+```
+
+- matching: with `--commit`, the newest deployment whose description is `Commit: <sha>` (prefix ok). Without it, the newest deployment started within `--since` (default `60s` ago) or still running
+- `--applicationId` and `--composeId` repeat or take comma-separated ids; preview deployments are ignored
+- `--timeout` defaults to `20m`. Dokploy runs builds one at a time, so a service can stay `not_started` while another builds. A service that never starts usually means `watchPaths` or autoDeploy skipped it
+- progress goes to stderr, one line per state change; poll interval adapts to each service's typical build time from its recent deployments
+- exit `0` when all are `done`, `1` when any is `error` or `cancelled`, `124` on timeout
+
+Result:
+
+```json
+{
+  "ok": true,
+  "timedOut": false,
+  "elapsedSeconds": 95,
+  "services": [
+    {
+      "type": "application | compose",
+      "id": "string",
+      "state": "not_started | running | done | error | cancelled",
+      "deploymentId": "string",
+      "title": "string",
+      "commit": "string",
+      "startedAt": "string",
+      "finishedAt": "string",
+      "durationSeconds": 80,
+      "typicalSeconds": 75,
+      "errorMessage": "string, on failure",
+      "logsCommand": "deployment read-logs command, on failure"
+    }
+  ]
+}
+```
+
 ## JSON errors
 
 When `--json` is present, CLI errors use:

@@ -13,7 +13,7 @@ import { CliError } from "../agent/errors.js";
 import { apiGet, formatCliError, readAuthConfig } from "../client.js";
 import { filterLogString, limitLogString, redactString } from "../redact.js";
 
-interface DeploymentRecord {
+export interface DeploymentRecord {
 	deploymentId?: string;
 	logPath?: string;
 	serverId?: string;
@@ -152,8 +152,11 @@ async function resolveSourceServerId(
 	return undefined;
 }
 
-async function fetchDeployments(
-	opts: DeploymentLogOptions,
+export async function fetchDeployments(
+	opts: Pick<
+		DeploymentLogOptions,
+		"applicationId" | "composeId" | "serverId" | "id" | "type" | "deploymentId"
+	>,
 ): Promise<DeploymentRecord[]> {
 	let data: unknown;
 	if (opts.applicationId) {
