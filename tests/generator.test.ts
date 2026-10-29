@@ -2008,7 +2008,7 @@ describe("approval for perimeter misses", () => {
 				composeType: "stack",
 			});
 			expect(dialogs).toHaveLength(1);
-			expect(dialogs[0]).toContain("Approve compose.update?");
+			expect(dialogs[0]).toContain("Approve update on compose kutt?");
 			expect(dialogs[0]).toContain(
 				"compose: kutt / kutt-a1b2c3 (compose-kutt)",
 			);
@@ -2075,12 +2075,34 @@ describe("approval for perimeter misses", () => {
 		}
 	}, 15_000);
 
+	it("names the router in titles for writes through another router", async () => {
+		const dialogs = answerDialog("approved");
+		const { program, postSpy, tempDir } = await setup([kutt]);
+		try {
+			await run(
+				program,
+				"domain",
+				"create",
+				"--composeId",
+				"compose-kutt",
+				"--host",
+				"kutt.example.com",
+			);
+			expect(dialogs).toHaveLength(1);
+			expect(dialogs[0]).toContain("Approve domain create on compose kutt?");
+			expect(postSpy).toHaveBeenCalledOnce();
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
 	it("asks once for a deploy with no fields", async () => {
 		const dialogs = answerDialog("approved");
 		const { program, postSpy, tempDir } = await setup([kutt]);
 		try {
 			await run(program, "compose", "deploy", "--composeId", "compose-kutt");
 			expect(dialogs).toHaveLength(1);
+			expect(dialogs[0]).toContain("Approve deploy on compose kutt?");
 			expect(dialogs[0]).toContain("  run compose.deploy");
 			expect(postSpy).toHaveBeenCalledExactlyOnceWith("compose.deploy", {
 				composeId: "compose-kutt",

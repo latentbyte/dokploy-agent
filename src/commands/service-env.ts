@@ -2,6 +2,7 @@ import type { Command } from "commander";
 import {
 	type ApprovalLine,
 	type ApprovalRequest,
+	approvalTarget,
 	requireUserApproval,
 } from "../agent/approval.js";
 import { CliError, cliErrorCode } from "../agent/errors.js";
@@ -343,16 +344,8 @@ function envApprovalRequest(
 ): ApprovalRequest {
 	return {
 		endpoint: `${kind}.saveEnvironment`,
-		title: `env ${operation} on ${kind}`,
-		target: {
-			kind,
-			id,
-			name:
-				[record.name, record.appName].filter(Boolean).join(" / ") || undefined,
-			project: record.environment?.project?.name,
-			environment: record.environment?.name,
-			server: record.server?.name ?? record.serverId ?? undefined,
-		},
+		title: `env ${operation}`,
+		target: approvalTarget(kind, id, record),
 		lines,
 		audit: { operation, names: [name] },
 		reason: typeof reason === "string" ? reason : undefined,

@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	type ApprovalRequest,
+	approvalTarget,
 	buildApprovalDialog,
 	requireUserApproval,
 } from "../src/agent/approval.js";
@@ -32,7 +33,7 @@ const dialog: backends.ApprovalDialog = {
 
 const request: ApprovalRequest = {
 	endpoint: "application.saveEnvironment",
-	title: "env set on application",
+	title: "env set",
 	target: { kind: "application", id: "app-1", name: "web" },
 	lines: [{ kind: "add", text: 'API_KEY="s3cret-value"' }],
 	audit: { operation: "set", names: ["API_KEY"] },
@@ -363,7 +364,7 @@ describe("approval reminder", () => {
 		);
 		expect(await waitForFile(file, 2000)).toBe(true);
 		expect(fs.readFileSync(file, "utf8")).toBe(
-			"Approve env set on application? 1s\n",
+			"Approve env set on application web? 1s\n",
 		);
 	});
 
@@ -408,9 +409,9 @@ describe("buildApprovalDialog", () => {
 		);
 		const message = text(built);
 		expect(message.split("\n")[0]).toBe(
-			"An agent asks to run a change outside its policy. Denied automatically after 45s.",
+			"An agent asks for a change outside its policy. Nothing runs unless you approve. Denied automatically after 45s.",
 		);
-		expect(built.heading).toBe("Approve env set on application?");
+		expect(built.heading).toBe("Approve env set on application web?");
 		expect(built.timeoutSeconds).toBe(45);
 		expect(message).toContain("application: web (app-1)");
 		expect(message).toContain("project: storefront/production");
@@ -446,5 +447,38 @@ describe("buildApprovalDialog", () => {
 		expect(message).not.toContain("step 7");
 		expect(message).not.toContain("\r");
 		expect(message).toContain("REQUESTED FROM (unverified)\n/work/repo");
+	});
+
+	it("names the service in the heading, falling back to appName and id", () => {
+		const target = approvalTarget("compose", "c-1", {
+			name: "kutt",
+			appName: "kutt-a1b2c3",
+			environment: { name: "production", project: { name: "storefront" } },
+			serverId: "srv-1",
+		});
+		expect(target).toEqual({
+			kind: "compose",
+			id: "c-1",
+			name: "kutt",
+			appName: "kutt-a1b2c3",
+			project: "storefront",
+			environment: "production",
+			server: "srv-1",
+		});
+		const heading = (t: ApprovalRequest["target"]) =>
+			buildApprovalDialog({ ...request, target: t }, "blocked", 30).heading;
+		expect(heading(target)).toBe("Approve env set on compose kutt?");
+		expect(
+			text(buildApprovalDialog({ ...request, target }, "blocked", 30)),
+		).toContain("compose: kutt / kutt-a1b2c3 (c-1)");
+		expect(
+			heading(approvalTarget("compose", "c-1", { appName: "kutt-x" })),
+		).toBe("Approve env set on compose kutt-x?");
+		expect(heading(approvalTarget("compose", "c-1", {}))).toBe(
+			"Approve env set on compose c-1?",
+		);
+		expect(heading({ kind: "compose", id: "c-1", name: "n".repeat(80) })).toBe(
+			`Approve env set on compose ${"n".repeat(57)}...?`,
+		);
 	});
 });

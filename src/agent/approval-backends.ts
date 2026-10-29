@@ -95,8 +95,9 @@ function baseEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 
 // JXA builds a native NSAlert with a styled, scrollable text view. The dialog
 // arrives as one JSON argv item and is only ever parsed as data, so names and
-// values never become script source. Return answers Deny; abortModal fires
-// the native timeout
+// values never become script source. Return answers Deny, which counts down
+// to the native timeout (abortModal); Approve arms after a short delay so a
+// click meant for another window cannot land on it
 const MACOS_SCRIPT = String.raw`ObjC.import("Cocoa");
 function run(argv) {
 	const spec = JSON.parse(argv[0]);
@@ -106,34 +107,53 @@ function run(argv) {
 	alert.icon = $.NSImage.imageNamed("NSCaution");
 	alert.messageText = spec.heading;
 	alert.informativeText = spec.intro;
-	alert.addButtonWithTitle("Deny");
-	alert.addButtonWithTitle("Approve");
+	const deny = alert.addButtonWithTitle("Deny (" + spec.timeoutSeconds + "s)");
+	const approve = alert.addButtonWithTitle("Approve");
+	approve.hasDestructiveAction = true;
+	approve.enabled = false;
 	const width = 560;
-	const height = Math.min(Math.max(spec.lines.length * 16 + 16, 80), 360);
-	const view = $.NSTextView.alloc.initWithFrame($.NSMakeRect(0, 0, width, height));
+	const view = $.NSTextView.alloc.initWithFrame($.NSMakeRect(0, 0, width, 80));
 	view.editable = false;
-	view.textContainerInset = $.NSMakeSize(6, 6);
+	view.textContainerInset = $.NSMakeSize(6, 8);
 	view.string = spec.lines.map((line) => line.text).join("\n");
 	const store = view.textStorage;
 	const mono = $.NSFont.monospacedSystemFontOfSizeWeight(12, 0);
-	const fonts = { heading: $.NSFont.boldSystemFontOfSize(11) };
+	const fonts = {
+		heading: $.NSFont.boldSystemFontOfSize(11),
+		note: $.NSFont.systemFontOfSize(12),
+	};
 	const colors = {
 		heading: $.NSColor.secondaryLabelColor,
 		note: $.NSColor.secondaryLabelColor,
 		add: $.NSColor.systemGreenColor,
 		remove: $.NSColor.systemRedColor,
 	};
+	// one block per kind, so adjacent rows of a kind share a full-width band
+	const rows = {};
+	for (const kind of ["add", "remove"]) {
+		const block = $.NSTextBlock.alloc.init;
+		block.backgroundColor = colors[kind].colorWithAlphaComponent(0.14);
+		block.setValueTypeForDimension(100, $.NSTextBlockPercentageValueType, $.NSTextBlockWidth);
+		const style = $.NSMutableParagraphStyle.alloc.init;
+		style.textBlocks = $([block]);
+		rows[kind] = style;
+	}
+	const total = view.string.length;
 	let at = 0;
 	for (const line of spec.lines) {
-		const range = $.NSMakeRange(at, line.text.length);
-		const color = colors[line.kind] || $.NSColor.labelColor;
+		// include the newline so paragraph styles cover the whole row
+		const range = $.NSMakeRange(at, Math.min(line.text.length + 1, total - at));
 		store.addAttributeValueRange($.NSFontAttributeName, fonts[line.kind] || mono, range);
-		store.addAttributeValueRange($.NSForegroundColorAttributeName, color, range);
-		if (line.kind === "add" || line.kind === "remove") {
-			store.addAttributeValueRange($.NSBackgroundColorAttributeName, color.colorWithAlphaComponent(0.14), range);
-		}
+		store.addAttributeValueRange($.NSForegroundColorAttributeName, colors[line.kind] || $.NSColor.labelColor, range);
+		if (rows[line.kind]) store.addAttributeValueRange($.NSParagraphStyleAttributeName, rows[line.kind], range);
 		at += line.text.length + 1;
 	}
+	// fit the text, leaving room on screen for the alert chrome around it
+	view.layoutManager.ensureLayoutForTextContainer(view.textContainer);
+	const used = view.layoutManager.usedRectForTextContainer(view.textContainer).size.height + 16;
+	const screen = $.NSScreen.mainScreen;
+	const room = screen.isNil() ? 360 : screen.visibleFrame.size.height - 300;
+	const height = Math.min(Math.max(used, 80), Math.max(room, 200));
 	const scroll = $.NSScrollView.alloc.initWithFrame($.NSMakeRect(0, 0, width, height));
 	scroll.hasVerticalScroller = true;
 	scroll.borderType = $.NSBezelBorder;
@@ -142,8 +162,16 @@ function run(argv) {
 	alert.layout;
 	alert.window.title = spec.title;
 	app.activateIgnoringOtherApps(true);
+	const opened = Date.now();
+	const tick = $.NSTimer.timerWithTimeIntervalRepeatsBlock(0.25, true, () => {
+		const elapsed = (Date.now() - opened) / 1000;
+		deny.title = "Deny (" + Math.max(0, Math.ceil(spec.timeoutSeconds - elapsed)) + "s)";
+		if (elapsed >= 1) approve.enabled = true;
+	});
+	$.NSRunLoop.currentRunLoop.addTimerForMode(tick, "NSModalPanelRunLoopMode");
 	app.performSelectorWithObjectAfterDelayInModes("abortModal", $(), spec.timeoutSeconds, $(["NSModalPanelRunLoopMode"]));
 	const response = Number(alert.runModal);
+	tick.invalidate;
 	if (response === -1001) return "timeout";
 	return response === 1001 ? "approved" : "denied";
 }`;

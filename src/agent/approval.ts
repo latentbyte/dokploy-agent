@@ -19,9 +19,27 @@ export interface ApprovalTarget {
 	kind: string;
 	id: string;
 	name?: string;
+	appName?: string;
 	project?: string;
 	environment?: string;
 	server?: string;
+}
+
+// target fields as read from a `<kind>.one` record
+export function approvalTarget(
+	kind: string,
+	id: string,
+	record: Record<string, any>,
+): ApprovalTarget {
+	return {
+		kind,
+		id,
+		name: record.name || undefined,
+		appName: record.appName || undefined,
+		project: record.environment?.project?.name,
+		environment: record.environment?.name,
+		server: record.server?.name ?? record.serverId ?? undefined,
+	};
 }
 
 export interface ApprovalLine {
@@ -31,6 +49,7 @@ export interface ApprovalLine {
 
 export interface ApprovalRequest {
 	endpoint: string;
+	// action phrase for the heading, e.g. "env set" or "deploy"
 	title: string;
 	target: ApprovalTarget;
 	// dialog only; may hold the new values the agent supplied. add/remove
@@ -43,6 +62,7 @@ export interface ApprovalRequest {
 }
 
 const MAX_LINE_CHARS = 200;
+const MAX_HEADING_NAME_CHARS = 60;
 const MAX_LINES = 20;
 const MAX_REASON_CHARS = 500;
 const MAX_REASON_LINES = 8;
@@ -102,10 +122,16 @@ export function buildApprovalDialog(
 			text: `(${request.lines.length - MAX_LINES} more lines not shown)`,
 		});
 	}
+	const names = [target.name, target.appName].filter(Boolean).join(" / ");
+	const shortName = target.name ?? target.appName ?? target.id;
+	const headingName =
+		shortName.length > MAX_HEADING_NAME_CHARS
+			? `${shortName.slice(0, MAX_HEADING_NAME_CHARS - 3)}...`
+			: shortName;
 	const targetLines: DialogLine[] = [
 		{
 			kind: "text",
-			text: `${target.kind}: ${target.name ?? target.id} (${target.id})`,
+			text: `${target.kind}: ${names || target.id} (${target.id})`,
 		},
 		...(location
 			? [{ kind: "text" as const, text: `project: ${location}` }]
@@ -114,8 +140,8 @@ export function buildApprovalDialog(
 	];
 	return {
 		title: "dokploy-agent approval",
-		heading: `Approve ${request.title}?`,
-		intro: `An agent asks to run a change outside its policy. Denied automatically after ${timeoutSeconds}s.`,
+		heading: `Approve ${request.title} on ${target.kind} ${headingName}?`,
+		intro: `An agent asks for a change outside its policy. Nothing runs unless you approve. Denied automatically after ${timeoutSeconds}s.`,
 		timeoutSeconds,
 		lines: [
 			{ kind: "heading", text: "TARGET" },

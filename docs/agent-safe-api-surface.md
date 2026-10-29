@@ -158,7 +158,8 @@ Writes on a service outside the policy are not refused outright. The CLI opens a
 
 - backends: macOS `/usr/bin/osascript`, Windows PowerShell MessageBox (only in an interactive desktop session), Linux `zenity` or `kdialog` from `/usr/bin` or `/bin` when `DISPLAY` or `WAYLAND_DISPLAY` is set. No dialog over SSH (`SSH_CONNECTION`, `SSH_TTY`)
 - binaries come from fixed paths and run with a minimal env, so `PATH` or loader overrides cannot swap in a fake approver. Dialog text travels through argv or env vars, never script source
-- Deny is the default button; the dialog gives up after `agentDeployPolicy.approval.timeoutSeconds` (default 90)
+- Deny is the default button; the dialog gives up after `agentDeployPolicy.approval.timeoutSeconds` (default 90). On macOS, Deny counts down the remaining seconds and Approve (styled destructive) stays disabled for the first second, so a click meant for another window cannot approve
+- the heading names the action and service (`Approve deploy on compose kutt?`); the macOS dialog renders the diff with full-width colored rows and sizes itself to the content. `just preview-approval` renders sample macOS dialogs to `tmp/approval-preview/` offscreen
 - one approval covers one request. The CLI computes the write before prompting, re-reads the service after approval, and aborts with `AGENT_APPROVAL_STALE` (exit 1) if the env or companion fields changed meanwhile (for generated commands: any passed field, `environmentId`, or `serverId`)
 - results: approval runs the write; `AGENT_APPROVAL_DENIED` and `AGENT_APPROVAL_TIMEOUT` exit 2; with no backend, or with `agentDeployPolicy.approval.enabled: false`, the original `AGENT_POLICY_BLOCKED` stays
 - every prompt is logged to `$XDG_STATE_HOME/dokploy-agent/approvals.jsonl` (default `~/.local/state`): time, endpoint, target, key names, result. Values are never logged

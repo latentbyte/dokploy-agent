@@ -1,6 +1,10 @@
 import { type AgentApprovalConfig, apiGet } from "../client.js";
 import { sanitizeForAgent } from "../redact.js";
-import { type ApprovalLine, requireUserApproval } from "./approval.js";
+import {
+	type ApprovalLine,
+	approvalTarget,
+	requireUserApproval,
+} from "./approval.js";
 import { agentPolicyBlocked, CliError } from "./errors.js";
 
 export interface PerimeterTarget {
@@ -147,6 +151,14 @@ function fieldDiff(
 	];
 }
 
+// "application.saveBuildType" on an application reads "save build type";
+// writes through another router keep its name, e.g. "domain create"
+function actionTitle(endpoint: string, kind: string): string {
+	const [group, action = ""] = endpoint.split(".");
+	const words = action.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
+	return group === kind ? words : `${group} ${words}`;
+}
+
 // asks the user to let a write through its perimeter misses; the hard checks
 // already passed. throws unless approved and the record is unchanged since
 export async function approvePerimeterPost(
@@ -180,17 +192,8 @@ export async function approvePerimeterPost(
 		config,
 		{
 			endpoint,
-			title: endpoint,
-			target: {
-				kind: target.kind,
-				id: target.id,
-				name:
-					[record.name, record.appName].filter(Boolean).join(" / ") ||
-					undefined,
-				project: record.environment?.project?.name,
-				environment: record.environment?.name,
-				server: record.server?.name ?? record.serverId ?? undefined,
-			},
+			title: actionTitle(endpoint, target.kind),
+			target: approvalTarget(target.kind, target.id, record),
 			lines,
 			audit: { fields },
 			reason,
