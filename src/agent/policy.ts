@@ -8,6 +8,7 @@ import {
 	readAgentDeployPolicyConfig,
 } from "../client.js";
 import { agentPolicyBlocked, CliError, cliErrorCode } from "./errors.js";
+import { approvePerimeterPost, type PerimeterTarget } from "./post-approval.js";
 
 // classification tables shared by scripts/generate.ts and the runtime guards
 
@@ -206,6 +207,37 @@ const AGENT_DATABASE_KIND_SET: ReadonlySet<string> = new Set(
 	AGENT_DATABASE_KINDS,
 );
 
+// endpoints whose perimeter misses (project/environment, server, expanded
+// allowlist) become one approval dialog instead of a denial. hard checks such
+// as protected fields, git providers, domain hosts, and appName still deny.
+// creates, deletes, moves, and expanded-only writes are never approvable
+export const AGENT_APPROVABLE_ENDPOINTS: ReadonlySet<string> = new Set([
+	...AGENT_DEPLOY_SERVICE_MUTATIONS,
+	...AGENT_SERVICE_LIFECYCLE_MUTATIONS,
+	...AGENT_DEPLOY_PROJECT_APPLICATION_ENDPOINTS,
+	...AGENT_DATABASE_KINDS.map((kind) => `${kind}.deploy`),
+	...AGENT_DEPLOY_DOMAIN_MUTATIONS,
+]);
+
+// collects perimeter misses. strict throws at once; deferred records them so
+// the hard checks after still run before the user is asked anything
+class PerimeterScope {
+	readonly denials: string[] = [];
+	target?: PerimeterTarget;
+
+	constructor(readonly deferred = false) {}
+
+	deny(message: string) {
+		if (!this.deferred) throw agentPolicyBlocked(message);
+		this.denials.push(message);
+	}
+
+	// the service record a write lands on, for the dialog and its stale check
+	see(kind: AgentServiceKind, id: string, record: any) {
+		if (this.deferred) this.target ??= { kind, id, record };
+	}
+}
+
 function stringValue(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim() ? value : undefined;
 }
@@ -218,13 +250,14 @@ function ensureAgentDeployServer(
 	policy: AgentDeployPolicyConfig,
 	serverId: string | undefined,
 	label = "serverId",
+	scope = new PerimeterScope(),
 ) {
 	if (!serverId || policy.allowAnyServer) return undefined;
 	const server = policy.servers.find(
 		(candidate) => candidate.serverId === serverId,
 	);
 	if (server) return server;
-	throw agentPolicyBlocked(
+	scope.deny(
 		"agent-safe deploy policy rejects " +
 			label +
 			" " +
@@ -259,6 +292,18 @@ function allowedAgentDeployProject(
 	);
 }
 
+function agentDeployEnvironmentDenial(
+	policy: AgentDeployPolicyConfig,
+	environmentId: unknown,
+) {
+	return (
+		"agent-safe deploy policy rejects environmentId " +
+		environmentId +
+		"; allowed projects: " +
+		policy.projects.map(agentDeployProjectLabel).join(", ")
+	);
+}
+
 function ensureAgentDeployEnvironment(
 	policy: AgentDeployPolicyConfig,
 	opts: Record<string, any>,
@@ -266,10 +311,7 @@ function ensureAgentDeployEnvironment(
 	const project = allowedAgentDeployProject(policy, opts.environmentId);
 	if (project) return project;
 	throw agentPolicyBlocked(
-		"agent-safe deploy policy rejects environmentId " +
-			opts.environmentId +
-			"; allowed projects: " +
-			policy.projects.map(agentDeployProjectLabel).join(", "),
+		agentDeployEnvironmentDenial(policy, opts.environmentId),
 	);
 }
 
@@ -313,31 +355,37 @@ function serviceServerId(service: any): string | undefined {
 function validateAgentDeployServerIds(
 	policy: AgentDeployPolicyConfig,
 	labelsToServerIds: Array<{ label: string; serverId: string | undefined }>,
+	scope: PerimeterScope,
 ) {
 	const seen = new Set<string>();
 	for (const { label, serverId } of labelsToServerIds) {
 		if (!serverId || seen.has(serverId)) continue;
 		seen.add(serverId);
-		ensureAgentDeployServer(policy, serverId, label);
+		ensureAgentDeployServer(policy, serverId, label, scope);
 	}
 }
 
 function assertServiceServersAllowed(
 	policy: AgentDeployPolicyConfig,
 	service: any,
+	scope = new PerimeterScope(),
 ) {
-	validateAgentDeployServerIds(policy, [
-		{ label: "serverId", serverId: stringValue(service?.serverId) },
-		{ label: "buildServerId", serverId: stringValue(service?.buildServerId) },
-		{
-			label: "server.serverId",
-			serverId: stringValue(service?.server?.serverId),
-		},
-		{
-			label: "buildServer.serverId",
-			serverId: stringValue(service?.buildServer?.serverId),
-		},
-	]);
+	validateAgentDeployServerIds(
+		policy,
+		[
+			{ label: "serverId", serverId: stringValue(service?.serverId) },
+			{ label: "buildServerId", serverId: stringValue(service?.buildServerId) },
+			{
+				label: "server.serverId",
+				serverId: stringValue(service?.server?.serverId),
+			},
+			{
+				label: "buildServer.serverId",
+				serverId: stringValue(service?.buildServer?.serverId),
+			},
+		],
+		scope,
+	);
 }
 
 function assertServiceRecordInDeployProject(
@@ -345,7 +393,9 @@ function assertServiceRecordInDeployProject(
 	kind: AgentServiceKind,
 	id: string,
 	service: any,
+	scope = new PerimeterScope(),
 ) {
+	scope.see(kind, id, service);
 	if (
 		!policy.projects.some((project) =>
 			serviceMatchesAgentDeployProject(project, service),
@@ -357,22 +407,23 @@ function assertServiceRecordInDeployProject(
 			"unknown";
 		const serviceEnvironment =
 			service?.environment?.name ?? service?.environmentId ?? "unknown";
-		throw agentPolicyBlocked(
+		scope.deny(
 			`agent-safe deploy policy rejects ${kind} ${id} in ${serviceProject}/${serviceEnvironment}; allowed projects: ${policy.projects.map(agentDeployProjectLabel).join(", ")}`,
 		);
 	}
-	assertServiceServersAllowed(policy, service);
+	assertServiceServersAllowed(policy, service, scope);
 }
 
 async function assertAgentServiceInDeployProject(
 	policy: AgentDeployPolicyConfig,
 	kind: AgentServiceKind,
 	id: string | undefined,
+	scope = new PerimeterScope(),
 ) {
 	if (!id)
 		throw agentPolicyBlocked(`agent-safe deploy policy requires ${kind} id`);
 	const service = await apiGet(`${kind}.one`, { [`${kind}Id`]: id });
-	assertServiceRecordInDeployProject(policy, kind, id, service);
+	assertServiceRecordInDeployProject(policy, kind, id, service, scope);
 	return service;
 }
 
@@ -405,6 +456,7 @@ export function assertApplicationRecordWritable(
 	policy: AgentDeployPolicyConfig,
 	applicationId: string,
 	application: any,
+	scope = new PerimeterScope(),
 ) {
 	if (
 		isApplicationExpandedAllowed(
@@ -412,7 +464,8 @@ export function assertApplicationRecordWritable(
 			applicationCandidateFromService(application, applicationId),
 		)
 	) {
-		assertServiceServersAllowed(policy, application);
+		scope.see("application", applicationId, application);
+		assertServiceServersAllowed(policy, application, scope);
 		return;
 	}
 	assertServiceRecordInDeployProject(
@@ -420,6 +473,7 @@ export function assertApplicationRecordWritable(
 		"application",
 		applicationId,
 		application,
+		scope,
 	);
 }
 
@@ -441,12 +495,13 @@ export function assertServiceRecordWritable(
 async function assertApplicationWritable(
 	policy: AgentDeployPolicyConfig,
 	applicationId: string | undefined,
+	scope = new PerimeterScope(),
 ) {
 	if (!applicationId) {
 		throw agentPolicyBlocked("agent-safe deploy policy requires applicationId");
 	}
 	const application = await apiGet("application.one", { applicationId });
-	assertApplicationRecordWritable(policy, applicationId, application);
+	assertApplicationRecordWritable(policy, applicationId, application, scope);
 	return application;
 }
 
@@ -456,13 +511,14 @@ async function assertDeployProjectApplicationOperation(
 	policy: AgentDeployPolicyConfig,
 	endpoint: string,
 	opts: Record<string, any>,
+	scope: PerimeterScope,
 ) {
 	const applicationId = stringValue(opts.applicationId);
 	if (!applicationId) {
 		throw agentPolicyBlocked(`agent-safe ${endpoint} requires applicationId`);
 	}
 	const application = await apiGet("application.one", { applicationId });
-	assertApplicationRecordWritable(policy, applicationId, application);
+	assertApplicationRecordWritable(policy, applicationId, application, scope);
 	if (
 		!isApplicationExpandedAllowed(
 			policy,
@@ -504,13 +560,14 @@ async function assertAgentServiceLifecycleAllowed(
 	policy: AgentDeployPolicyConfig,
 	endpoint: string,
 	opts: Record<string, any>,
+	scope: PerimeterScope,
 ) {
 	const kind = endpoint.split(".")[0] as AgentServiceKind;
 	const id = stringValue(opts[`${kind}Id`]);
 	const service =
 		kind === "application"
-			? await assertApplicationWritable(policy, id)
-			: await assertAgentServiceInDeployProject(policy, kind, id);
+			? await assertApplicationWritable(policy, id, scope)
+			: await assertAgentServiceInDeployProject(policy, kind, id, scope);
 	if (endpoint.endsWith(".reload") && opts.appName !== service?.appName) {
 		throw agentPolicyBlocked(
 			`agent-safe ${endpoint} requires appName to match ${kind} ${id}`,
@@ -528,9 +585,10 @@ function databaseKindForEndpoint(endpoint: string) {
 function agentDeployDomainSuffixesForServer(
 	policy: AgentDeployPolicyConfig,
 	serverId: string | undefined,
+	scope: PerimeterScope,
 ) {
 	if (!serverId) return policy.domainSuffixes;
-	const server = ensureAgentDeployServer(policy, serverId, "serverId");
+	const server = ensureAgentDeployServer(policy, serverId, "serverId", scope);
 	return server?.domainSuffixes?.length
 		? server.domainSuffixes
 		: policy.domainSuffixes;
@@ -562,10 +620,15 @@ function assertAgentDomainHost(
 	policy: AgentDeployPolicyConfig,
 	host: string | undefined,
 	serverId: string | undefined,
+	scope = new PerimeterScope(),
 ) {
 	if (!host) return;
 	const normalizedHost = normalizeAgentDomainHost(host);
-	const allowedSuffixes = agentDeployDomainSuffixesForServer(policy, serverId);
+	const allowedSuffixes = agentDeployDomainSuffixesForServer(
+		policy,
+		serverId,
+		scope,
+	);
 	const domainSuffix = normalizedHost
 		? matchingAgentDomainSuffix(normalizedHost, allowedSuffixes)
 		: undefined;
@@ -631,16 +694,23 @@ async function assertAgentDomainHostUnused(host: string | undefined) {
 async function assertAgentDomainInDeployProject(
 	policy: AgentDeployPolicyConfig,
 	opts: Record<string, any>,
+	scope: PerimeterScope,
 ) {
 	if (opts.applicationId) {
 		return assertAgentServiceInDeployProject(
 			policy,
 			"application",
 			opts.applicationId,
+			scope,
 		);
 	}
 	if (opts.composeId) {
-		return assertAgentServiceInDeployProject(policy, "compose", opts.composeId);
+		return assertAgentServiceInDeployProject(
+			policy,
+			"compose",
+			opts.composeId,
+			scope,
+		);
 	}
 	if (!opts.domainId)
 		throw agentPolicyBlocked(
@@ -652,6 +722,7 @@ async function assertAgentDomainInDeployProject(
 			policy,
 			"application",
 			domain.applicationId,
+			scope,
 		);
 	}
 	if (domain?.composeId) {
@@ -659,6 +730,7 @@ async function assertAgentDomainInDeployProject(
 			policy,
 			"compose",
 			domain.composeId,
+			scope,
 		);
 	}
 	throw agentPolicyBlocked(
@@ -788,15 +860,27 @@ async function agentWatchPathOnlyWrite(
 	};
 }
 
+// reason is the agent's --reason, shown in the approval dialog
 export async function guardAgentSafePost(
 	endpoint: string,
 	opts: Record<string, any>,
+	reason?: string,
 ) {
 	if (opts.watchPaths != null) assertAgentWatchPaths(opts.watchPaths);
 	const watchPathWrite = await agentWatchPathOnlyWrite(endpoint, opts);
 	if (watchPathWrite.allowed) return;
+	const scope = new PerimeterScope(AGENT_APPROVABLE_ENDPOINTS.has(endpoint));
 	try {
-		await guardAgentPerimeterPost(endpoint, opts);
+		const policy = await guardAgentPerimeterPost(endpoint, opts, scope);
+		if (scope.denials.length > 0) {
+			await approvePerimeterPost(policy.approval, {
+				endpoint,
+				opts,
+				target: scope.target,
+				denials: scope.denials,
+				reason,
+			});
+		}
 	} catch (error) {
 		if (
 			!watchPathWrite.reason ||
@@ -812,7 +896,8 @@ export async function guardAgentSafePost(
 async function guardAgentPerimeterPost(
 	endpoint: string,
 	opts: Record<string, any>,
-) {
+	scope: PerimeterScope,
+): Promise<AgentDeployPolicyConfig> {
 	const forbiddenUpdateFields = AGENT_PROTECTED_UPDATE_FIELDS.get(endpoint);
 	const forbiddenFields = Object.keys(opts).filter((field) =>
 		forbiddenUpdateFields?.has(field),
@@ -834,27 +919,33 @@ async function guardAgentPerimeterPost(
 		(databaseKind && endpoint.endsWith(".create"))
 	) {
 		normalizeAgentDeployCreate(policy, opts);
-		return;
+		return policy;
 	}
 	if (databaseKind && endpoint.endsWith(".deploy")) {
 		await assertAgentServiceInDeployProject(
 			policy,
 			databaseKind,
 			opts[`${databaseKind}Id`],
+			scope,
 		);
-		return;
+		return policy;
 	}
 	if (AGENT_SERVICE_LIFECYCLE_MUTATION_SET.has(endpoint)) {
-		await assertAgentServiceLifecycleAllowed(policy, endpoint, opts);
-		return;
+		await assertAgentServiceLifecycleAllowed(policy, endpoint, opts, scope);
+		return policy;
 	}
 	if (AGENT_DEPLOY_PROJECT_APPLICATION_MUTATIONS.has(endpoint)) {
-		await assertDeployProjectApplicationOperation(policy, endpoint, opts);
-		return;
+		await assertDeployProjectApplicationOperation(
+			policy,
+			endpoint,
+			opts,
+			scope,
+		);
+		return policy;
 	}
 	if (AGENT_EXPANDED_APPLICATION_MUTATIONS.has(endpoint)) {
 		await assertExpandedApplicationAllowed(policy, opts.applicationId);
-		return;
+		return policy;
 	}
 	if (endpoint === "mounts.create") {
 		if (opts.serviceType !== "application") {
@@ -863,15 +954,15 @@ async function guardAgentPerimeterPost(
 			);
 		}
 		await assertExpandedApplicationAllowed(policy, opts.serviceId);
-		return;
+		return policy;
 	}
 	if (endpoint === "port.create") {
 		await assertExpandedApplicationAllowed(policy, opts.applicationId);
-		return;
+		return policy;
 	}
 	if (endpoint === "volumeBackups.create") {
 		await assertAgentVolumeBackupParentWritable(policy, opts, endpoint);
-		return;
+		return policy;
 	}
 	if (endpoint === "volumeBackups.runManually") {
 		await assertAgentVolumeBackupWritable(
@@ -879,37 +970,45 @@ async function guardAgentPerimeterPost(
 			opts.volumeBackupId,
 			endpoint,
 		);
-		return;
+		return policy;
 	}
 	if (AGENT_DEPLOY_SERVICE_MUTATION_SET.has(endpoint)) {
-		ensureAgentDeployEnvironment(policy, opts);
-		ensureAgentDeployServer(policy, stringValue(opts.serverId), "serverId");
+		if (!allowedAgentDeployProject(policy, opts.environmentId))
+			scope.deny(agentDeployEnvironmentDenial(policy, opts.environmentId));
+		ensureAgentDeployServer(
+			policy,
+			stringValue(opts.serverId),
+			"serverId",
+			scope,
+		);
 		ensureAgentDeployServer(
 			policy,
 			stringValue(opts.buildServerId),
 			"buildServerId",
+			scope,
 		);
 		if (endpoint.startsWith("application.")) {
-			await assertApplicationWritable(policy, opts.applicationId);
+			await assertApplicationWritable(policy, opts.applicationId, scope);
 		} else {
 			await assertAgentServiceInDeployProject(
 				policy,
 				"compose",
 				opts.composeId,
+				scope,
 			);
 		}
 		await assertAgentGitProvidersConfigured(opts);
-		return;
+		return policy;
 	}
 	if (AGENT_DEPLOY_DOMAIN_MUTATION_SET.has(endpoint)) {
-		const service = await assertAgentDomainInDeployProject(policy, opts);
-		assertAgentDomainHost(policy, opts.host, serviceServerId(service));
+		const service = await assertAgentDomainInDeployProject(policy, opts, scope);
+		assertAgentDomainHost(policy, opts.host, serviceServerId(service), scope);
 		await assertAgentDomainHostUnused(opts.host);
-		return;
+		return policy;
 	}
 	if (endpoint === AGENT_DOMAIN_DELETE) {
 		await assertAgentDomainDeletable(policy, opts.domainId);
-		return;
+		return policy;
 	}
 	throw agentPolicyBlocked(
 		`agent-safe deploy policy does not allow write endpoint ${endpoint}`,

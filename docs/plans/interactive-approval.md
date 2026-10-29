@@ -1,6 +1,6 @@
 # Plan: interactive user approval for blocked agent writes
 
-Status: steps 1 and 2 implemented (approval layer, env overlay with database targets), with their docs, plus `--reason` and the requester hint in the dialog. The async queue below is designed but not built; settle it before step 4. Typed confirmation is deferred to phase 2 with the Tier B endpoints. Steps 3 onward are open.
+Status: steps 1 and 2 implemented (approval layer, env overlay with database targets), with their docs, plus `--reason` and the requester hint in the dialog. Step 4 is partly done: Tier A perimeter misses on already-allowlisted endpoints (update, deploy, redeploy, start, stop, reload, deploy-project `save-*`, `domain.create`) prompt through `approvePerimeterPost`, which can later enqueue instead of blocking. Not done from step 4: stubbed endpoints, `mounts|port create`, and the safety-report `approval` classification. The async queue below is designed but not built. Typed confirmation is deferred to phase 2 with the Tier B endpoints. Steps 3 onward are open.
 
 ## Goal
 

@@ -15,6 +15,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+	AGENT_APPROVABLE_ENDPOINTS,
 	AGENT_DATABASE_KINDS,
 	AGENT_PROTECTED_UPDATE_FIELDS,
 	MUTATING_GET_ENDPOINTS,
@@ -635,9 +636,17 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 					".option('--local-max-chars <value>', 'Limit printed logs to last N chars after redaction/filtering, 0 disables char limit')",
 				]
 			: [];
+	const approvable =
+		isAgentSafeBuild && AGENT_APPROVABLE_ENDPOINTS.has(cmd.endpoint);
+	const approvalOptionLines = approvable
+		? [
+				".option('--reason <text>', 'why this change is needed; shown in the approval dialog when the target is outside the agent policy')",
+			]
+		: [];
 	const optionLines = [
 		...commandOptions.map((opt) => generateOptionLine(cmd, opt)),
 		...agentLogOptionLines,
+		...approvalOptionLines,
 	].join("\n\t\t");
 	const coercions = commandOptions
 		.map(generateCoercion)
@@ -647,7 +656,9 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 
 	const agentPostGuard =
 		isAgentSafeBuild && cmd.method === "post"
-			? `\n\t\t\tawait guardAgentSafePost("${cmd.endpoint}", opts);`
+			? approvable
+				? `\n\t\t\tconst reason = opts.reason; delete opts.reason;\n\t\t\tawait guardAgentSafePost("${cmd.endpoint}", opts, reason);`
+				: `\n\t\t\tawait guardAgentSafePost("${cmd.endpoint}", opts);`
 			: "";
 	const recordFill = cmd.recordLookup
 		? `\n\t\t\tawait fillFromCurrentRecord(${JSON.stringify(cmd.recordLookup)}, opts);`

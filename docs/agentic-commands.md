@@ -163,6 +163,16 @@ Any other field in the same call (`--branch`, `--buildPath`, `--enableSubmodules
 
 The generator detects these endpoints from the spec (a `<group>Id` update with a required nullable field and at least two required fields). Agent-safe policy checks run before the record is read. Optional fields with a spec default (such as `server update --enableDockerCleanup`) are carried over too, so the default cannot reset them. A current `null` is kept only where the spec accepts `null`; if a field is missing or `null` where a value is required, the command fails with `MISSING_OPTION` before writing. When switching source providers, pass every provider field (`--githubId` and so on), since the old provider's fields are `null` and would be kept. Like env writes, this is read-modify-write without compare-and-swap.
 
+## Approval for service writes outside the policy
+
+Writes that the agent may already make inside `agentDeployPolicy` prompt the user instead of failing when only the scope is wrong (project/environment, server, or expanded allowlist): `application|compose update`, `deploy`, `redeploy`, `compose isolated-deployment`, `start`, `stop`, `reload`, database `deploy`, the deploy-project `application save-*` and `cancel-deployment|kill-build|clean-queues` commands, and `domain create`. These commands take `--reason <text>`:
+
+```bash
+dokploy-agent compose update --composeId ID --composeType stack --reason "kutt needs swarm overlay networks" --json
+```
+
+The dialog shows the target and a diff of each passed field against the current record (a line diff for multi-line fields such as `--composeFile`; stored values are redacted, agent-supplied values are shown as given). Every other check still runs first and still denies outright: protected fields, unknown git providers, domain hosts outside the suffix policy or already in use, `reload` appName mismatches. Creates, deletes, moves, and expanded-only writes are never approvable. Results match the env commands: `AGENT_APPROVAL_DENIED`/`AGENT_APPROVAL_TIMEOUT` (exit 2), `AGENT_APPROVAL_STALE` (exit 1) when a passed field, `environmentId`, or `serverId` changed while the dialog was open, and `AGENT_POLICY_BLOCKED` on hosts without a dialog or with `approval.enabled: false`.
+
 ## `deployment wait`
 
 Blocks until the matching deployment of every listed service finishes. Use it instead of hand-rolled polling loops after a deploy or a git push.

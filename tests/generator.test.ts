@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Command } from "commander";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import * as backends from "../src/agent/approval-backends.js";
 import * as client from "../src/client.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -246,7 +247,10 @@ describe("generator", () => {
 			);
 			expect(generatedContent).toContain('apiPost("domain.delete"');
 			expect(generatedContent).toContain(
-				'await guardAgentSafePost("application.update", opts);',
+				'await guardAgentSafePost("application.update", opts, reason);',
+			);
+			expect(generatedContent).toContain(
+				'await guardAgentSafePost("application.create", opts);',
 			);
 			expect(generatedContent).toMatch(/from "[^"]*\/agent\/policy\.js"/);
 			expect(generatedContent).toContain(
@@ -1889,4 +1893,303 @@ describe("generator", () => {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
 	});
+});
+
+describe("approval for perimeter misses", () => {
+	const outside = {
+		environmentId: "env-other",
+		environment: {
+			name: "production",
+			project: { name: "storefront", projectId: "proj-other" },
+		},
+		serverId: "srv-agent",
+	};
+	const kutt = {
+		...outside,
+		name: "kutt",
+		appName: "kutt-a1b2c3",
+		sourceType: "raw",
+		composeType: "docker-compose",
+		composeFile: [
+			"services:",
+			"  app:",
+			"    image: kutt/kutt:v2",
+			"    environment:",
+			"      DB_PASSWORD=hunter2hunter2hunter2",
+			"      SITE_NAME=kutt",
+			"  redis:",
+			"    image: redis:7",
+			"volumes: {}",
+		].join("\n"),
+	};
+
+	// records the dialog text and answers with the given result
+	function answerDialog(result: backends.ApprovalResult) {
+		const dialogs: string[] = [];
+		vi.mocked(backends.detectApprovalBackend).mockReturnValue({
+			name: "macos",
+			invocation: (dialog) => {
+				dialogs.push(backends.plainDialogText(dialog));
+				return {
+					command: process.execPath,
+					args: ["-e", `process.stdout.write(${JSON.stringify(result)})`],
+					env: {},
+					parse: (_status, stdout) => stdout as backends.ApprovalResult,
+				};
+			},
+		});
+		return dialogs;
+	}
+
+	// reads return each queued record once, then the last one
+	async function setup(
+		records: Record<string, any>[],
+		approval?: client.AgentApprovalConfig,
+	) {
+		const loaded = await loadAgentSafeGeneratedCommands();
+		const program = new Command();
+		loaded.registerGeneratedCommands(program);
+		vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+			projects: [
+				{
+					projectName: "agent_sandbox",
+					projectId: "proj-agent",
+					environmentName: "production",
+					environmentId: "env-agent",
+				},
+			],
+			servers: [{ serverId: "srv-agent" }],
+			domainSuffixes: [".example.com"],
+			expandedProjects: [],
+			expandedApplicationIds: [],
+			expandedApplicationNames: [],
+			approval,
+		});
+		const queue = [...records];
+		const getSpy = vi
+			.spyOn(client, "apiGet")
+			.mockImplementation(async (endpoint) =>
+				endpoint === "project.all"
+					? []
+					: queue.length > 1
+						? queue.shift()
+						: queue[0],
+			);
+		const postSpy = vi.spyOn(client, "apiPost").mockResolvedValue(true);
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		return { program, postSpy, getSpy, tempDir: loaded.tempDir };
+	}
+
+	const run = (program: Command, ...args: string[]) =>
+		program.parseAsync(["node", "cli", ...args]);
+
+	afterEach(() => {
+		vi.mocked(backends.detectApprovalBackend).mockReset();
+		vi.mocked(backends.detectApprovalBackend).mockReturnValue(undefined);
+	});
+
+	it("writes a field change after the user approves its diff", async () => {
+		const dialogs = answerDialog("approved");
+		const { program, postSpy, tempDir } = await setup([kutt]);
+		try {
+			await run(
+				program,
+				"compose",
+				"update",
+				"--composeId",
+				"compose-kutt",
+				"--composeType",
+				"stack",
+				"--reason",
+				"swarm overlay networks need a stack",
+			);
+			expect(postSpy).toHaveBeenCalledExactlyOnceWith("compose.update", {
+				composeId: "compose-kutt",
+				composeType: "stack",
+			});
+			expect(dialogs).toHaveLength(1);
+			expect(dialogs[0]).toContain("Approve compose.update?");
+			expect(dialogs[0]).toContain(
+				"compose: kutt / kutt-a1b2c3 (compose-kutt)",
+			);
+			expect(dialogs[0]).toContain("project: storefront/production");
+			expect(dialogs[0]).toContain(
+				"- composeType: docker-compose\n+ composeType: stack",
+			);
+			expect(dialogs[0]).toContain("swarm overlay networks need a stack");
+			expect(dialogs[0]).toContain(
+				"rejects compose compose-kutt in storefront",
+			);
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
+	it("shows multi-line fields as a line diff with stored secrets masked", async () => {
+		const dialogs = answerDialog("approved");
+		const { program, postSpy, tempDir } = await setup([kutt]);
+		const nextFile = kutt.composeFile
+			.replace("kutt/kutt:v2", "kutt/kutt:v3")
+			.replace(
+				"DB_PASSWORD=hunter2hunter2hunter2",
+				"DB_PASSWORD=n3w-s3cret-value",
+			);
+		try {
+			await run(
+				program,
+				"compose",
+				"update",
+				"--composeId",
+				"compose-kutt",
+				"--composeFile",
+				nextFile,
+			);
+			expect(postSpy).toHaveBeenCalledOnce();
+			const dialog = dialogs[0];
+			expect(dialog).toContain(
+				[
+					"  composeFile:",
+					"  ...",
+					"    app:",
+					"-     image: kutt/kutt:v2",
+					"+     image: kutt/kutt:v3",
+					"      environment:",
+				].join("\n"),
+			);
+			expect(dialog).toContain("+       DB_PASSWORD=n3w-s3cret-value");
+			expect(dialog).toMatch(/- {7}DB_PASSWORD=hunt\*\*\*/);
+			expect(dialog).not.toContain("hunter2hunter2hunter2");
+			expect(dialog).not.toContain("redis:7");
+			const audit = fs.readFileSync(
+				path.join(
+					process.env.XDG_STATE_HOME as string,
+					"dokploy-agent",
+					"approvals.jsonl",
+				),
+				"utf8",
+			);
+			expect(audit).toContain('"fields":["composeFile"]');
+			expect(audit).not.toContain("n3w-s3cret-value");
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
+	it("asks once for a deploy with no fields", async () => {
+		const dialogs = answerDialog("approved");
+		const { program, postSpy, tempDir } = await setup([kutt]);
+		try {
+			await run(program, "compose", "deploy", "--composeId", "compose-kutt");
+			expect(dialogs).toHaveLength(1);
+			expect(dialogs[0]).toContain("  run compose.deploy");
+			expect(postSpy).toHaveBeenCalledExactlyOnceWith("compose.deploy", {
+				composeId: "compose-kutt",
+			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
+	it("writes nothing when the user denies or the record changed", async () => {
+		const { program, postSpy, tempDir } = await setup([
+			kutt,
+			kutt,
+			{ ...kutt, composeType: "stack" },
+		]);
+		const args = [
+			"compose",
+			"update",
+			"--composeId",
+			"compose-kutt",
+			"--composeType",
+			"stack",
+		];
+		try {
+			answerDialog("denied");
+			await expect(run(program, ...args)).rejects.toMatchObject({
+				code: "AGENT_APPROVAL_DENIED",
+				exitCode: 2,
+			});
+			answerDialog("approved");
+			await expect(run(program, ...args)).rejects.toMatchObject({
+				code: "AGENT_APPROVAL_STALE",
+			});
+			expect(postSpy).not.toHaveBeenCalled();
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
+	it("keeps hard checks and non-approvable endpoints as plain denials", async () => {
+		const dialogs = answerDialog("approved");
+		const { program, postSpy, tempDir } = await setup([
+			{ ...kutt, domains: [] },
+		]);
+		try {
+			for (const [args, message] of [
+				[
+					[
+						"compose",
+						"update",
+						"--composeId",
+						"compose-kutt",
+						"--githubId",
+						"gh-unknown",
+					],
+					"not a git provider configured",
+				],
+				[
+					[
+						"domain",
+						"create",
+						"--composeId",
+						"compose-kutt",
+						"--host",
+						"kutt.example.net",
+					],
+					"rejects host kutt.example.net",
+				],
+				[
+					[
+						"compose",
+						"create",
+						"--name",
+						"kutt2",
+						"--environmentId",
+						"env-other",
+					],
+					"rejects environmentId env-other",
+				],
+			] as const) {
+				await expect(run(program, ...args)).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining(message),
+				});
+			}
+			expect(dialogs).toHaveLength(0);
+			expect(postSpy).not.toHaveBeenCalled();
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
+	it("keeps the denial when approval is disabled", async () => {
+		const dialogs = answerDialog("approved");
+		const { program, postSpy, tempDir } = await setup([kutt], {
+			enabled: false,
+			timeoutSeconds: 90,
+		});
+		try {
+			await expect(
+				run(program, "compose", "deploy", "--composeId", "compose-kutt"),
+			).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("rejects compose compose-kutt"),
+			});
+			expect(dialogs).toHaveLength(0);
+			expect(postSpy).not.toHaveBeenCalled();
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
 });
