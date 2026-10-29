@@ -5,8 +5,10 @@ import * as client from "../src/client.js";
 import {
 	annotateEnvironmentVariable,
 	appendEnvironmentVariable,
+	environmentRenameRisk,
 	environmentUrlParts,
 	registerServiceEnvCommands,
+	renameEnvironmentVariable,
 	setEnvironmentVariable,
 	unsetEnvironmentVariable,
 } from "../src/commands/service-env.js";
@@ -77,6 +79,50 @@ describe("service environment mutations", () => {
 			"does not exist",
 		);
 		expect(unsetEnvironmentVariable("K='a\nb' # note\r\nZ=1", "K")).toBe("Z=1");
+	});
+
+	it("renames in place and keeps prefix, separator, and raw value", () => {
+		expect(
+			renameEnvironmentVariable(
+				"# db\r\nexport OLD = 'a\nb' # note\r\nZ=1\r\n",
+				"OLD",
+				"NEW",
+			),
+		).toBe("# db\r\nexport NEW = 'a\nb' # note\r\nZ=1\r\n");
+		expect(() => renameEnvironmentVariable("A=1\n", "B", "C")).toThrow(
+			"B does not exist",
+		);
+		expect(() => renameEnvironmentVariable("A=1\nA=2\n", "A", "C")).toThrow(
+			"duplicated",
+		);
+		expect(() => renameEnvironmentVariable("A=1\nC=2\n", "A", "C")).toThrow(
+			"C already exists",
+		);
+		expect(() => renameEnvironmentVariable("A=1\n", "A", "A")).toThrow(
+			"A already exists",
+		);
+		expect(() => renameEnvironmentVariable("A=1\n", "A", "1BAD")).toThrow(
+			"Invalid environment variable name: 1BAD",
+		);
+	});
+
+	it("flags renames that publish a value or drop a secret-looking name", () => {
+		expect(environmentRenameRisk("DB_PASSWORD", "NEXT_PUBLIC_DB")).toContain(
+			"NEXT_PUBLIC_ client-bundle prefix",
+		);
+		expect(environmentRenameRisk("SITE_NAME", "VITE_SITE_NAME")).toContain(
+			"VITE_",
+		);
+		expect(environmentRenameRisk("STRIPE_SECRET", "STRIPE_SK")).toContain(
+			"no longer redacted",
+		);
+		expect(environmentRenameRisk("VITE_TITLE", "VITE_APP_TITLE")).toBe(
+			undefined,
+		);
+		expect(environmentRenameRisk("DB_PASSWORD", "DATABASE_PASSWORD")).toBe(
+			undefined,
+		);
+		expect(environmentRenameRisk("LOG_LEVEL", "LOGGING_LEVEL")).toBe(undefined);
 	});
 
 	it("keeps CRLF line endings when replacing a value", () => {
@@ -595,6 +641,101 @@ describe("environment approval outside the deploy policy", () => {
 		await program.parseAsync(setArgs);
 		expect(dialogs).toHaveLength(0);
 		expect(postSpy).toHaveBeenCalledOnce();
+	});
+
+	describe("env rename", () => {
+		const inside = {
+			...outsideApp,
+			environmentId: "allowed-env",
+			environment: {
+				name: "production",
+				project: { name: "allowed-project" },
+			},
+		};
+		const renameArgs = (name: string, newName: string) => [
+			"node",
+			"cli",
+			"application",
+			"env",
+			"rename",
+			"--applicationId",
+			"app-1",
+			"--name",
+			name,
+			"--new-name",
+			newName,
+			"--json",
+		];
+
+		it("renames inside the deploy project without prompting", async () => {
+			const dialogs = answerDialog("denied");
+			const { program, postSpy } = setup([inside]);
+
+			await program.parseAsync(renameArgs("API_URL", "SERVICE_URL"));
+			expect(dialogs).toHaveLength(0);
+			expect(postSpy).toHaveBeenCalledWith(
+				"application.saveEnvironment",
+				expect.objectContaining({
+					env: "SERVICE_URL=https://old.example.com\nSECRET=old-value\n",
+				}),
+			);
+			expect(console.log).toHaveBeenCalledWith(
+				expect.stringContaining('"newName": "SERVICE_URL"'),
+			);
+		});
+
+		it("asks before publishing a value inside the deploy project", async () => {
+			const dialogs = answerDialog("approved");
+			const { program, postSpy } = setup([inside, inside]);
+
+			await program.parseAsync(renameArgs("SECRET", "NEXT_PUBLIC_SECRET"));
+			expect(dialogs).toHaveLength(1);
+			expect(dialogs[0]).toMatch(
+				/\n- SECRET=\*\*\* \(9 chars\)\n\+ NEXT_PUBLIC_SECRET=\*\*\* \(9 chars\)\n/,
+			);
+			expect(dialogs[0]).toContain("NEXT_PUBLIC_ client-bundle prefix");
+			expect(dialogs[0]).not.toContain("old-value");
+			expect(postSpy).toHaveBeenCalledWith(
+				"application.saveEnvironment",
+				expect.objectContaining({
+					env: "API_URL=https://old.example.com\nNEXT_PUBLIC_SECRET=old-value\n",
+				}),
+			);
+		});
+
+		it("asks before dropping a secret-looking name and writes nothing on deny", async () => {
+			const dialogs = answerDialog("denied");
+			const { program, postSpy } = setup([inside]);
+
+			await expect(
+				program.parseAsync(renameArgs("SECRET", "PLAIN")),
+			).rejects.toMatchObject({ code: "AGENT_APPROVAL_DENIED", exitCode: 2 });
+			expect(dialogs[0]).toContain("no longer redacted");
+			expect(postSpy).not.toHaveBeenCalled();
+		});
+
+		it("blocks a risky rename on hosts without a dialog", async () => {
+			const { program, postSpy } = setup([inside]);
+
+			await expect(
+				program.parseAsync(renameArgs("SECRET", "VITE_SECRET")),
+			).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("no approval dialog available"),
+			});
+			expect(postSpy).not.toHaveBeenCalled();
+		});
+
+		it("names both the perimeter and the rename risk in one dialog", async () => {
+			const dialogs = answerDialog("approved");
+			const { program, postSpy } = setup([outsideApp, outsideApp]);
+
+			await program.parseAsync(renameArgs("SECRET", "VITE_SECRET"));
+			expect(dialogs).toHaveLength(1);
+			expect(dialogs[0]).toContain("rejects application app-1");
+			expect(dialogs[0]).toContain("VITE_ client-bundle prefix");
+			expect(postSpy).toHaveBeenCalledOnce();
+		});
 	});
 
 	it("lists env outside the deploy policy without prompting", async () => {

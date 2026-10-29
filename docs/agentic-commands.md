@@ -105,6 +105,14 @@ dokploy-agent application env unset \
   --name OLD_KEY \
   --json
 
+# keeps the value; fails when OLD_KEY is missing or duplicated, or NEW_KEY exists
+dokploy-agent application env rename \
+  --applicationId APP_ID \
+  --name OLD_KEY \
+  --new-name NEW_KEY \
+  --reason "match the name the new release reads" \
+  --json
+
 # inserts comment lines before one unambiguous existing key
 dokploy-agent application env comment \
   --applicationId APP_ID \
@@ -121,6 +129,8 @@ Safety behavior:
 - no overwrite mode for add
 - comment fails on missing or duplicated keys
 - unset fails on missing keys and leaves comments in place
+- rename changes only the key name; prefix, quoting, raw value, position, and comments stay. References to the old name (compose `${OLD_KEY}`, app code) are not rewritten
+- rename asks the user even inside the deploy policy when the new name starts with a client-bundle prefix (`NEXT_PUBLIC_`, `NUXT_PUBLIC_`, `VITE_`, `REACT_APP_`, `EXPO_PUBLIC_`, `GATSBY_`, `VUE_APP_`, `PUBLIC_`) the old name lacks, or when it turns a secret-looking name into one log redaction no longer matches. Hosts without a dialog keep `AGENT_POLICY_BLOCKED`
 - multiline comment input is prefixed line-by-line to prevent assignment injection
 - `list` works on any service; `url` prints only scheme, host, port, and database (database schemes only), never userinfo, query, or fragment, and fails with `INVALID_ENV_URL` without echoing a non-URL value
 - agent-safe builds enforce configured project and server policy before writes and `url` reads; compose and databases must be in a deploy project (expanded allowlists cover applications only)

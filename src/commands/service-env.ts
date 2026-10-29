@@ -5,7 +5,7 @@ import {
 	approvalTarget,
 	requireUserApproval,
 } from "../agent/approval.js";
-import { CliError, cliErrorCode } from "../agent/errors.js";
+import { agentPolicyBlocked, CliError, cliErrorCode } from "../agent/errors.js";
 import {
 	AGENT_DATABASE_KINDS,
 	type AgentServiceKind,
@@ -22,7 +22,7 @@ import {
 	parseEnvDocument,
 	unquoteEnvValue,
 } from "../env-document.js";
-import { maskSecret } from "../redact.js";
+import { isSensitiveEnvKey, maskSecret } from "../redact.js";
 
 interface ServiceEnvCommandOptions {
 	agentSafe: boolean;
@@ -219,6 +219,67 @@ export function unsetEnvironmentVariable(
 	return next;
 }
 
+export function renameEnvironmentVariable(
+	document: string,
+	name: string,
+	newName: string,
+): string {
+	for (const candidate of [name, newName]) {
+		if (!ENV_NAME_PATTERN.test(candidate)) {
+			throw new Error(`Invalid environment variable name: ${candidate}`);
+		}
+	}
+	const matches = matchingAssignments(document, name);
+	if (matches.length === 0) {
+		throw new Error(`Environment variable ${name} does not exist.`);
+	}
+	if (matches.length > 1) {
+		throw new Error(
+			`Environment variable ${name} is duplicated; refusing ambiguous rename.`,
+		);
+	}
+	if (matchingAssignments(document, newName).length > 0) {
+		throw new Error(`Environment variable ${newName} already exists.`);
+	}
+
+	// only the name changes; prefix, separator, and raw value bytes stay
+	const [line] = matches as [Assignment];
+	const { prefix, separator, value } = line.assignment;
+	return `${document.slice(0, line.index)}${prefix}${newName}${separator}${value}${document.slice(line.index + line.length)}`;
+}
+
+// frameworks inline these into client bundles served to anyone
+const PUBLIC_ENV_PREFIXES = [
+	"NEXT_PUBLIC_",
+	"NUXT_PUBLIC_",
+	"VITE_",
+	"REACT_APP_",
+	"EXPO_PUBLIC_",
+	"GATSBY_",
+	"VUE_APP_",
+	"PUBLIC_",
+];
+
+function publicEnvPrefix(name: string): string | undefined {
+	return PUBLIC_ENV_PREFIXES.find((prefix) => name.startsWith(prefix));
+}
+
+// a rename moves a value the agent never saw to a name it picked; names that
+// publish the value or drop out of name-based log redaction need the user
+export function environmentRenameRisk(
+	name: string,
+	newName: string,
+): string | undefined {
+	const prefix = publicEnvPrefix(newName);
+	if (prefix && !publicEnvPrefix(name)) {
+		return `renaming ${name} to ${newName} publishes its value through the ${prefix} client-bundle prefix`;
+	}
+	if (isSensitiveEnvKey(name) && !isSensitiveEnvKey(newName)) {
+		return `renaming ${name} to ${newName} drops a secret-looking name, so logs printing it are no longer redacted`;
+	}
+	return undefined;
+}
+
 export interface EnvironmentUrlParts {
 	scheme: string;
 	host: string;
@@ -338,7 +399,7 @@ function envApprovalRequest(
 	id: string,
 	record: ServiceRecord,
 	operation: string,
-	name: string,
+	names: string[],
 	lines: ApprovalLine[],
 	reason: unknown,
 ): ApprovalRequest {
@@ -347,7 +408,7 @@ function envApprovalRequest(
 		title: `env ${operation}`,
 		target: approvalTarget(kind, id, record),
 		lines,
-		audit: { operation, names: [name] },
+		audit: { operation, names },
 		reason: typeof reason === "string" ? reason : undefined,
 	};
 }
@@ -366,6 +427,8 @@ type EnvDescribe = (
 	document: string,
 	opts: Record<string, unknown>,
 ) => ApprovalLine[];
+// why an otherwise permitted write still needs the user
+type EnvRisk = (opts: Record<string, unknown>) => string | undefined;
 
 function registerEnvCommands(
 	group: Command,
@@ -430,7 +493,7 @@ function registerEnvCommands(
 							id,
 							record,
 							"url",
-							name,
+							[name],
 							[
 								{
 									kind: "text",
@@ -459,6 +522,7 @@ function registerEnvCommands(
 		edit: EnvEdit,
 		describe: EnvDescribe,
 		optional: Array<[string, string]> = [],
+		risk?: EnvRisk,
 	) => {
 		const command = env
 			.command(name)
@@ -478,10 +542,18 @@ function registerEnvCommands(
 				const policy = options.agentSafe
 					? readAgentDeployPolicyConfig()
 					: undefined;
-				const blocked = policy && policyDenial(policy, kind, id, record);
+				const outside = policy && policyDenial(policy, kind, id, record);
 				const document = environmentDocument(kind, record);
 				const nextEnv = edit(document, opts);
-				if (blocked) {
+				const blockedReasons = policy
+					? [risk?.(opts), outside?.message].filter(
+							(reason): reason is string => reason !== undefined,
+						)
+					: [];
+				const names = [opts.name, opts.newName].filter(
+					(value): value is string => typeof value === "string",
+				);
+				if (policy && blockedReasons.length > 0) {
 					await requireUserApproval(
 						policy.approval,
 						envApprovalRequest(
@@ -489,11 +561,11 @@ function registerEnvCommands(
 							id,
 							record,
 							name,
-							String(opts.name),
+							names,
 							describe(document, opts),
 							opts.reason,
 						),
-						blocked,
+						agentPolicyBlocked(blockedReasons.join("; ")),
 					);
 					const current = await fetchService(kind, id);
 					if (!sameEnvState(kind, record, current)) {
@@ -505,7 +577,14 @@ function registerEnvCommands(
 				}
 				await save(id, record, nextEnv);
 				printResult(
-					{ [idKey]: id, name: opts.name, [resultKey]: true },
+					{
+						[idKey]: id,
+						name: opts.name,
+						...(typeof opts.newName === "string"
+							? { newName: opts.newName }
+							: {}),
+						[resultKey]: true,
+					},
 					opts.json === true,
 				);
 			});
@@ -555,6 +634,33 @@ function registerEnvCommands(
 		(document, opts) => unsetEnvironmentVariable(document, String(opts.name)),
 		(document, opts) =>
 			maskedAssignments(document, String(opts.name), "remove"),
+	);
+	mutation(
+		"rename",
+		"rename an environment variable, keeping its value without exposing it",
+		[
+			["--name <value>", "existing environment variable name"],
+			["--new-name <value>", "new environment variable name"],
+		],
+		"renamed",
+		(document, opts) =>
+			renameEnvironmentVariable(
+				document,
+				String(opts.name),
+				String(opts.newName),
+			),
+		(document, opts) => {
+			const removed = maskedAssignments(document, String(opts.name), "remove");
+			return [
+				...removed,
+				...removed.map(({ text }) => ({
+					kind: "add" as const,
+					text: text.replace(String(opts.name), String(opts.newName)),
+				})),
+			];
+		},
+		[],
+		(opts) => environmentRenameRisk(String(opts.name), String(opts.newName)),
 	);
 	mutation(
 		"comment",

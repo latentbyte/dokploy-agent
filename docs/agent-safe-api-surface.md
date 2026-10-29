@@ -146,11 +146,14 @@ Custom blind environment mutations are also exposed for applications, compose se
 - `<kind> env url --name KEY` returns the scheme, host, port, and (database schemes only) database of a URL value; userinfo, query, and fragment stay hidden
 - `<kind> env add` appends only when the key does not exist
 - `<kind> env set` creates or replaces one key; `<kind> env unset` removes every assignment of one key
+- `<kind> env rename --name OLD --new-name NEW` renames one unambiguous key in place, keeping its raw value; fails when `NEW` exists
 - `<kind> env comment` inserts sanitized comment lines before one existing key
 
 These are CLI overlays around `<kind>.one` and `<kind>.saveEnvironment`; the generated `save-environment` commands stay blocked.
 
 Writes on a service outside the policy are not refused outright. The CLI opens a native approval dialog (see [Interactive approval](#interactive-approval)) and writes only after the user approves. `env url` outside the policy prompts the same way before printing.
+
+`env rename` is the one write that moves a value the agent never saw to a name it chose, so it also prompts inside the policy when the new name could expose the value: a client-bundle prefix (`NEXT_PUBLIC_`, `VITE_`, and similar; see `PUBLIC_ENV_PREFIXES` in `src/commands/service-env.ts`) the old name lacks, or a secret-looking old name (`isSensitiveEnvKey`) becoming one name-based log redaction no longer matches. Other renames inside the policy run directly; they add no capability beyond the deploy-project source and build writes.
 
 ## Interactive approval
 
@@ -166,7 +169,7 @@ Writes on a service outside the policy are not refused outright. The CLI opens a
 - the dialog shows the target, key names, masked current values, and the new value the agent supplied. Below those CLI-derived facts it shows the agent's `--reason` text and the working directory, both labeled unverified; the audit log records both
 - limits: the policy is a cooperative guard. An agent that can edit the config file, script the desktop UI, or call the API with the token directly can get around it
 
-Currently gated: env `add`, `set`, `unset`, `comment`, and `url`, plus perimeter misses on `AGENT_APPROVABLE_ENDPOINTS` in `src/agent/policy.ts`: `application|compose update`, deploy, redeploy, isolated deployment, start, stop, reload, database deploy, the deploy-project application configure endpoints, and `domain.create`. For these the guard defers scope denials (project/environment, server, expanded allowlist), runs every other check, then asks once with a field diff against `<kind>.one`; stored values in the diff go through `sanitizeForAgent`, since dialog argv is readable by local processes. Creates, deletes, moves, and expanded-only writes stay hard-blocked. Plan for further endpoints: [docs/plans/interactive-approval.md](plans/interactive-approval.md).
+Currently gated: env `add`, `set`, `unset`, `rename`, `comment`, and `url` (risky `rename` also inside the policy), plus perimeter misses on `AGENT_APPROVABLE_ENDPOINTS` in `src/agent/policy.ts`: `application|compose update`, deploy, redeploy, isolated deployment, start, stop, reload, database deploy, the deploy-project application configure endpoints, and `domain.create`. For these the guard defers scope denials (project/environment, server, expanded allowlist), runs every other check, then asks once with a field diff against `<kind>.one`; stored values in the diff go through `sanitizeForAgent`, since dialog argv is readable by local processes. Creates, deletes, moves, and expanded-only writes stay hard-blocked. Plan for further endpoints: [docs/plans/interactive-approval.md](plans/interactive-approval.md).
 
 Env overlay output never includes existing values; `env url` prints only the non-secret URL parts above. Generic agent-safe `application.update` omits replacement-style env, build-secret, password, and refresh-token fields. Generic agent-safe `compose.update` omits env and refresh-token fields.
 
