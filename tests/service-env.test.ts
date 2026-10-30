@@ -1,3 +1,5 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { Command } from "commander";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as backends from "../src/agent/approval-backends.js";
@@ -5,6 +7,8 @@ import * as client from "../src/client.js";
 import {
 	annotateEnvironmentVariable,
 	appendEnvironmentVariable,
+	copyEnvironmentVariables,
+	environmentCopyNames,
 	environmentRenameRisk,
 	environmentUrlParts,
 	registerServiceEnvCommands,
@@ -103,6 +107,52 @@ describe("service environment mutations", () => {
 		);
 		expect(() => renameEnvironmentVariable("A=1\n", "A", "1BAD")).toThrow(
 			"Invalid environment variable name: 1BAD",
+		);
+	});
+
+	it("copies raw assignment bytes after the target document", () => {
+		expect(
+			copyEnvironmentVariables(
+				"export A = 'x\ny' # note\r\nB=${{project.KEY}}\r\nC=skip\r\n",
+				"KEEP=1",
+				["A", "B"],
+			),
+		).toBe("KEEP=1\nexport A = 'x\ny' # note\nB=${{project.KEY}}\n");
+		expect(copyEnvironmentVariables("A=1\n", "", ["A"])).toBe("A=1\n");
+	});
+
+	it("refuses copies that would be ambiguous or overwrite the target", () => {
+		expect(() => copyEnvironmentVariables("A=1\n", "A=2\n", ["A"])).toThrow(
+			"A already exists",
+		);
+		expect(() => copyEnvironmentVariables("A=1\nA=2\n", "", ["A"])).toThrow(
+			"duplicated",
+		);
+	});
+
+	it("selects names in source order from --names or --all", () => {
+		const source = "B=1\nA=2\nC=3\n";
+		expect(environmentCopyNames(source, { all: true })).toEqual([
+			"B",
+			"A",
+			"C",
+		]);
+		expect(environmentCopyNames(source, { names: "C, B,C" })).toEqual([
+			"B",
+			"C",
+		]);
+		expect(() => environmentCopyNames(source, {})).toThrow("exactly one");
+		expect(() =>
+			environmentCopyNames(source, { names: "A", all: true }),
+		).toThrow("exactly one");
+		expect(() => environmentCopyNames(source, { names: " , " })).toThrow(
+			"lists no variables",
+		);
+		expect(() => environmentCopyNames(source, { names: "NOPE" })).toThrow(
+			"NOPE does not exist",
+		);
+		expect(() => environmentCopyNames("", { all: true })).toThrow(
+			"no environment variables",
 		);
 	});
 
@@ -735,6 +785,199 @@ describe("environment approval outside the deploy policy", () => {
 			expect(dialogs[0]).toContain("rejects application app-1");
 			expect(dialogs[0]).toContain("VITE_ client-bundle prefix");
 			expect(postSpy).toHaveBeenCalledOnce();
+		});
+	});
+
+	describe("env copy", () => {
+		const compose = {
+			name: "backend",
+			appName: "backend-a1b2c3",
+			env: "API_URL=https://api.example.com\nSECRET=old-compose-value\nNEXT_PUBLIC_SITE=https://site.example.com\nOTHER=skip\n",
+			environmentId: "other-env",
+			environment: { name: "production", project: { name: "storefront" } },
+		};
+		const emptyApp = { ...outsideApp, env: "KEEP=1\n" };
+		const copyArgs = [
+			"node",
+			"cli",
+			"application",
+			"env",
+			"copy",
+			"--from-compose",
+			"compose-1",
+			"--applicationId",
+			"app-1",
+			"--names",
+			"API_URL,SECRET,NEXT_PUBLIC_SITE",
+			"--reason",
+			"move backend to an application",
+			"--json",
+		];
+
+		it("copies one approved batch and prints no values", async () => {
+			const dialogs = answerDialog("approved");
+			const { program, postSpy } = setup([
+				compose,
+				emptyApp,
+				compose,
+				emptyApp,
+			]);
+			await program.parseAsync(copyArgs);
+			expect(dialogs).toHaveLength(1);
+			expect(dialogs[0]).toContain("Approve env copy on application web?");
+			expect(dialogs[0]).toContain("from compose backend / backend-a1b2c3");
+			expect(dialogs[0]).toContain("[NEXT_PUBLIC_ client-bundle prefix]");
+			expect(dialogs[0]).toContain("env copy always needs the user");
+			expect(dialogs[0]).not.toContain("old-compose-value");
+			expect(postSpy).toHaveBeenCalledTimes(1);
+			expect(postSpy.mock.calls[0]?.[1]).toMatchObject({
+				applicationId: "app-1",
+				env: "KEEP=1\nAPI_URL=https://api.example.com\nSECRET=old-compose-value\nNEXT_PUBLIC_SITE=https://site.example.com\n",
+			});
+			const output = vi.mocked(console.log).mock.calls.flat().join("\n");
+			expect(JSON.parse(output)).toEqual({
+				applicationId: "app-1",
+				fromComposeId: "compose-1",
+				names: ["API_URL", "SECRET", "NEXT_PUBLIC_SITE"],
+				copied: true,
+			});
+		});
+
+		it("asks even when both services are inside the deploy project", async () => {
+			const inside = {
+				environmentId: "allowed-env",
+				environment: {
+					name: "production",
+					project: { name: "allowed-project" },
+				},
+			};
+			const dialogs = answerDialog("approved");
+			const records = [
+				{ ...compose, ...inside },
+				{ ...emptyApp, ...inside },
+				{ ...compose, ...inside },
+				{ ...emptyApp, ...inside },
+			];
+			const { program, postSpy } = setup(records);
+			await program.parseAsync(copyArgs);
+			expect(dialogs).toHaveLength(1);
+			expect(postSpy).toHaveBeenCalledTimes(1);
+		});
+
+		it("records key names but no values in the audit log", async () => {
+			answerDialog("approved");
+			const logPath = path.join(
+				process.env.XDG_STATE_HOME ?? "",
+				"dokploy-agent",
+				"approvals.jsonl",
+			);
+			const { program } = setup([compose, emptyApp, compose, emptyApp]);
+			await program.parseAsync(copyArgs);
+			const log = fs.readFileSync(logPath, "utf8").trim().split("\n");
+			const entry = log.at(-1) ?? "";
+			expect(JSON.parse(entry)).toMatchObject({
+				endpoint: "application.saveEnvironment",
+				operation: "copy",
+				fromComposeId: "compose-1",
+				names: ["API_URL", "SECRET", "NEXT_PUBLIC_SITE"],
+				result: "approved",
+			});
+			expect(entry).not.toContain("old-compose-value");
+		});
+
+		it.each([
+			["denied", "AGENT_APPROVAL_DENIED"],
+			["timeout", "AGENT_APPROVAL_TIMEOUT"],
+		] as const)("writes nothing on %s", async (result, code) => {
+			answerDialog(result);
+			const { program, postSpy } = setup([compose, emptyApp]);
+			await expect(program.parseAsync(copyArgs)).rejects.toMatchObject({
+				code,
+			});
+			expect(postSpy).not.toHaveBeenCalled();
+		});
+
+		it("stays blocked on hosts without a dialog and when disabled", async () => {
+			const { program, postSpy } = setup([compose, emptyApp]);
+			await expect(program.parseAsync(copyArgs)).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("no approval dialog available"),
+			});
+			const dialogs = answerDialog("approved");
+			const disabled = setup([compose, emptyApp], { enabled: false });
+			await expect(disabled.program.parseAsync(copyArgs)).rejects.toMatchObject(
+				{
+					code: "AGENT_POLICY_BLOCKED",
+				},
+			);
+			expect(dialogs).toHaveLength(0);
+			expect(postSpy).not.toHaveBeenCalled();
+			expect(disabled.postSpy).not.toHaveBeenCalled();
+		});
+
+		it.each([
+			["source", [{ ...compose, env: "SECRET=rotated\n" }, emptyApp]],
+			["target", [compose, { ...emptyApp, env: "KEEP=2\n" }]],
+			["companion field", [compose, { ...emptyApp, buildArgs: "A=1" }]],
+		])(
+			"aborts when the %s changed while the dialog was open",
+			async (_, after) => {
+				answerDialog("approved");
+				const { program, postSpy } = setup([compose, emptyApp, ...after]);
+				await expect(program.parseAsync(copyArgs)).rejects.toMatchObject({
+					code: "AGENT_APPROVAL_STALE",
+				});
+				expect(postSpy).not.toHaveBeenCalled();
+			},
+		);
+
+		it("denies across environments before any prompt", async () => {
+			const dialogs = answerDialog("approved");
+			const { program } = setup([
+				compose,
+				{ ...emptyApp, environmentId: "third-env" },
+			]);
+			await expect(program.parseAsync(copyArgs)).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("in one environment"),
+			});
+			expect(dialogs).toHaveLength(0);
+		});
+
+		it("denies a batch the dialog cannot show in full", async () => {
+			const dialogs = answerDialog("approved");
+			const env = Array.from({ length: 19 }, (_, i) => `KEY_${i}=v\n`).join("");
+			const { program } = setup([{ ...compose, env }, emptyApp]);
+			await expect(
+				program.parseAsync([
+					"node",
+					"cli",
+					"application",
+					"env",
+					"copy",
+					"--from-compose",
+					"compose-1",
+					"--applicationId",
+					"app-1",
+					"--all",
+				]),
+			).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("does not fit"),
+			});
+			expect(dialogs).toHaveLength(0);
+		});
+
+		it("refuses to overwrite a target key before any prompt", async () => {
+			const dialogs = answerDialog("approved");
+			const { program } = setup([
+				compose,
+				{ ...emptyApp, env: "SECRET=target-value\n" },
+			]);
+			await expect(program.parseAsync(copyArgs)).rejects.toThrow(
+				"SECRET already exists",
+			);
+			expect(dialogs).toHaveLength(0);
 		});
 	});
 

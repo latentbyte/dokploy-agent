@@ -409,7 +409,7 @@ describe("buildApprovalDialog", () => {
 		);
 		const message = text(built);
 		expect(message.split("\n")[0]).toBe(
-			"An agent asks for a change outside its policy. Nothing runs unless you approve. Denied automatically after 45s.",
+			"An agent asks for a change that needs your approval. Nothing runs unless you approve. Denied automatically after 45s.",
 		);
 		expect(built.heading).toBe("Approve env set on application web?");
 		expect(built.timeoutSeconds).toBe(45);

@@ -3,6 +3,7 @@ import {
 	type ApprovalLine,
 	type ApprovalRequest,
 	approvalTarget,
+	MAX_APPROVAL_LINES,
 	requireUserApproval,
 } from "../agent/approval.js";
 import { agentPolicyBlocked, CliError, cliErrorCode } from "../agent/errors.js";
@@ -248,6 +249,65 @@ export function renameEnvironmentVariable(
 	return `${document.slice(0, line.index)}${prefix}${newName}${separator}${value}${document.slice(line.index + line.length)}`;
 }
 
+// names to copy, in source order and without repeats
+export function environmentCopyNames(
+	source: string,
+	opts: { names?: unknown; all?: unknown },
+): string[] {
+	if ((opts.names === undefined) === (opts.all === undefined)) {
+		throw new Error("Pass exactly one of --names or --all.");
+	}
+	const present = [
+		...new Set(assignments(source).map((line) => line.assignment.name)),
+	];
+	if (opts.all !== undefined) {
+		if (present.length === 0) {
+			throw new Error("Source service has no environment variables.");
+		}
+		return present;
+	}
+	const requested = String(opts.names)
+		.split(",")
+		.map((name) => name.trim())
+		.filter(Boolean);
+	if (requested.length === 0) throw new Error("--names lists no variables.");
+	for (const name of requested) {
+		if (!ENV_NAME_PATTERN.test(name)) {
+			throw new Error(`Invalid environment variable name: ${name}`);
+		}
+		if (!present.includes(name)) {
+			throw new Error(`Environment variable ${name} does not exist.`);
+		}
+	}
+	return present.filter((name) => requested.includes(name));
+}
+
+// raw bytes, so quoting and ${{project.X}} references keep their meaning
+export function copyEnvironmentVariables(
+	source: string,
+	target: string,
+	names: string[],
+): string {
+	const eol = lineEnding(target);
+	let next = target;
+	for (const name of names) {
+		const matches = matchingAssignments(source, name);
+		if (matches.length > 1) {
+			throw new Error(
+				`Environment variable ${name} is duplicated; refusing ambiguous copy.`,
+			);
+		}
+		if (matchingAssignments(target, name).length > 0) {
+			throw new Error(`Environment variable ${name} already exists.`);
+		}
+		const [line] = matches as [Assignment];
+		const { prefix, separator, value } = line.assignment;
+		const lead = next.length > 0 && !next.endsWith("\n") ? eol : "";
+		next = `${next}${lead}${prefix}${name}${separator}${value}${eol}`;
+	}
+	return next;
+}
+
 // frameworks inline these into client bundles served to anyone
 const PUBLIC_ENV_PREFIXES = [
 	"NEXT_PUBLIC_",
@@ -430,6 +490,122 @@ type EnvDescribe = (
 // why an otherwise permitted write still needs the user
 type EnvRisk = (opts: Record<string, unknown>) => string | undefined;
 
+// masked lines only: dialog argv is readable by local processes
+function envCopyLines(
+	composeId: string,
+	compose: ServiceRecord,
+	document: string,
+	names: string[],
+): ApprovalLine[] {
+	const label = [compose.name, compose.appName].filter(Boolean).join(" / ");
+	return [
+		{ kind: "text", text: `from compose ${label} (${composeId})` },
+		{
+			kind: "text",
+			text: `${names.length} keys; anything this application runs can read the values`,
+		},
+		...names.flatMap((name) =>
+			maskedAssignments(document, name, "add").map((line) => {
+				const prefix = publicEnvPrefix(name);
+				return prefix
+					? { ...line, text: `${line.text}  [${prefix} client-bundle prefix]` }
+					: line;
+			}),
+		),
+	];
+}
+
+function registerEnvCopyCommand(
+	env: Command,
+	options: ServiceEnvCommandOptions,
+): void {
+	env
+		.command("copy")
+		.description(
+			"copy environment variables from a compose service without exposing values",
+		)
+		.requiredOption("--from-compose <value>", "source composeId")
+		.requiredOption("--applicationId <value>", "target applicationId")
+		.option("--names <value>", "comma-separated variable names to copy")
+		.option("--all", "copy every variable")
+		.option(
+			"--reason <text>",
+			"why this copy is needed; always shown in the approval dialog",
+		)
+		.option("--json", "Output JSON")
+		.action(async (opts: Record<string, unknown>) => {
+			const composeId = String(opts.fromCompose);
+			const applicationId = String(opts.applicationId);
+			const source = await fetchService("compose", composeId);
+			const target = await fetchService("application", applicationId);
+			const document = environmentDocument("compose", source);
+			const names = environmentCopyNames(document, opts);
+			const nextEnv = copyEnvironmentVariables(
+				document,
+				environmentDocument("application", target),
+				names,
+			);
+			if (options.agentSafe) {
+				const policy = readAgentDeployPolicyConfig();
+				if (
+					!source.environmentId ||
+					source.environmentId !== target.environmentId
+				) {
+					throw agentPolicyBlocked(
+						`agent-safe env copy requires compose ${composeId} and application ${applicationId} in one environment, so \${{environment.X}} references keep their meaning`,
+					);
+				}
+				const lines = envCopyLines(composeId, source, document, names);
+				if (lines.length > MAX_APPROVAL_LINES) {
+					throw agentPolicyBlocked(
+						`agent-safe env copy of ${names.length} keys does not fit one approval dialog; copy fewer with --names`,
+					);
+				}
+				const misses = [
+					policyDenial(policy, "application", applicationId, target),
+					policyDenial(policy, "compose", composeId, source),
+				].flatMap((denial) => (denial ? [denial.message] : []));
+				await requireUserApproval(
+					policy.approval,
+					{
+						...envApprovalRequest(
+							"application",
+							applicationId,
+							target,
+							"copy",
+							names,
+							lines,
+							opts.reason,
+						),
+						audit: { operation: "copy", names, fromComposeId: composeId },
+					},
+					agentPolicyBlocked(
+						[
+							"env copy always needs the user: a copied secret could reach a service the agent controls",
+							...misses,
+						].join("; "),
+					),
+				);
+				const currentSource = await fetchService("compose", composeId);
+				const currentTarget = await fetchService("application", applicationId);
+				if (
+					!sameEnvState("compose", source, currentSource) ||
+					!sameEnvState("application", target, currentTarget)
+				) {
+					throw new CliError(
+						"AGENT_APPROVAL_STALE",
+						`compose ${composeId} or application ${applicationId} environment changed while the approval dialog was open; nothing was written, retry to review the new state`,
+					);
+				}
+			}
+			await ENV_TARGETS.application.save(applicationId, target, nextEnv);
+			printResult(
+				{ applicationId, fromComposeId: composeId, names, copied: true },
+				opts.json === true,
+			);
+		});
+}
+
 function registerEnvCommands(
 	group: Command,
 	kind: EnvServiceKind,
@@ -513,6 +689,8 @@ function registerEnvCommands(
 			}
 			printResult({ [idKey]: id, name, ...parts }, opts.json === true);
 		});
+
+	if (kind === "application") registerEnvCopyCommand(env, options);
 
 	const mutation = (
 		name: string,

@@ -63,7 +63,7 @@ export interface ApprovalRequest {
 
 const MAX_LINE_CHARS = 200;
 const MAX_HEADING_NAME_CHARS = 60;
-const MAX_LINES = 20;
+export const MAX_APPROVAL_LINES = 20;
 const MAX_REASON_CHARS = 500;
 const MAX_REASON_LINES = 8;
 
@@ -111,15 +111,15 @@ export function buildApprovalDialog(
 		.filter(Boolean)
 		.join("/");
 	const changes: DialogLine[] = request.lines
-		.slice(0, MAX_LINES)
+		.slice(0, MAX_APPROVAL_LINES)
 		.map((line) => ({
 			kind: line.kind,
 			text: truncate(`${DIFF_MARKERS[line.kind]}${line.text}`),
 		}));
-	if (request.lines.length > MAX_LINES) {
+	if (request.lines.length > MAX_APPROVAL_LINES) {
 		changes.push({
 			kind: "note",
-			text: `(${request.lines.length - MAX_LINES} more lines not shown)`,
+			text: `(${request.lines.length - MAX_APPROVAL_LINES} more lines not shown)`,
 		});
 	}
 	const names = [target.name, target.appName].filter(Boolean).join(" / ");
@@ -141,7 +141,7 @@ export function buildApprovalDialog(
 	return {
 		title: "dokploy-agent approval",
 		heading: `Approve ${request.title} on ${target.kind} ${headingName}?`,
-		intro: `An agent asks for a change outside its policy. Nothing runs unless you approve. Denied automatically after ${timeoutSeconds}s.`,
+		intro: `An agent asks for a change that needs your approval. Nothing runs unless you approve. Denied automatically after ${timeoutSeconds}s.`,
 		timeoutSeconds,
 		lines: [
 			{ kind: "heading", text: "TARGET" },
