@@ -111,13 +111,15 @@ describe("service environment mutations", () => {
 	});
 
 	it("copies raw assignment bytes after the target document", () => {
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: Dokploy reference syntax
+		const reference = "B=${{project.KEY}}";
 		expect(
 			copyEnvironmentVariables(
-				"export A = 'x\ny' # note\r\nB=${{project.KEY}}\r\nC=skip\r\n",
+				`export A = 'x\ny' # note\r\n${reference}\r\nC=skip\r\n`,
 				"KEEP=1",
 				["A", "B"],
 			),
-		).toBe("KEEP=1\nexport A = 'x\ny' # note\nB=${{project.KEY}}\n");
+		).toBe(`KEEP=1\nexport A = 'x\ny' # note\n${reference}\n`);
 		expect(copyEnvironmentVariables("A=1\n", "", ["A"])).toBe("A=1\n");
 	});
 

@@ -210,8 +210,11 @@ const AGENT_DATABASE_KIND_SET: ReadonlySet<string> = new Set(
 // endpoints whose perimeter misses (project/environment, server, expanded
 // allowlist) become one approval dialog instead of a denial. hard checks such
 // as protected fields, git providers, domain hosts, and appName still deny.
-// creates, deletes, moves, and expanded-only writes are never approvable
+// application.create has no record yet, so its dialog is keyed on the
+// environment. other creates carry a compose file, image, or password a dialog
+// cannot review. deletes, moves, and expanded-only writes are never approvable
 export const AGENT_APPROVABLE_ENDPOINTS: ReadonlySet<string> = new Set([
+	"application.create",
 	...AGENT_DEPLOY_SERVICE_MUTATIONS,
 	...AGENT_SERVICE_LIFECYCLE_MUTATIONS,
 	...AGENT_DEPLOY_PROJECT_APPLICATION_ENDPOINTS,
@@ -232,8 +235,9 @@ class PerimeterScope {
 		this.denials.push(message);
 	}
 
-	// the service record a write lands on, for the dialog and its stale check
-	see(kind: AgentServiceKind, id: string, record: any) {
+	// the record a write lands on, for the dialog and its stale check; a create
+	// has no service yet and lands on its environment
+	see(kind: AgentServiceKind | "environment", id: string, record: any) {
 		if (this.deferred) this.target ??= { kind, id, record };
 	}
 }
@@ -304,26 +308,31 @@ function agentDeployEnvironmentDenial(
 	);
 }
 
-function ensureAgentDeployEnvironment(
+async function normalizeAgentDeployCreate(
 	policy: AgentDeployPolicyConfig,
 	opts: Record<string, any>,
+	scope: PerimeterScope,
 ) {
 	const project = allowedAgentDeployProject(policy, opts.environmentId);
-	if (project) return project;
-	throw agentPolicyBlocked(
-		agentDeployEnvironmentDenial(policy, opts.environmentId),
+	if (project) opts.environmentId = project.environmentId;
+	else scope.deny(agentDeployEnvironmentDenial(policy, opts.environmentId));
+	ensureAgentDeployServer(
+		policy,
+		stringValue(opts.serverId),
+		"serverId",
+		scope,
 	);
-}
-
-function normalizeAgentDeployCreate(
-	policy: AgentDeployPolicyConfig,
-	opts: Record<string, any>,
-) {
-	const project = ensureAgentDeployEnvironment(policy, opts);
-	opts.environmentId = project.environmentId;
-	ensureAgentDeployServer(policy, stringValue(opts.serverId), "serverId");
 	if (!opts.serverId && !policy.allowAnyServer)
 		opts.serverId = policy.servers[0]?.serverId;
+	if (scope.denials.length === 0) return;
+	const { environmentId } = opts;
+	if (!environmentId)
+		throw agentPolicyBlocked(agentDeployEnvironmentDenial(policy, undefined));
+	scope.see(
+		"environment",
+		environmentId,
+		await apiGet("environment.one", { environmentId }),
+	);
 }
 
 function serviceProjectName(service: any): string | undefined {
@@ -918,7 +927,7 @@ async function guardAgentPerimeterPost(
 		endpoint === "compose.create" ||
 		(databaseKind && endpoint.endsWith(".create"))
 	) {
-		normalizeAgentDeployCreate(policy, opts);
+		await normalizeAgentDeployCreate(policy, opts, scope);
 		return policy;
 	}
 	if (databaseKind && endpoint.endsWith(".deploy")) {
