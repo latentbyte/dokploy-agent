@@ -6,18 +6,13 @@ import {
 	MAX_APPROVAL_LINES,
 	requireUserApproval,
 } from "../agent/approval.js";
-import { agentPolicyBlocked, CliError, cliErrorCode } from "../agent/errors.js";
+import { agentPolicyBlocked, CliError } from "../agent/errors.js";
 import {
 	AGENT_DATABASE_KINDS,
 	type AgentServiceKind,
-	assertServiceRecordWritable,
+	servicePerimeterDenial,
 } from "../agent/policy.js";
-import {
-	type AgentDeployPolicyConfig,
-	apiGet,
-	apiPost,
-	readAgentDeployPolicyConfig,
-} from "../client.js";
+import { apiGet, apiPost, readAgentDeployPolicyConfig } from "../client.js";
 import {
 	type EnvLine,
 	parseEnvDocument,
@@ -405,23 +400,6 @@ async function fetchService(
 	})) as ServiceRecord;
 }
 
-// a perimeter miss becomes the error to prompt about; other failures throw
-function policyDenial(
-	policy: AgentDeployPolicyConfig,
-	kind: EnvServiceKind,
-	id: string,
-	record: ServiceRecord,
-): CliError | undefined {
-	try {
-		assertServiceRecordWritable(policy, kind, id, record);
-		return undefined;
-	} catch (error) {
-		if (cliErrorCode(error) === "AGENT_POLICY_BLOCKED")
-			return error as CliError;
-		throw error;
-	}
-}
-
 function sameEnvState(
 	kind: EnvServiceKind,
 	before: ServiceRecord,
@@ -562,8 +540,8 @@ function registerEnvCopyCommand(
 					);
 				}
 				const misses = [
-					policyDenial(policy, "application", applicationId, target),
-					policyDenial(policy, "compose", composeId, source),
+					servicePerimeterDenial(policy, "application", applicationId, target),
+					servicePerimeterDenial(policy, "compose", composeId, source),
 				].flatMap((denial) => (denial ? [denial.message] : []));
 				await requireUserApproval(
 					policy.approval,
@@ -659,7 +637,8 @@ function registerEnvCommands(
 			const policy = options.agentSafe
 				? readAgentDeployPolicyConfig()
 				: undefined;
-			const blocked = policy && policyDenial(policy, kind, id, record);
+			const blocked =
+				policy && servicePerimeterDenial(policy, kind, id, record);
 			if (blocked) {
 				await requireUserApproval(
 					policy.approval,
@@ -720,7 +699,8 @@ function registerEnvCommands(
 				const policy = options.agentSafe
 					? readAgentDeployPolicyConfig()
 					: undefined;
-				const outside = policy && policyDenial(policy, kind, id, record);
+				const outside =
+					policy && servicePerimeterDenial(policy, kind, id, record);
 				const document = environmentDocument(kind, record);
 				const nextEnv = edit(document, opts);
 				const blockedReasons = policy

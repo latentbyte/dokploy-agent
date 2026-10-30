@@ -12,6 +12,7 @@ import { registerAuthCommand } from "./commands/auth.js";
 import { registerComposeToolCommands } from "./commands/compose-tools.js";
 import { registerDeploymentLogsCommand } from "./commands/deployment-logs.js";
 import { registerDeploymentWaitCommand } from "./commands/deployment-wait.js";
+import { registerDomainMoveCommand } from "./commands/domain-move.js";
 import { registerServiceEnvCommands } from "./commands/service-env.js";
 import { registerServiceInventoryCommands } from "./commands/service-inventory.js";
 import {
@@ -65,6 +66,9 @@ program
 registerAuthCommand(program);
 registerGeneratedCommands(program);
 registerServiceEnvCommands(program, {
+	agentSafe: AGENT_SAFE_BUILD,
+});
+registerDomainMoveCommand(program, {
 	agentSafe: AGENT_SAFE_BUILD,
 });
 registerApplicationLogCommands(program);

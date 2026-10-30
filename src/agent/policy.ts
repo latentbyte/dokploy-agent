@@ -501,6 +501,23 @@ export function assertServiceRecordWritable(
 	assertServiceRecordInDeployProject(policy, kind, id, record);
 }
 
+// a perimeter miss as the error to prompt about; other failures throw
+export function servicePerimeterDenial(
+	policy: AgentDeployPolicyConfig,
+	kind: AgentServiceKind,
+	id: string,
+	record: any,
+): CliError | undefined {
+	try {
+		assertServiceRecordWritable(policy, kind, id, record);
+		return undefined;
+	} catch (error) {
+		if (cliErrorCode(error) === "AGENT_POLICY_BLOCKED")
+			return error as CliError;
+		throw error;
+	}
+}
+
 async function assertApplicationWritable(
 	policy: AgentDeployPolicyConfig,
 	applicationId: string | undefined,
