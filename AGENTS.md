@@ -15,7 +15,7 @@ Fork of `Dokploy/cli` (origin `latentbyte/dokploy-agent`, public). TypeScript ES
 
 - `src/index.ts`: entry; registers hand-written commands then generated ones. Program name comes from `DOKPLOY_AGENT_BIN`
 - `src/client.ts`: auth/config loading (env > `.env` > JSONC config at `DOKPLOY_CONFIG_PATH` or `$XDG_CONFIG_HOME/dokploy/config.json`), `apiGet`/`apiPost`, `agentDeployPolicy` parsing
-- `src/commands/*`: hand-written overlays (`service list`/`inventory`, `application logs`, `application env`/`compose env` (`service-env.ts`), `compose effective|summary`, `deployment read-logs`, `deployment wait`, `auth`). Each takes `agentSafe` and must enforce policy itself
+- `src/commands/*`: hand-written overlays (`service list`/`inventory`, `application logs`, `application env`/`compose env` (`service-env.ts`), `domain move`, `compose effective|summary`, `deployment read-logs`, `deployment wait`, `auth`). Each takes `agentSafe` and must enforce policy itself
 - `src/redact.ts`: secret redaction applied to agent output
 - `src/record-fill.ts`: fills omitted required fields from `<group>.one` for full-record update endpoints (`save-build-type`, `save-*-provider`, ...); the generator picks the endpoints via `findRecordLookup`
 - `src/agent/errors.ts`: `CliError`, JSON error shape, exit codes. Every policy denial goes through `agentPolicyBlocked` (exit 2, `AGENT_POLICY_BLOCKED`)

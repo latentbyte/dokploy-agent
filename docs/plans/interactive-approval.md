@@ -1,6 +1,6 @@
 # Plan: interactive user approval for blocked agent writes
 
-Status: steps 1 and 2 implemented (approval layer, env overlay with database targets), with their docs, plus `--reason` and the requester hint in the dialog. Step 4 is partly done: Tier A perimeter misses on already-allowlisted endpoints (update, deploy, redeploy, start, stop, reload, deploy-project `save-*`, `domain.create`) prompt through `approvePerimeterPost`, which can later enqueue instead of blocking. Not done from step 4: stubbed endpoints, `mounts|port create`, and the safety-report `approval` classification. The async queue below is designed but not built. Typed confirmation is deferred to phase 2 with the Tier B endpoints. Steps 3 onward are open.
+Status: steps 1 and 2 implemented (approval layer, env overlay with database targets), with their docs, plus `--reason` and the requester hint in the dialog. Step 4 is partly done: Tier A perimeter misses on already-allowlisted endpoints (update, deploy, redeploy, start, stop, reload, deploy-project `save-*`, `domain.create`) prompt through `approvePerimeterPost`, which can later enqueue instead of blocking. The Compose-to-Application path is done too: `application.create` is approvable on perimeter misses (keyed on the environment record), and the `application env copy` and `domain move` overlays always prompt. Not done from step 4: other stubbed endpoints, `mounts|port create`, and the safety-report `approval` classification. The async queue below is designed but not built. Typed confirmation is deferred to phase 2 with the Tier B endpoints. Steps 3 onward are open.
 
 ## Goal
 
@@ -104,6 +104,8 @@ Mechanics: add a table `APPROVABLE_ENDPOINTS: Map<endpoint, "confirm" | "typed">
 Tier A, confirm:
 
 - perimeter misses: deploy, redeploy, start, stop, reload, update, save-*-provider on services outside policy; `mounts create` and `port create` on non-allowlisted apps
+- `application.create` outside policy (done). The dialog is keyed on the environment record, since a create has no target. `compose.create` and `<db>.create` stay out: a compose file, image, or password fails the review rule above
+- always prompted, even inside the perimeter (done): `application env copy` (a copied secret can reach a service the agent controls) and `domain move` (it skips the host suffix and in-use checks for that one record)
 - `compose redeploy | cancel-deployment | kill-build | clean-queues`, `previewDeployment.redeploy`, `rollback.rollback`, `deployment.killProcess`
 - `docker start | stop | restart-container`, `<db>.changeStatus | rebuild`
 - `schedule.runManually`, `backup.manualBackup*`
@@ -115,6 +117,8 @@ Tier B, typed confirm (the user types the service name):
 - `application.delete` outside expanded apps, `compose.delete`, `<db>.remove`, `project.remove`, `environment.remove`, `previewDeployment.delete`
 - `dockerVolume.removeVolume`, `docker.removeContainer`, `dockerImage.removeImage`, `rollback.delete`, `deployment.removeDeployment`
 - `<kind>.move`, `<db>.changePassword`, `compose.disconnectGitProvider`
+
+Notes for `compose.delete`, not built yet. Typed confirm does not exist in any backend, so this needs all four. Dokploy deletes the row first and swallows cleanup errors, so a failed `docker compose down` leaves orphan containers still routing. `removeCompose` also runs `rm -rf` on the compose directory, so `deleteVolumes: false` keeps named volumes but not `../files` bind mounts; the dialog must say so. Require the compose to be stopped and to have no domains left, since domains cascade on delete. `application.delete` needs no change: it stays expanded-only, and no current flow depends on it.
 
 Tier C, stays hard-blocked:
 

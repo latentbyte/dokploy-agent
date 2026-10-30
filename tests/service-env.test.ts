@@ -970,6 +970,30 @@ describe("environment approval outside the deploy policy", () => {
 			expect(dialogs).toHaveLength(0);
 		});
 
+		it("accepts the largest batch the dialog shows in full", async () => {
+			const dialogs = answerDialog("approved");
+			const source = {
+				...compose,
+				env: Array.from({ length: 18 }, (_, i) => `KEY_${i}=v\n`).join(""),
+			};
+			const { program, postSpy } = setup([source, emptyApp, source, emptyApp]);
+			await program.parseAsync([
+				"node",
+				"cli",
+				"application",
+				"env",
+				"copy",
+				"--from-compose",
+				"compose-1",
+				"--applicationId",
+				"app-1",
+				"--all",
+			]);
+			expect(dialogs[0]).toContain("KEY_17=");
+			expect(dialogs[0]).not.toContain("more lines not shown");
+			expect(postSpy).toHaveBeenCalledOnce();
+		});
+
 		it("refuses to overwrite a target key before any prompt", async () => {
 			const dialogs = answerDialog("approved");
 			const { program } = setup([

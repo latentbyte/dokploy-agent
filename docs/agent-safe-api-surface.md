@@ -65,7 +65,7 @@ These commands are exposed only in agent-safe builds and are guarded at runtime:
 
 - `application`: create, deploy, redeploy, update, start, stop, reload
 - `compose`: create, deploy, isolated-deployment, update, start, stop
-- `domain`: create, delete
+- `domain`: create, delete, move (overlay)
 - `libsql`, `mariadb`, `mongo`, `mysql`, `postgres`, `redis`: create, deploy, start, stop, reload
 - `application` configure operations (source providers, build type, cancel, kill build, clean queues) for deploy-project and expanded applications
 - `application` expanded operations for explicitly allowlisted application IDs
@@ -74,7 +74,7 @@ These commands are exposed only in agent-safe builds and are guarded at runtime:
 
 Runtime policy:
 
-- application, compose, and database creation is forced into an allowed `agentDeployPolicy.projects[].environmentId` from the Dokploy config file
+- application, compose, and database creation is forced into an allowed `agentDeployPolicy.projects[].environmentId` from the Dokploy config file. `application create` elsewhere opens an approval dialog; compose and database creates are denied, since a dialog cannot review a compose file, image, or password
 - if create omits `environmentId`, the first configured project is used
 - allowed deploy servers come from `agentDeployPolicy.servers`; set `servers` to `"*"` to allow every remote server plus the local Dokploy server
 - omitted `serverId` on create defaults to the first configured server; with `servers: "*"`, it remains omitted so Dokploy selects its local server
@@ -103,7 +103,7 @@ Runtime policy:
 - domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.apps.example.net` for `*.apps.example.net`
 - before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects
 - domain delete mirrors create: the domain's parent application or compose must be in a configured project (expanded rights do not apply) and the host must match the agent domain suffix policy
-- domain update stays blocked, so agents cannot move existing domains
+- domain update stays blocked. `domain move` is the one way to move an existing domain: always prompted, target application in the same environment and server, and it skips the suffix and in-use checks for that record only
 - Dokploy's create operation remains the final uniqueness check if two clients race after the inventory check
 - server entries can set `domainSuffixes` to bind a deploy server to a narrower domain set
 - when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value; omit it to allow any unused single-label name
@@ -153,6 +153,8 @@ These are CLI overlays around `<kind>.one` and `<kind>.saveEnvironment`; the gen
 
 Writes on a service outside the policy are not refused outright. The CLI opens a native approval dialog (see [Interactive approval](#interactive-approval)) and writes only after the user approves. `env url` outside the policy prompts the same way before printing.
 
+`application env copy` always prompts, inside the policy too, because a copied secret can reach a service the agent controls. Source and target must share an environment, it never overwrites a target key, and a batch that does not fit the dialog is denied, so approval never covers keys the user did not see.
+
 `env rename` is the one write that moves a value the agent never saw to a name it chose, so it also prompts inside the policy when the new name could expose the value: a client-bundle prefix (`NEXT_PUBLIC_`, `VITE_`, and similar; see `PUBLIC_ENV_PREFIXES` in `src/commands/service-env.ts`) the old name lacks, or a secret-looking old name (`isSensitiveEnvKey`) becoming one name-based log redaction no longer matches. Other renames inside the policy run directly; they add no capability beyond the deploy-project source and build writes.
 
 ## Interactive approval
@@ -163,13 +165,13 @@ Writes on a service outside the policy are not refused outright. The CLI opens a
 - binaries come from fixed paths and run with a minimal env, so `PATH` or loader overrides cannot swap in a fake approver. Dialog text travels through argv or env vars, never script source
 - Deny is the default button; the dialog gives up after `agentDeployPolicy.approval.timeoutSeconds` (default 90). On macOS, Deny counts down the remaining seconds and Approve (styled destructive) stays disabled for the first second, so a click meant for another window cannot approve
 - the heading names the action and service (`Approve deploy on compose kutt?`); the macOS dialog renders the diff with full-width colored rows and sizes itself to the content. `just preview-approval` renders sample macOS dialogs to `tmp/approval-preview/` offscreen
-- one approval covers one request. The CLI computes the write before prompting, re-reads the service after approval, and aborts with `AGENT_APPROVAL_STALE` (exit 1) if the env or companion fields changed meanwhile (for generated commands: any passed field, `environmentId`, or `serverId`)
+- one approval covers one request. The CLI computes the write before prompting, re-reads the service after approval, and aborts with `AGENT_APPROVAL_STALE` (exit 1) if the env or companion fields changed meanwhile (for generated commands: any passed field, `environmentId`, or `serverId`; for `env copy`: source or target env; for `domain move`: the domain or the target; for `application create`: the environment's project)
 - results: approval runs the write; `AGENT_APPROVAL_DENIED` and `AGENT_APPROVAL_TIMEOUT` exit 2; with no backend, or with `agentDeployPolicy.approval.enabled: false`, the original `AGENT_POLICY_BLOCKED` stays
 - every prompt is logged to `$XDG_STATE_HOME/dokploy-agent/approvals.jsonl` (default `~/.local/state`): time, endpoint, target, key names, result. Values are never logged
 - the dialog shows the target, key names, masked current values, and the new value the agent supplied. Below those CLI-derived facts it shows the agent's `--reason` text and the working directory, both labeled unverified; the audit log records both
 - limits: the policy is a cooperative guard. An agent that can edit the config file, script the desktop UI, or call the API with the token directly can get around it
 
-Currently gated: env `add`, `set`, `unset`, `rename`, `comment`, and `url` (risky `rename` also inside the policy), plus perimeter misses on `AGENT_APPROVABLE_ENDPOINTS` in `src/agent/policy.ts`: `application|compose update`, deploy, redeploy, isolated deployment, start, stop, reload, database deploy, the deploy-project application configure endpoints, and `domain.create`. For these the guard defers scope denials (project/environment, server, expanded allowlist), runs every other check, then asks once with a field diff against `<kind>.one`; stored values in the diff go through `sanitizeForAgent`, since dialog argv is readable by local processes. Creates, deletes, moves, and expanded-only writes stay hard-blocked. Plan for further endpoints: [docs/plans/interactive-approval.md](plans/interactive-approval.md).
+Currently gated: env `add`, `set`, `unset`, `rename`, `comment`, and `url` (risky `rename` also inside the policy), `env copy` and `domain move` (always), plus perimeter misses on `AGENT_APPROVABLE_ENDPOINTS` in `src/agent/policy.ts`: `application|compose update`, deploy, redeploy, isolated deployment, start, stop, reload, database deploy, the deploy-project application configure endpoints, `application.create`, and `domain.create`. For these the guard defers scope denials (project/environment, server, expanded allowlist), runs every other check, then asks once with a field diff against `<kind>.one`; stored values in the diff go through `sanitizeForAgent`, since dialog argv is readable by local processes. A create has no record yet, so its dialog and stale check use the environment. Other creates, deletes, moves, and expanded-only writes stay hard-blocked. Plan for further endpoints: [docs/plans/interactive-approval.md](plans/interactive-approval.md).
 
 Env overlay output never includes existing values; `env url` prints only the non-secret URL parts above. Generic agent-safe `application.update` omits replacement-style env, build-secret, password, and refresh-token fields. Generic agent-safe `compose.update` omits env and refresh-token fields.
 
