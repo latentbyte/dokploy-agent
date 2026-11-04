@@ -12,6 +12,7 @@ import type { Command } from "commander";
 import { CliError } from "../agent/errors.js";
 import { apiGet, formatCliError, readAuthConfig } from "../client.js";
 import { filterLogString, limitLogString, redactString } from "../redact.js";
+import { asObject } from "./json.js";
 
 export interface DeploymentRecord {
 	deploymentId?: string;
@@ -80,22 +81,15 @@ function deploymentTimeValue(deployment: DeploymentRecord): number {
 	return Number.isFinite(time) ? time : 0;
 }
 
-function objectValue(value: unknown): Record<string, unknown> | undefined {
-	if (!value || typeof value !== "object" || Array.isArray(value)) {
-		return undefined;
-	}
-	return value as Record<string, unknown>;
-}
-
 function stringValue(value: unknown): string | undefined {
 	return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function nestedServerId(value: unknown): string | undefined {
-	const obj = objectValue(value);
+	const obj = asObject(value);
 	if (!obj) return undefined;
-	const server = objectValue(obj.server);
-	const buildServer = objectValue(obj.buildServer);
+	const server = asObject(obj.server);
+	const buildServer = asObject(obj.buildServer);
 	return stringValue(buildServer?.serverId) ?? stringValue(server?.serverId);
 }
 
@@ -113,7 +107,7 @@ function deploymentServerId(
 }
 
 function entityServerId(entity: unknown): string | undefined {
-	const obj = objectValue(entity);
+	const obj = asObject(entity);
 	if (!obj) return undefined;
 	return (
 		stringValue(obj.buildServerId) ??

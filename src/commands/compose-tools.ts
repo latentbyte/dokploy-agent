@@ -1,18 +1,7 @@
 import type { Command } from "commander";
 import { apiGet } from "../client.js";
 import { sanitizeForAgent } from "../redact.js";
-
-type JsonObject = Record<string, unknown>;
-
-function asObject(value: unknown): JsonObject | undefined {
-	return value && typeof value === "object" && !Array.isArray(value)
-		? (value as JsonObject)
-		: undefined;
-}
-
-function asArray(value: unknown): unknown[] {
-	return Array.isArray(value) ? value : [];
-}
+import { asArray, asObject, type JsonObject } from "./json.js";
 
 function asText(value: unknown): string {
 	if (typeof value === "string") return value;

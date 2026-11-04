@@ -1,8 +1,7 @@
 import type { Command } from "commander";
 import { apiGet } from "../client.js";
 import { type SanitizeOptions, sanitizeForAgent } from "../redact.js";
-
-type JsonObject = Record<string, unknown>;
+import { asObject, type JsonObject } from "./json.js";
 
 interface ApplicationCandidate {
 	applicationId: string;
@@ -34,12 +33,6 @@ interface ReadLogOptions extends ResolveOptions {
 interface CollectContext {
 	project?: string;
 	env?: string;
-}
-
-function asObject(value: unknown): JsonObject | undefined {
-	return value && typeof value === "object" && !Array.isArray(value)
-		? (value as JsonObject)
-		: undefined;
 }
 
 function getString(

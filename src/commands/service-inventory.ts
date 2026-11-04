@@ -1,8 +1,7 @@
 import type { Command } from "commander";
 import { apiGet } from "../client.js";
 import { sanitizeForAgent } from "../redact.js";
-
-type JsonObject = Record<string, unknown>;
+import { asArray, asObject, type JsonObject } from "./json.js";
 
 interface InventoryRow {
 	type: string;
@@ -16,16 +15,6 @@ interface InventoryRow {
 	branch?: string;
 	path?: string;
 	serverId?: string;
-}
-
-function asObject(value: unknown): JsonObject | undefined {
-	return value && typeof value === "object" && !Array.isArray(value)
-		? (value as JsonObject)
-		: undefined;
-}
-
-function asArray(value: unknown): unknown[] {
-	return Array.isArray(value) ? value : [];
 }
 
 function firstString(...values: unknown[]): string | undefined {
@@ -153,13 +142,8 @@ function selectFields(
 	});
 }
 
-function print(data: unknown, jsonOutput: boolean): void {
-	const output = sanitizeForAgent(data);
-	if (jsonOutput) {
-		console.log(JSON.stringify(output, null, 2));
-		return;
-	}
-	console.log(JSON.stringify(output, null, 2));
+function print(data: unknown): void {
+	console.log(JSON.stringify(sanitizeForAgent(data), null, 2));
 }
 
 async function listServices(
@@ -174,7 +158,6 @@ async function listServices(
 			rows,
 			typeof opts.fields === "string" ? opts.fields : undefined,
 		),
-		opts.json === true,
 	);
 }
 
