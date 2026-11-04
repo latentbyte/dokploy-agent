@@ -1,40 +1,35 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
-# list targets
-_default:
+# list recipes
+default:
 	@just --list
 
 # install dependencies
 deps:
 	pnpm install
 
-# alias for deps
-get-deps: deps
+alias get-deps := deps
 
 # run static checks without changing files
 check:
 	pnpm exec biome check scripts src/agent src/client.ts src/commands src/index.ts src/env-document.ts src/record-fill.ts src/redact.ts tests
 	pnpm exec tsc -b --pretty false
 
-# alias for check
-lint: check
+alias lint := check
 
 # format touched source files
 fmt:
 	pnpm exec biome check --write scripts src/agent src/client.ts src/commands src/index.ts src/env-document.ts src/record-fill.ts src/redact.ts tests
 
-# alias for fmt
-format: fmt
-
-# alias for fmt
-fix: fmt
+alias format := fmt
+alias fix := fmt
 
 # run tests
 test:
 	pnpm test
 
-# rewrite docs/agent-safe-api-surface.json from an agent-safe build
 # uses an empty config dir so personal blacklists do not leak into docs
+# rewrite docs/agent-safe-api-surface.json from an agent-safe build
 api-surface:
 	tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT; XDG_CONFIG_HOME="$tmp" DOKPLOY_AGENT_BLACKLIST_PATH= just build-agent-safe
 	pnpm exec tsx scripts/api-surface.ts
