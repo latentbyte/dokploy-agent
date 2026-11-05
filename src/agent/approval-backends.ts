@@ -43,8 +43,8 @@ export interface ApprovalInvocation {
 	parse(status: number | null, stdout: string): ApprovalResult;
 }
 
-// fire-and-forget desktop notification; output and exit status are ignored
-export type ReminderInvocation = Omit<ApprovalInvocation, "parse">;
+// fire-and-forget notification or sound; output and exit status are ignored
+export type DetachedInvocation = Omit<ApprovalInvocation, "parse">;
 
 export interface ApprovalBackend {
 	name: "macos" | "windows" | "zenity" | "kdialog";
@@ -53,7 +53,10 @@ export interface ApprovalBackend {
 	reminder?(
 		dialog: ApprovalDialog,
 		remainingSeconds: number,
-	): ReminderInvocation;
+	): DetachedInvocation;
+	// audible cue when the dialog opens, for a user away from the screen.
+	// Windows has none: the warning MessageBox plays the system sound itself
+	sound?: DetachedInvocation;
 }
 
 function reminderText(dialog: ApprovalDialog, remainingSeconds: number) {
@@ -70,6 +73,8 @@ export interface DetectOptions {
 }
 
 const OSASCRIPT = "/usr/bin/osascript";
+const AFPLAY = "/usr/bin/afplay";
+const MACOS_SOUND = "/System/Library/Sounds/Glass.aiff";
 const POWERSHELL =
 	"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
 const LINUX_BIN_DIRS = ["/usr/bin", "/bin"];
@@ -209,6 +214,20 @@ export function macosBackend(env: NodeJS.ProcessEnv): ApprovalBackend {
 			],
 			env: baseEnv(env),
 		}),
+		sound: { command: AFPLAY, args: [MACOS_SOUND], env: baseEnv(env) },
+	};
+}
+
+// freedesktop sound theme event, played through libcanberra when installed
+function linuxSound(
+	soundCommand: string | undefined,
+	env: NodeJS.ProcessEnv,
+): DetachedInvocation | undefined {
+	if (!soundCommand) return undefined;
+	return {
+		command: soundCommand,
+		args: ["--id", "dialog-warning", "--description", "dokploy-agent approval"],
+		env: { ...baseEnv(env), ...pick(env, LINUX_PASSTHROUGH_ENV) },
 	};
 }
 
@@ -262,9 +281,11 @@ export function windowsBackend(env: NodeJS.ProcessEnv): ApprovalBackend {
 export function zenityBackend(
 	command: string,
 	env: NodeJS.ProcessEnv,
+	soundCommand?: string,
 ): ApprovalBackend {
 	return {
 		name: "zenity",
+		sound: linuxSound(soundCommand, env),
 		invocation: (dialog) => ({
 			command,
 			args: [
@@ -300,9 +321,11 @@ export function zenityBackend(
 export function kdialogBackend(
 	command: string,
 	env: NodeJS.ProcessEnv,
+	soundCommand?: string,
 ): ApprovalBackend {
 	return {
 		name: "kdialog",
+		sound: linuxSound(soundCommand, env),
 		invocation: (dialog) => ({
 			command,
 			args: [
@@ -344,12 +367,13 @@ export function detectApprovalBackend(
 		return exists(POWERSHELL) ? windowsBackend(env) : undefined;
 	}
 	if (!env.DISPLAY && !env.WAYLAND_DISPLAY) return undefined;
-	for (const dir of LINUX_BIN_DIRS) {
-		if (exists(`${dir}/zenity`)) return zenityBackend(`${dir}/zenity`, env);
-	}
-	for (const dir of LINUX_BIN_DIRS) {
-		if (exists(`${dir}/kdialog`)) return kdialogBackend(`${dir}/kdialog`, env);
-	}
+	const find = (name: string) =>
+		LINUX_BIN_DIRS.map((dir) => `${dir}/${name}`).find(exists);
+	const sound = find("canberra-gtk-play");
+	const zenity = find("zenity");
+	if (zenity) return zenityBackend(zenity, env, sound);
+	const kdialog = find("kdialog");
+	if (kdialog) return kdialogBackend(kdialog, env, sound);
 	return undefined;
 }
 
@@ -387,7 +411,7 @@ export function runApprovalInvocation(
 	});
 }
 
-export function runReminderInvocation(invocation: ReminderInvocation): void {
+export function runDetached(invocation: DetachedInvocation): void {
 	try {
 		const child = spawn(invocation.command, invocation.args, {
 			env: invocation.env,

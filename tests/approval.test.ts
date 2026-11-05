@@ -175,6 +175,25 @@ describe("approval backend detection", () => {
 			})?.name,
 		).toBe("zenity");
 	});
+
+	it("plays a chime through canberra on Linux only when installed", () => {
+		const env = { DISPLAY: ":0", LD_PRELOAD: "/tmp/fake.so" };
+		const sound = actual.detectApprovalBackend({
+			platform: "linux",
+			env,
+			exists: exists(["/bin/canberra-gtk-play", "/usr/bin/kdialog"]),
+		})?.sound;
+		expect(sound?.command).toBe("/bin/canberra-gtk-play");
+		expect(sound?.args.slice(0, 2)).toEqual(["--id", "dialog-warning"]);
+		expect(sound?.env).toEqual({ PATH: "/usr/bin:/bin", DISPLAY: ":0" });
+		expect(
+			actual.detectApprovalBackend({
+				platform: "linux",
+				env,
+				exists: exists(["/usr/bin/zenity"]),
+			})?.sound,
+		).toBeUndefined();
+	});
 });
 
 describe("approval backend invocations", () => {
@@ -238,7 +257,7 @@ describe("approval backend invocations", () => {
 	it("passes reminder text as data and keeps env minimal", () => {
 		const macos = actual
 			.macosBackend(hostileEnv)
-			.reminder?.(dialog, 15) as backends.ReminderInvocation;
+			.reminder?.(dialog, 15) as backends.DetachedInvocation;
 		expect(macos.command).toBe("/usr/bin/osascript");
 		expect(macos.args.slice(0, -1).join("\n")).not.toContain("Approve env");
 		expect(JSON.parse(macos.args.at(-1) as string)).toEqual({
@@ -248,19 +267,28 @@ describe("approval backend invocations", () => {
 		expect(macos.env).toEqual({ PATH: "/usr/bin:/bin", HOME: "/home/user" });
 		const zenity = actual
 			.zenityBackend("/usr/bin/zenity", hostileEnv)
-			.reminder?.(dialog, 15) as backends.ReminderInvocation;
+			.reminder?.(dialog, 15) as backends.DetachedInvocation;
 		expect(zenity.args.slice(0, 2)).toEqual(["--notification", "--no-markup"]);
 		expect(zenity.env.LD_PRELOAD).toBeUndefined();
 		const kdialog = actual
 			.kdialogBackend("/usr/bin/kdialog", hostileEnv)
-			.reminder?.(dialog, 15) as backends.ReminderInvocation;
+			.reminder?.(dialog, 15) as backends.DetachedInvocation;
 		expect(kdialog.args).toContain("--passivepopup");
 		expect(actual.windowsBackend(hostileEnv).reminder).toBeUndefined();
 	});
 
+	it("plays a fixed system sound on macOS with a minimal env", () => {
+		expect(actual.macosBackend(hostileEnv).sound).toEqual({
+			command: "/usr/bin/afplay",
+			args: ["/System/Library/Sounds/Glass.aiff"],
+			env: { PATH: "/usr/bin:/bin", HOME: "/home/user" },
+		});
+		expect(actual.windowsBackend(hostileEnv).sound).toBeUndefined();
+	});
+
 	it("ignores a missing reminder binary", () => {
 		expect(() =>
-			actual.runReminderInvocation({
+			actual.runDetached({
 				command: "/nonexistent/notify",
 				args: [],
 				env: {},
@@ -326,6 +354,26 @@ describe("requireUserApproval", () => {
 			result: "approved",
 		});
 		expect(JSON.stringify(auditLog())).not.toContain("s3cret-value");
+	});
+
+	it("plays the backend sound when the dialog opens", async () => {
+		const file = path.join(
+			fs.mkdtempSync(path.join(process.env.XDG_STATE_HOME as string, "s-")),
+			"chimed",
+		);
+		vi.mocked(backends.detectApprovalBackend).mockReturnValue({
+			...fakeBackend("approved"),
+			sound: {
+				command: process.execPath,
+				args: [
+					"-e",
+					`require("node:fs").writeFileSync(${JSON.stringify(file)}, "")`,
+				],
+				env: {},
+			},
+		});
+		await requireUserApproval(config, request, blocked);
+		expect(await waitForFile(file, 2000)).toBe(true);
 	});
 
 	it("maps denial and timeout to distinct exit-2 errors", async () => {
