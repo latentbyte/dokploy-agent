@@ -168,10 +168,13 @@ export function buildApprovalDialog(
 	};
 }
 
-function approvalLogPath(): string {
+// jsonl audit log under $XDG_STATE_HOME/dokploy-agent; callers pass no values
+export function appendAgentLog(file: string, entry: Record<string, unknown>) {
 	const stateHome =
 		process.env.XDG_STATE_HOME || path.join(os.homedir(), ".local", "state");
-	return path.join(stateHome, "dokploy-agent", "approvals.jsonl");
+	const logPath = path.join(stateHome, "dokploy-agent", file);
+	fs.mkdirSync(path.dirname(logPath), { recursive: true, mode: 0o700 });
+	fs.appendFileSync(logPath, `${JSON.stringify(entry)}\n`, { mode: 0o600 });
 }
 
 function appendApprovalLog(
@@ -179,9 +182,7 @@ function appendApprovalLog(
 	dokployUrl: string,
 	result: ApprovalResult,
 ) {
-	const logPath = approvalLogPath();
-	fs.mkdirSync(path.dirname(logPath), { recursive: true, mode: 0o700 });
-	const entry = {
+	appendAgentLog("approvals.jsonl", {
 		time: new Date().toISOString(),
 		dokployUrl,
 		endpoint: request.endpoint,
@@ -190,8 +191,7 @@ function appendApprovalLog(
 		reason: request.reason,
 		cwd: process.cwd(),
 		result,
-	};
-	fs.appendFileSync(logPath, `${JSON.stringify(entry)}\n`, { mode: 0o600 });
+	});
 }
 
 // turns a policy denial into a user prompt; anything but an explicit approval

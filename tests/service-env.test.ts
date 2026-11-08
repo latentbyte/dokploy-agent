@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { Command } from "commander";
@@ -7,10 +8,13 @@ import * as client from "../src/client.js";
 import {
 	annotateEnvironmentVariable,
 	appendEnvironmentVariable,
+	checkEnvironmentValue,
 	copyEnvironmentVariables,
 	environmentCopyNames,
+	environmentPresence,
 	environmentRenameRisk,
 	environmentUrlParts,
+	matchCheckFromOptions,
 	registerServiceEnvCommands,
 	renameEnvironmentVariable,
 	replaceEnvironmentUrlHost,
@@ -310,6 +314,53 @@ describe("service environment mutations", () => {
 				"new.example.com/path",
 			),
 		).toThrow("--to must be a bare hostname");
+	});
+
+	it("reports presence without the value", () => {
+		const document = 'A="x"\nEMPTY=""\nDUP=1\nDUP=2\n';
+		expect(environmentPresence(document, "A")).toEqual({
+			exists: true,
+			duplicated: false,
+			empty: false,
+		});
+		expect(environmentPresence(document, "EMPTY")).toMatchObject({
+			empty: true,
+		});
+		expect(environmentPresence(document, "DUP")).toEqual({
+			exists: true,
+			duplicated: true,
+			empty: null,
+		});
+		expect(environmentPresence(document, "MISSING")).toEqual({
+			exists: false,
+			duplicated: false,
+			empty: null,
+		});
+	});
+
+	it("checks a stored value by equality, digest, or substring", () => {
+		const document = 'TOKEN="hunter2-secret"\n';
+		const sha256 = createHash("sha256").update("hunter2-secret").digest("hex");
+		const sha512 = createHash("sha512").update("hunter2-secret").digest("hex");
+		const check = (opts: Record<string, unknown>) =>
+			checkEnvironmentValue(document, "TOKEN", matchCheckFromOptions(opts));
+		expect(check({ value: "hunter2-secret" })).toBe(true);
+		expect(check({ value: "hunter2" })).toBe(false);
+		expect(check({ sha256: sha256.toUpperCase() })).toBe(true);
+		expect(check({ sha512 })).toBe(true);
+		expect(check({ sha256: "0".repeat(64) })).toBe(false);
+		expect(
+			checkEnvironmentValue(document, "TOKEN", {
+				kind: "contains",
+				substring: "2-sec",
+			}),
+		).toBe(true);
+		expect(() => check({})).toThrow("exactly one");
+		expect(() => check({ value: "a", sha256 })).toThrow("exactly one");
+		expect(() => check({ sha256: "abc" })).toThrow("64 hex");
+		expect(() =>
+			checkEnvironmentValue("A=1\nA=2\n", "A", { kind: "equals", value: "1" }),
+		).toThrow("duplicated");
 	});
 
 	it("lists only names and masked previews", async () => {
@@ -742,6 +793,148 @@ describe("environment approval outside the deploy policy", () => {
 		await program.parseAsync(setArgs);
 		expect(dialogs).toHaveLength(0);
 		expect(postSpy).toHaveBeenCalledOnce();
+	});
+
+	describe("env checks", () => {
+		const inside = {
+			...outsideApp,
+			environmentId: "allowed-env",
+			environment: {
+				name: "production",
+				project: { name: "allowed-project" },
+			},
+		};
+		const args = (command: string, ...rest: string[]) => [
+			"node",
+			"cli",
+			"application",
+			"env",
+			command,
+			"--applicationId",
+			"app-1",
+			...rest,
+			"--json",
+		];
+		const checkLog = () => {
+			const file = path.join(
+				process.env.XDG_STATE_HOME ?? "",
+				"dokploy-agent",
+				"env-checks.jsonl",
+			);
+			return fs
+				.readFileSync(file, "utf8")
+				.trim()
+				.split("\n")
+				.map((line) => JSON.parse(line));
+		};
+		const printed = () =>
+			JSON.parse(String(vi.mocked(console.log).mock.calls.at(-1)?.[0]));
+
+		afterEach(() => {
+			vi.unstubAllEnvs();
+		});
+
+		function stubAuth() {
+			vi.stubEnv("DOKPLOY_URL", "https://dokploy.example.com");
+			vi.stubEnv("DOKPLOY_API_KEY", "test-token");
+		}
+
+		it("answers has without a dialog and logs it", async () => {
+			stubAuth();
+			const dialogs = answerDialog("approved");
+			const { program } = setup([outsideApp]);
+
+			await program.parseAsync(args("has", "--name", "SECRET"));
+
+			expect(dialogs).toHaveLength(0);
+			expect(printed()).toEqual({
+				applicationId: "app-1",
+				name: "SECRET",
+				exists: true,
+				duplicated: false,
+				empty: false,
+			});
+			expect(checkLog().at(-1)).toMatchObject({
+				operation: "has",
+				name: "SECRET",
+				dokployUrl: "https://dokploy.example.com",
+				target: { kind: "application", id: "app-1" },
+			});
+		});
+
+		it("asks even inside the policy and logs no input", async () => {
+			stubAuth();
+			const dialogs = answerDialog("approved");
+			const { program } = setup([inside]);
+			const digest = createHash("sha256").update("old-value").digest("hex");
+
+			await program.parseAsync(
+				args("match", "--name", "SECRET", "--sha256", digest),
+			);
+
+			expect(printed()).toMatchObject({ check: "sha256", matches: true });
+			expect(dialogs).toHaveLength(1);
+			expect(dialogs[0]).toContain(
+				`check sha256(SECRET) equals ${digest.slice(0, 16)}...`,
+			);
+			expect(dialogs[0]).not.toContain("old-value");
+			const entry = checkLog().at(-1);
+			expect(entry).toMatchObject({
+				operation: "match",
+				check: "sha256",
+				result: true,
+			});
+			expect(JSON.stringify(entry)).not.toContain(digest.slice(0, 16));
+		});
+
+		it("logs the input length but not the substring", async () => {
+			stubAuth();
+			answerDialog("approved");
+			const { program } = setup([outsideApp]);
+
+			await program.parseAsync(
+				args("contains", "--name", "API_URL", "--substring", "old.example"),
+			);
+
+			expect(printed()).toMatchObject({ contains: true });
+			const entry = checkLog().at(-1);
+			expect(entry).toMatchObject({ inputLength: 11, result: true });
+			expect(JSON.stringify(entry)).not.toContain("old.example");
+		});
+
+		it("answers nothing when the user denies", async () => {
+			stubAuth();
+			answerDialog("denied");
+			const { program } = setup([inside]);
+
+			await expect(
+				program.parseAsync(args("match", "--name", "SECRET", "--value", "x")),
+			).rejects.toMatchObject({ code: "AGENT_APPROVAL_DENIED" });
+			expect(console.log).not.toHaveBeenCalled();
+			expect(checkLog().at(-1)).toMatchObject({
+				operation: "match",
+				check: "equals",
+				inputLength: 1,
+				result: "AGENT_APPROVAL_DENIED",
+			});
+		});
+
+		it("stays blocked when approval is disabled", async () => {
+			stubAuth();
+			const { program } = setup([inside], {
+				enabled: false,
+				timeoutSeconds: 90,
+			});
+
+			await expect(
+				program.parseAsync(
+					args("contains", "--name", "SECRET", "--substring", "old"),
+				),
+			).rejects.toMatchObject({
+				code: "AGENT_POLICY_BLOCKED",
+				message: expect.stringContaining("always needs the user"),
+			});
+		});
 	});
 
 	describe("env replace-host", () => {

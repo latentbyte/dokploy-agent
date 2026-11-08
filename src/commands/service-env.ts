@@ -1,18 +1,25 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { Command } from "commander";
 import {
 	type ApprovalLine,
 	type ApprovalRequest,
+	appendAgentLog,
 	approvalTarget,
 	MAX_APPROVAL_LINES,
 	requireUserApproval,
 } from "../agent/approval.js";
-import { agentPolicyBlocked, CliError } from "../agent/errors.js";
+import { agentPolicyBlocked, CliError, cliErrorCode } from "../agent/errors.js";
 import {
 	AGENT_DATABASE_KINDS,
 	type AgentServiceKind,
 	servicePerimeterDenial,
 } from "../agent/policy.js";
-import { apiGet, apiPost, readAgentDeployPolicyConfig } from "../client.js";
+import {
+	apiGet,
+	apiPost,
+	readAgentDeployPolicyConfig,
+	readAuthConfig,
+} from "../client.js";
 import {
 	type EnvLine,
 	parseEnvDocument,
@@ -462,6 +469,102 @@ export function replaceEnvironmentUrlHost(
 	return `${document.slice(0, line.index)}${prefix}${name}${separator}${nextValue}${document.slice(line.index + line.length)}`;
 }
 
+export interface EnvironmentPresence {
+	exists: boolean;
+	duplicated: boolean;
+	// null when absent or duplicated
+	empty: boolean | null;
+}
+
+// names are public through env list, so this needs no approval
+export function environmentPresence(
+	document: string,
+	name: string,
+): EnvironmentPresence {
+	if (!ENV_NAME_PATTERN.test(name)) {
+		throw new Error(`Invalid environment variable name: ${name}`);
+	}
+	const matches = matchingAssignments(document, name);
+	return {
+		exists: matches.length > 0,
+		duplicated: matches.length > 1,
+		empty:
+			matches.length === 1 && matches[0]
+				? unquoteEnvValue(matches[0].assignment.value) === ""
+				: null,
+	};
+}
+
+export type EnvValueCheck =
+	| { kind: "equals"; value: string }
+	| { kind: "sha256" | "sha512"; digest: string }
+	| { kind: "contains"; substring: string };
+
+const DIGEST_HEX_LENGTH = { sha256: 64, sha512: 128 };
+
+export function matchCheckFromOptions(
+	opts: Record<string, unknown>,
+): EnvValueCheck {
+	const given = (["value", "sha256", "sha512"] as const).filter(
+		(key) => typeof opts[key] === "string",
+	);
+	if (given.length !== 1) {
+		throw new Error("Pass exactly one of --value, --sha256, or --sha512.");
+	}
+	const [kind] = given as [keyof typeof DIGEST_HEX_LENGTH | "value"];
+	if (kind === "value") return { kind: "equals", value: String(opts.value) };
+	const digest = String(opts[kind]).trim().toLowerCase();
+	if (!new RegExp(`^[0-9a-f]{${DIGEST_HEX_LENGTH[kind]}}$`).test(digest)) {
+		throw new Error(
+			`--${kind} must be ${DIGEST_HEX_LENGTH[kind]} hex characters.`,
+		);
+	}
+	return { kind, digest };
+}
+
+function sameBytes(a: Buffer, b: Buffer): boolean {
+	return a.length === b.length && timingSafeEqual(a, b);
+}
+
+// compares the stored text as written; ${{project.X}} references stay unresolved
+export function checkEnvironmentValue(
+	document: string,
+	name: string,
+	check: EnvValueCheck,
+): boolean {
+	assertSingleEnvironmentVariable(document, name);
+	const [line] = matchingAssignments(document, name) as [Assignment];
+	const value = unquoteEnvValue(line.assignment.value);
+	switch (check.kind) {
+		case "equals":
+			return sameBytes(Buffer.from(value), Buffer.from(check.value));
+		case "contains":
+			return value.includes(check.substring);
+		default:
+			return sameBytes(
+				createHash(check.kind).update(value).digest(),
+				Buffer.from(check.digest, "hex"),
+			);
+	}
+}
+
+function valueCheckSubject(name: string, check: EnvValueCheck): string {
+	switch (check.kind) {
+		case "equals":
+			return `${name} equals agent value ${maskSecret(check.value)}`;
+		case "contains":
+			return `${name} contains ${JSON.stringify(check.substring)}`;
+		default:
+			return `${check.kind}(${name}) equals ${check.digest.slice(0, 16)}...`;
+	}
+}
+
+function valueCheckInputLength(check: EnvValueCheck): number | undefined {
+	if (check.kind === "equals") return check.value.length;
+	if (check.kind === "contains") return check.substring.length;
+	return undefined;
+}
+
 async function fetchService(
 	kind: EnvServiceKind,
 	id: string,
@@ -742,6 +845,153 @@ function registerEnvCommands(
 			}
 			printResult({ [idKey]: id, name, ...parts }, opts.json === true);
 		});
+
+	// every check is logged with names and input lengths, never inputs or values
+	const logCheck = (entry: Record<string, unknown>) =>
+		appendAgentLog("env-checks.jsonl", {
+			time: new Date().toISOString(),
+			dokployUrl: readAuthConfig().url,
+			...entry,
+			cwd: process.cwd(),
+		});
+
+	env
+		.command("has")
+		.description(
+			"report whether a variable exists and whether it is empty, without reading its value",
+		)
+		.requiredOption(`--${idKey} <value>`, idKey)
+		.requiredOption("--name <value>", "environment variable name")
+		.option("--json", "Output JSON")
+		.action(async (opts: Record<string, unknown>) => {
+			const id = String(opts[idKey]);
+			const name = String(opts.name);
+			const record = await fetchService(kind, id);
+			const presence = environmentPresence(
+				environmentDocument(kind, record),
+				name,
+			);
+			logCheck({
+				operation: "has",
+				target: approvalTarget(kind, id, record),
+				name,
+				result: presence,
+			});
+			printResult({ [idKey]: id, name, ...presence }, opts.json === true);
+		});
+
+	const valueCheck = (
+		operation: string,
+		description: string,
+		flags: Array<[string, string]>,
+		toCheck: (opts: Record<string, unknown>) => EnvValueCheck,
+		resultKey: string,
+	) => {
+		const command = env
+			.command(operation)
+			.description(description)
+			.requiredOption(`--${idKey} <value>`, idKey)
+			.requiredOption("--name <value>", "environment variable name");
+		for (const [flag, help] of flags) command.option(flag, help);
+		command
+			.option(
+				"--reason <text>",
+				"why this check is needed; always shown in the approval dialog",
+			)
+			.option("--json", "Output JSON")
+			.action(async (opts: Record<string, unknown>) => {
+				const id = String(opts[idKey]);
+				const name = String(opts.name);
+				const check = toCheck(opts);
+				const record = await fetchService(kind, id);
+				const document = environmentDocument(kind, record);
+				assertSingleEnvironmentVariable(document, name);
+				const audit = {
+					operation,
+					names: [name],
+					check: check.kind,
+					inputLength: valueCheckInputLength(check),
+				};
+				let result: boolean | string = "CLI_ERROR";
+				try {
+					if (options.agentSafe) {
+						const policy = readAgentDeployPolicyConfig();
+						const outside = servicePerimeterDenial(policy, kind, id, record);
+						await requireUserApproval(
+							policy.approval,
+							{
+								...envApprovalRequest(
+									kind,
+									id,
+									record,
+									operation,
+									[name],
+									[
+										{
+											kind: "text",
+											text: `check ${valueCheckSubject(name, check)}`,
+										},
+										{
+											kind: "text",
+											text: "the agent learns only true or false; the value is not printed",
+										},
+									],
+									opts.reason,
+								),
+								endpoint: `${kind}.one`,
+								audit,
+							},
+							agentPolicyBlocked(
+								[
+									`env ${operation} tells the agent something about the stored value of ${name}, so it always needs the user`,
+									...(outside ? [outside.message] : []),
+								].join("; "),
+							),
+						);
+					}
+					const matched = checkEnvironmentValue(document, name, check);
+					result = matched;
+					printResult(
+						{ [idKey]: id, name, check: check.kind, [resultKey]: matched },
+						opts.json === true,
+					);
+				} catch (error) {
+					result = cliErrorCode(error);
+					throw error;
+				} finally {
+					logCheck({
+						...audit,
+						target: approvalTarget(kind, id, record),
+						reason: typeof opts.reason === "string" ? opts.reason : undefined,
+						result,
+					});
+				}
+			});
+	};
+
+	valueCheck(
+		"match",
+		"check whether a stored value equals a given value or digest; prints only true or false",
+		[
+			["--value <value>", "expected value"],
+			["--sha256 <hex>", "expected sha256 hex digest of the value"],
+			["--sha512 <hex>", "expected sha512 hex digest of the value"],
+		],
+		matchCheckFromOptions,
+		"matches",
+	);
+	valueCheck(
+		"contains",
+		"check whether a stored value contains a substring; prints only true or false",
+		[["--substring <value>", "text to look for"]],
+		(opts) => {
+			if (typeof opts.substring !== "string" || opts.substring === "") {
+				throw new Error("--substring must not be empty.");
+			}
+			return { kind: "contains", substring: opts.substring };
+		},
+		"contains",
+	);
 
 	if (kind === "application") registerEnvCopyCommand(env, options);
 
