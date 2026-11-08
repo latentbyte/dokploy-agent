@@ -499,6 +499,30 @@ describe("readAgentDeployPolicyConfig", () => {
 			],
 		});
 	});
+
+	it("should keep label glob domain patterns", async () => {
+		writePolicyConfig({
+			...basePolicy,
+			domainSuffixes: ["*-SRV.example.net", "app-*.example.com"],
+		});
+
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+
+		expect(readAgentDeployPolicyConfig().domainSuffixes).toEqual([
+			"*-srv.example.net",
+			"app-*.example.com",
+		]);
+	});
+
+	it("should reject malformed domain patterns", async () => {
+		const { readAgentDeployPolicyConfig } = await import("../src/client.js");
+		for (const pattern of ["*", "*-srv..example.net", "*-srv.example.net."]) {
+			writePolicyConfig({ ...basePolicy, domainSuffixes: [pattern] });
+			expect(() => readAgentDeployPolicyConfig()).toThrow(
+				"must be a hostname pattern",
+			);
+		}
+	});
 });
 
 describe("saveAuthConfig", () => {

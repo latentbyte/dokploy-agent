@@ -632,14 +632,29 @@ function normalizeAgentDomainHost(value: unknown): string | undefined {
 	}
 }
 
+// ".example.com" is shorthand for "*.example.com"; "*" matches within one label
+function agentDomainPattern(suffix: string) {
+	return suffix.startsWith(".") ? `*${suffix}` : suffix;
+}
+
+function agentDomainPatternRegExp(suffix: string) {
+	const source = agentDomainPattern(suffix)
+		.split("*")
+		.map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+		.join("[^.]+");
+	return new RegExp(`^${source}$`);
+}
+
 function matchingAgentDomainSuffix(host: string, suffixes: string[]) {
-	return suffixes
-		.filter((suffix) => host.endsWith(suffix))
-		.filter((suffix) => {
-			const domainName = host.slice(0, -suffix.length);
-			return domainName.length > 0 && !domainName.includes(".");
-		})
-		.sort((a, b) => b.length - a.length)[0];
+	return suffixes.find((suffix) => agentDomainPatternRegExp(suffix).test(host));
+}
+
+function exampleAgentDomainHost(
+	suffix: string,
+	name: string,
+	domainNameSuffix = "",
+) {
+	return agentDomainPattern(suffix).replace("*", name + domainNameSuffix);
 }
 
 function assertAgentDomainHost(
@@ -662,18 +677,18 @@ function assertAgentDomainHost(
 		throw agentPolicyBlocked(
 			"agent-safe deploy policy rejects host " +
 				host +
-				"; allowed wildcard domains: *" +
-				allowedSuffixes.join(", *"),
+				"; allowed wildcard domains: " +
+				allowedSuffixes.map(agentDomainPattern).join(", "),
 		);
 	}
 	if (!policy.domainNameSuffix) return;
-	const domainName = normalizedHost.slice(0, -domainSuffix.length);
+	const domainName = normalizedHost.split(".")[0];
 	if (domainName.endsWith(policy.domainNameSuffix)) return;
 	throw agentPolicyBlocked(
 		"agent-safe deploy policy rejects host " +
 			host +
-			"; domain name before " +
-			domainSuffix +
+			"; first label of " +
+			agentDomainPattern(domainSuffix) +
 			" must end with: " +
 			policy.domainNameSuffix,
 	);
@@ -1139,9 +1154,12 @@ async function agentDeployPolicy() {
 				(policy.allowAnyServer
 					? ""
 					: ` --serverId ${policy.servers[0]?.serverId}`),
-			"dokploy-agent domain create --composeId <id> --host demo" +
-				(policy.domainNameSuffix ?? "") +
-				policy.domainSuffixes[0] +
+			"dokploy-agent domain create --composeId <id> --host " +
+				exampleAgentDomainHost(
+					policy.domainSuffixes[0],
+					"demo",
+					policy.domainNameSuffix,
+				) +
 				" --https --certificateType letsencrypt --domainType compose",
 			"dokploy-agent application save-github-provider --applicationId <id from create> --githubId <id from github github-providers> --owner <owner> --repository <repo> --branch main",
 		],
@@ -1176,14 +1194,16 @@ export async function printAgentDeployPolicy(jsonOutput: boolean) {
 				agentDeployServerLabel(server) +
 				(server.hint ? ` ${server.hint}` : ""),
 		);
-	console.log(`domain suffixes: ${policy.domainSuffixes.join(", ")}`);
+	console.log(
+		`domain suffixes: ${policy.domainSuffixes.map(agentDomainPattern).join(", ")}`,
+	);
 	for (const server of policy.servers) {
 		if (server.domainSuffixes?.length)
 			console.log(
 				"domain suffixes for " +
 					agentDeployServerLabel(server) +
 					": " +
-					server.domainSuffixes.join(", "),
+					server.domainSuffixes.map(agentDomainPattern).join(", "),
 			);
 	}
 	console.log(`domain name suffix: ${policy.domainNameSuffix ?? "(none)"}`);

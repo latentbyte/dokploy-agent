@@ -100,13 +100,13 @@ Runtime policy:
 - volume backup update and delete stay blocked
 - expanded-only operations (deploy-project applications do not get them): delete, move, disconnect git provider, save environment, refresh token, mark running, clear deployments, Traefik config, mounts, and ports
 - expanded operations include delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
-- domain hosts must match one wildcard label before a suffix in `agentDeployPolicy.domainSuffixes`, for example `demo.apps.example.net` for `*.apps.example.net`
+- domain hosts must match an entry in `agentDeployPolicy.domainSuffixes`, where `*` matches one or more characters inside a single label: `demo.apps.example.net` matches `*.apps.example.net`, `api-srv.example.net` matches `*-srv.example.net`, and neither pattern matches extra labels. A bare suffix (`apps.example.net` or `.apps.example.net`) means `*.apps.example.net`
 - before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects
 - domain delete mirrors create: the domain's parent application or compose must be in a configured project (expanded rights do not apply) and the host must match the agent domain suffix policy
 - domain update stays blocked. `domain move` is the one way to move an existing domain: always prompted, target application in the same environment and server, and it skips the suffix and in-use checks for that record only
 - Dokploy's create operation remains the final uniqueness check if two clients race after the inventory check
 - server entries can set `domainSuffixes` to bind a deploy server to a narrower domain set
-- when `agentDeployPolicy.domainNameSuffix` is set, the configurable domain name before the matched suffix must end with that value; omit it to allow any unused single-label name
+- when `agentDeployPolicy.domainNameSuffix` is set, the host's first label must end with that value; omit it to allow any unused single-label name
 
 Example config shape. Use `"servers": "*"` instead of the array when agents may deploy to any server:
 

@@ -279,10 +279,18 @@ function assertString(value: unknown, name: string): string {
 	throw new Error(`Missing ${name} in agentDeployPolicy config.`);
 }
 
+// plain suffixes normalize to ".example.com" (one label before it); entries with
+// another "*", like "*-srv.example.com", stay as label globs
 function normalizeDomainSuffix(value: unknown, name: string): string {
 	const suffix = assertString(value, name).toLowerCase();
-	if (suffix.startsWith("*.")) return suffix.slice(1);
-	return suffix.startsWith(".") ? suffix : `.${suffix}`;
+	const plain = suffix.startsWith("*.") ? suffix.slice(1) : suffix;
+	if (!plain.includes("*")) return plain.startsWith(".") ? plain : `.${plain}`;
+	if (plain.split(".").some((label) => !label) || !plain.includes(".")) {
+		throw new Error(
+			`Invalid ${name} in agentDeployPolicy config: ${suffix} must be a hostname pattern like *-srv.example.com.`,
+		);
+	}
+	return plain;
 }
 
 function readDomainSuffixes(

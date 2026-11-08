@@ -40,7 +40,7 @@ Credentials and policy live in one JSONC file: `~/.config/dokploy/config.json` (
     ],
     // "*" for any server, or a list of { "serverId": "..." }
     "servers": "*",
-    // domains agents may create, one label deep
+    // domains agents may create; "*" matches within one label ("*-srv.example.com" works too)
     "domainSuffixes": ["*.apps.example.com"]
   }
 }

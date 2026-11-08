@@ -1621,6 +1621,77 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
+	it("matches label glob domain patterns per server", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [
+					{ serverId: "srv-allowed", domainSuffixes: ["*-srv.example.net"] },
+				],
+				domainSuffixes: [".example.com"],
+				expandedProjects: [],
+				expandedApplicationIds: [],
+				expandedApplicationNames: [],
+				approval: { enabled: false, timeoutSeconds: 90 },
+			});
+			vi.spyOn(client, "apiGet").mockImplementation(async (endpoint) => {
+				if (endpoint === "application.one") {
+					return {
+						environmentId: "env-1",
+						environment: { project: { name: "agent-project" } },
+						serverId: "srv-allowed",
+					};
+				}
+				if (endpoint === "project.all") return [];
+				throw new Error(`unexpected endpoint ${endpoint}`);
+			});
+			const postSpy = vi
+				.spyOn(client, "apiPost")
+				.mockResolvedValue({ ok: true });
+			registerGeneratedCommands(program);
+			const create = (host: string) =>
+				program.parseAsync([
+					"node",
+					"cli",
+					"domain",
+					"create",
+					"--applicationId",
+					"app-1",
+					"--host",
+					host,
+				]);
+
+			for (const host of [
+				"api.example.net",
+				"-srv.example.net",
+				"a.api-srv.example.net",
+				"api.example.com",
+			]) {
+				await expect(create(host)).rejects.toThrow(
+					"allowed wildcard domains: *-srv.example.net",
+				);
+			}
+			expect(postSpy).not.toHaveBeenCalled();
+
+			await create("API-srv.example.net");
+			expect(postSpy).toHaveBeenCalledWith("domain.create", {
+				applicationId: "app-1",
+				host: "API-srv.example.net",
+			});
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
 	it("deletes only agent-pattern domains on deploy-project services", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
