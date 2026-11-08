@@ -4,6 +4,7 @@ import * as path from "node:path";
 import {
 	type AgentApprovalConfig,
 	DEFAULT_APPROVAL_TIMEOUT_SECONDS,
+	readAuthConfig,
 } from "../client.js";
 import {
 	type ApprovalDialog,
@@ -100,11 +101,17 @@ function notes(texts: string[]): DialogLine[] {
 	return texts.map((text) => ({ kind: "note", text }));
 }
 
+export interface ApprovalContext {
+	// Dokploy instance the request would run against
+	dokployUrl: string;
+	requestedFrom?: string;
+}
+
 export function buildApprovalDialog(
 	request: ApprovalRequest,
 	blockedReason: string,
 	timeoutSeconds: number,
-	requestedFrom = process.cwd(),
+	{ dokployUrl, requestedFrom = process.cwd() }: ApprovalContext,
 ): ApprovalDialog {
 	const { target } = request;
 	const location = [target.project, target.environment]
@@ -129,6 +136,7 @@ export function buildApprovalDialog(
 			? `${shortName.slice(0, MAX_HEADING_NAME_CHARS - 3)}...`
 			: shortName;
 	const targetLines: DialogLine[] = [
+		{ kind: "text", text: truncate(`dokploy: ${dokployUrl}`) },
 		{
 			kind: "text",
 			text: `${target.kind}: ${names || target.id} (${target.id})`,
@@ -166,11 +174,16 @@ function approvalLogPath(): string {
 	return path.join(stateHome, "dokploy-agent", "approvals.jsonl");
 }
 
-function appendApprovalLog(request: ApprovalRequest, result: ApprovalResult) {
+function appendApprovalLog(
+	request: ApprovalRequest,
+	dokployUrl: string,
+	result: ApprovalResult,
+) {
 	const logPath = approvalLogPath();
 	fs.mkdirSync(path.dirname(logPath), { recursive: true, mode: 0o700 });
 	const entry = {
 		time: new Date().toISOString(),
+		dokployUrl,
 		endpoint: request.endpoint,
 		target: request.target,
 		...request.audit,
@@ -197,7 +210,11 @@ export async function requireUserApproval(
 	}
 	const timeoutSeconds =
 		config?.timeoutSeconds ?? DEFAULT_APPROVAL_TIMEOUT_SECONDS;
-	const dialog = buildApprovalDialog(request, blocked.message, timeoutSeconds);
+	// same resolution the API client uses, so the dialog names the real target
+	const { url: dokployUrl } = readAuthConfig();
+	const dialog = buildApprovalDialog(request, blocked.message, timeoutSeconds, {
+		dokployUrl,
+	});
 	if (backend.sound) runDetached(backend.sound);
 	// halfway nudge for a dialog buried behind other windows or on another space
 	const remainingSeconds = Math.ceil(timeoutSeconds / 2);
@@ -217,7 +234,7 @@ export async function requireUserApproval(
 	} finally {
 		clearTimeout(reminderTimer);
 	}
-	appendApprovalLog(request, result);
+	appendApprovalLog(request, dokployUrl, result);
 	if (result === "approved") return;
 	if (result === "unavailable") {
 		throw agentPolicyBlocked(

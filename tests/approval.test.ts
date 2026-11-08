@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	type ApprovalRequest,
 	approvalTarget,
@@ -14,7 +14,16 @@ const actual = await vi.importActual<typeof backends>(
 	"../src/agent/approval-backends.js",
 );
 
+const DOKPLOY_URL = "https://dokploy.example.com";
+const context = { dokployUrl: DOKPLOY_URL };
+
+beforeEach(() => {
+	vi.stubEnv("DOKPLOY_URL", `${DOKPLOY_URL}/`);
+	vi.stubEnv("DOKPLOY_API_KEY", "test-token");
+});
+
 afterEach(() => {
+	vi.unstubAllEnvs();
 	vi.mocked(backends.detectApprovalBackend).mockReset();
 	vi.mocked(backends.detectApprovalBackend).mockReturnValue(undefined);
 });
@@ -346,6 +355,7 @@ describe("requireUserApproval", () => {
 		);
 		const entry = auditLog().at(-1);
 		expect(entry).toMatchObject({
+			dokployUrl: DOKPLOY_URL,
 			endpoint: "application.saveEnvironment",
 			operation: "set",
 			names: ["API_KEY"],
@@ -454,6 +464,7 @@ describe("buildApprovalDialog", () => {
 			},
 			"agent-safe deploy policy rejects app-1",
 			45,
+			context,
 		);
 		const message = text(built);
 		expect(message.split("\n")[0]).toBe(
@@ -461,6 +472,7 @@ describe("buildApprovalDialog", () => {
 		);
 		expect(built.heading).toBe("Approve env set on application web?");
 		expect(built.timeoutSeconds).toBe(45);
+		expect(message).toContain(`TARGET\ndokploy: ${DOKPLOY_URL}\n`);
 		expect(message).toContain("application: web (app-1)");
 		expect(message).toContain("project: storefront/production");
 		expect(message).toContain(`CHANGE\n- ${"x".repeat(195)}...\n+ y\n`);
@@ -485,7 +497,7 @@ describe("buildApprovalDialog", () => {
 				},
 				"blocked",
 				30,
-				"/work/repo",
+				{ ...context, requestedFrom: "/work/repo" },
 			),
 		);
 		expect(message).toContain(
@@ -514,10 +526,11 @@ describe("buildApprovalDialog", () => {
 			server: "srv-1",
 		});
 		const heading = (t: ApprovalRequest["target"]) =>
-			buildApprovalDialog({ ...request, target: t }, "blocked", 30).heading;
+			buildApprovalDialog({ ...request, target: t }, "blocked", 30, context)
+				.heading;
 		expect(heading(target)).toBe("Approve env set on compose kutt?");
 		expect(
-			text(buildApprovalDialog({ ...request, target }, "blocked", 30)),
+			text(buildApprovalDialog({ ...request, target }, "blocked", 30, context)),
 		).toContain("compose: kutt / kutt-a1b2c3 (c-1)");
 		expect(
 			heading(approvalTarget("compose", "c-1", { appName: "kutt-x" })),
