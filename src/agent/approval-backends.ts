@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import * as fs from "node:fs";
+import type { Span } from "./word-diff.js";
 
 // OS dialogs the agent cannot answer through stdin or a pty. Binaries come
 // from fixed system paths and run with a minimal env, so PATH, LD_PRELOAD,
@@ -14,6 +15,9 @@ export type DialogLineKind = "heading" | "text" | "note" | "add" | "remove";
 export interface DialogLine {
 	kind: DialogLineKind;
 	text: string;
+	// changed spans of a paired add/remove row, emphasized where the backend
+	// can style text
+	highlights?: Span[];
 }
 
 export interface ApprovalDialog {
@@ -135,7 +139,9 @@ function run(argv) {
 	};
 	// one block per kind, so adjacent rows of a kind share a full-width band
 	const rows = {};
+	const marks = {};
 	for (const kind of ["add", "remove"]) {
+		marks[kind] = colors[kind].colorWithAlphaComponent(0.4);
 		const block = $.NSTextBlock.alloc.init;
 		block.backgroundColor = colors[kind].colorWithAlphaComponent(0.14);
 		block.setValueTypeForDimension(100, $.NSTextBlockPercentageValueType, $.NSTextBlockWidth);
@@ -151,6 +157,9 @@ function run(argv) {
 		store.addAttributeValueRange($.NSFontAttributeName, fonts[line.kind] || mono, range);
 		store.addAttributeValueRange($.NSForegroundColorAttributeName, colors[line.kind] || $.NSColor.labelColor, range);
 		if (rows[line.kind]) store.addAttributeValueRange($.NSParagraphStyleAttributeName, rows[line.kind], range);
+		for (const [start, end] of marks[line.kind] ? line.highlights || [] : []) {
+			store.addAttributeValueRange($.NSBackgroundColorAttributeName, marks[line.kind], $.NSMakeRange(at + start, end - start));
+		}
 		at += line.text.length + 1;
 	}
 	// fit the text, leaving room on screen for the alert chrome around it

@@ -15,6 +15,7 @@ import {
 	runDetached,
 } from "./approval-backends.js";
 import { agentPolicyBlocked, CliError } from "./errors.js";
+import { type Span, wordDiff } from "./word-diff.js";
 
 export interface ApprovalTarget {
 	kind: string;
@@ -88,6 +89,41 @@ function reasonLines(reason: string | undefined): string[] {
 }
 
 const DIFF_MARKERS = { text: "  ", add: "+ ", remove: "- " };
+const MARKER_CHARS = 2;
+
+function shifted(spans: Span[]): Span[] {
+	return spans.map(([start, end]) => [
+		start + MARKER_CHARS,
+		end + MARKER_CHARS,
+	]);
+}
+
+// pairs a run of removed rows with an equal-length run of added rows that
+// follows it, and marks the words that differ, like git diff-highlight
+function highlightPairs(lines: DialogLine[]): DialogLine[] {
+	const out = lines.map((line) => ({ ...line }));
+	for (let i = 0; i < out.length; ) {
+		let removes = 0;
+		while (out[i + removes]?.kind === "remove") removes++;
+		let adds = 0;
+		while (out[i + removes + adds]?.kind === "add") adds++;
+		if (removes > 0 && removes === adds) {
+			for (let k = 0; k < removes; k++) {
+				const before = out[i + k];
+				const after = out[i + removes + k];
+				const diff = wordDiff(
+					before.text.slice(MARKER_CHARS),
+					after.text.slice(MARKER_CHARS),
+				);
+				if (!diff) continue;
+				before.highlights = shifted(diff.before);
+				after.highlights = shifted(diff.after);
+			}
+		}
+		i += Math.max(1, removes + adds);
+	}
+	return out;
+}
 
 function section(heading: string, lines: DialogLine[]): DialogLine[] {
 	return [
@@ -117,12 +153,12 @@ export function buildApprovalDialog(
 	const location = [target.project, target.environment]
 		.filter(Boolean)
 		.join("/");
-	const changes: DialogLine[] = request.lines
-		.slice(0, MAX_APPROVAL_LINES)
-		.map((line) => ({
+	const changes: DialogLine[] = highlightPairs(
+		request.lines.slice(0, MAX_APPROVAL_LINES).map((line) => ({
 			kind: line.kind,
 			text: truncate(`${DIFF_MARKERS[line.kind]}${line.text}`),
-		}));
+		})),
+	);
 	if (request.lines.length > MAX_APPROVAL_LINES) {
 		changes.push({
 			kind: "note",

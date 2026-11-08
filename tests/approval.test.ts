@@ -488,6 +488,35 @@ describe("buildApprovalDialog", () => {
 		expect(kinds.filter((kind) => kind === "heading")).toHaveLength(5);
 	});
 
+	it("highlights the words that differ between paired rows", () => {
+		const built = buildApprovalDialog(
+			{
+				...request,
+				lines: [
+					{ kind: "remove", text: "URL host omnisink.srv.example.com" },
+					{ kind: "add", text: "URL host omnisink-srv.example.com" },
+					{ kind: "text", text: "rest stays" },
+					{ kind: "remove", text: "A=1" },
+					{ kind: "remove", text: "B=2" },
+					{ kind: "add", text: "C=3" },
+				],
+			},
+			"blocked",
+			30,
+			context,
+		);
+		const rows = built.lines.filter(
+			(line) => line.kind === "add" || line.kind === "remove",
+		);
+		const marked = rows.map((line) =>
+			(line.highlights ?? []).map(([start, end]) =>
+				line.text.slice(start, end),
+			),
+		);
+		// unequal remove/add runs stay unpaired
+		expect(marked).toEqual([["."], ["-"], [], [], []]);
+	});
+
 	it("shows the agent's reason clipped to bounded lines", () => {
 		const message = text(
 			buildApprovalDialog(
