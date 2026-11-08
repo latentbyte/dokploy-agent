@@ -391,6 +391,77 @@ export function environmentUrlParts(
 	return { scheme, host: url.hostname, port: url.port || null, database };
 }
 
+const HOSTNAME_PATTERN =
+	/^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/;
+
+function hostnameArgument(value: string, flag: string): string {
+	const host = value.trim().toLowerCase();
+	if (!HOSTNAME_PATTERN.test(host)) {
+		throw new Error(`${flag} must be a bare hostname, got ${value}`);
+	}
+	return host;
+}
+
+// the variable must exist once; checks that reveal nothing about its value
+export function assertSingleEnvironmentVariable(
+	document: string,
+	name: string,
+): void {
+	if (!ENV_NAME_PATTERN.test(name)) {
+		throw new Error(`Invalid environment variable name: ${name}`);
+	}
+	const matches = matchingAssignments(document, name);
+	if (matches.length === 0) {
+		throw new Error(`Environment variable ${name} does not exist.`);
+	}
+	if (matches.length > 1) {
+		throw new Error(
+			`Environment variable ${name} is duplicated; refusing ambiguous edit.`,
+		);
+	}
+}
+
+// swaps only the host of a URL value; scheme, credentials, port, path, query,
+// and quoting keep their raw bytes
+export function replaceEnvironmentUrlHost(
+	document: string,
+	name: string,
+	from: string,
+	to: string,
+): string {
+	const fromHost = hostnameArgument(from, "--from");
+	const toHost = hostnameArgument(to, "--to");
+	assertSingleEnvironmentVariable(document, name);
+	const [line] = matchingAssignments(document, name) as [Assignment];
+	const { prefix, separator, value } = line.assignment;
+	const notFrom = new CliError(
+		"ENV_URL_HOST_MISMATCH",
+		`Environment variable ${name} is not a URL with host ${fromHost}; check it with env url.`,
+	);
+	let parsed: URL | undefined;
+	try {
+		parsed = new URL(unquoteEnvValue(value));
+	} catch {
+		parsed = undefined;
+	}
+	if (parsed?.hostname.toLowerCase() !== fromHost) throw notFrom;
+	// raw authority: after "://", up to path, query, fragment, quote, or space
+	const schemeEnd = value.indexOf("://");
+	if (schemeEnd === -1) throw notFrom;
+	const authorityStart = schemeEnd + 3;
+	const authorityEnd = value.slice(authorityStart).search(/[/?#"'\s]|$/);
+	const authority = value.slice(authorityStart, authorityStart + authorityEnd);
+	const hostStart = authorityStart + authority.lastIndexOf("@") + 1;
+	const hostEnd = hostStart + fromHost.length;
+	const rawHost = value.slice(hostStart, hostEnd);
+	const afterHost = value.slice(hostEnd, authorityStart + authorityEnd);
+	if (rawHost.toLowerCase() !== fromHost || !/^(:\d*)?$/.test(afterHost)) {
+		throw notFrom;
+	}
+	const nextValue = `${value.slice(0, hostStart)}${toHost}${value.slice(hostEnd)}`;
+	return `${document.slice(0, line.index)}${prefix}${name}${separator}${nextValue}${document.slice(line.index + line.length)}`;
+}
+
 async function fetchService(
 	kind: EnvServiceKind,
 	id: string,
@@ -467,6 +538,9 @@ type EnvDescribe = (
 ) => ApprovalLine[];
 // why an otherwise permitted write still needs the user
 type EnvRisk = (opts: Record<string, unknown>) => string | undefined;
+// value-blind validation for edits whose own errors reveal the value; with it,
+// the edit runs only after any approval
+type EnvPrecheck = (document: string, opts: Record<string, unknown>) => void;
 
 // masked lines only: dialog argv is readable by local processes
 function envCopyLines(
@@ -680,6 +754,7 @@ function registerEnvCommands(
 		describe: EnvDescribe,
 		optional: Array<[string, string]> = [],
 		risk?: EnvRisk,
+		precheck?: EnvPrecheck,
 	) => {
 		const command = env
 			.command(name)
@@ -702,7 +777,8 @@ function registerEnvCommands(
 				const outside =
 					policy && servicePerimeterDenial(policy, kind, id, record);
 				const document = environmentDocument(kind, record);
-				const nextEnv = edit(document, opts);
+				precheck?.(document, opts);
+				const nextEnv = precheck ? undefined : edit(document, opts);
 				const blockedReasons = policy
 					? [risk?.(opts), outside?.message].filter(
 							(reason): reason is string => reason !== undefined,
@@ -733,13 +809,16 @@ function registerEnvCommands(
 						);
 					}
 				}
-				await save(id, record, nextEnv);
+				await save(id, record, nextEnv ?? edit(document, opts));
 				printResult(
 					{
 						[idKey]: id,
 						name: opts.name,
 						...(typeof opts.newName === "string"
 							? { newName: opts.newName }
+							: {}),
+						...(typeof opts.from === "string"
+							? { from: opts.from, to: opts.to }
 							: {}),
 						[resultKey]: true,
 					},
@@ -838,6 +917,41 @@ function registerEnvCommands(
 			...commentDiff(String(opts.text)),
 			...maskedAssignments(document, String(opts.name), "text"),
 		],
+	);
+	mutation(
+		"replace-host",
+		"swap the host of a URL variable, keeping credentials, port, path, and query without exposing them",
+		[
+			["--name <value>", "existing URL environment variable name"],
+			["--from <host>", "current host; the write fails when it does not match"],
+			["--to <host>", "new host"],
+		],
+		"replaced",
+		(document, opts) =>
+			replaceEnvironmentUrlHost(
+				document,
+				String(opts.name),
+				String(opts.from),
+				String(opts.to),
+			),
+		(_document, opts) => [
+			{
+				kind: "remove",
+				text: `${String(opts.name)} host ${String(opts.from)}`,
+			},
+			{ kind: "add", text: `${String(opts.name)} host ${String(opts.to)}` },
+			{
+				kind: "text",
+				text: "scheme, credentials, port, path, and query stay unchanged",
+			},
+		],
+		[],
+		undefined,
+		(document, opts) => {
+			hostnameArgument(String(opts.from), "--from");
+			hostnameArgument(String(opts.to), "--to");
+			assertSingleEnvironmentVariable(document, String(opts.name));
+		},
 	);
 }
 

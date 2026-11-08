@@ -13,6 +13,7 @@ import {
 	environmentUrlParts,
 	registerServiceEnvCommands,
 	renameEnvironmentVariable,
+	replaceEnvironmentUrlHost,
 	setEnvironmentVariable,
 	unsetEnvironmentVariable,
 } from "../src/commands/service-env.js";
@@ -261,6 +262,54 @@ describe("service environment mutations", () => {
 		expect(error).toMatchObject({ code: "INVALID_ENV_URL" });
 		expect(String((error as Error).message)).not.toContain("hunter2");
 		expect(() => environmentUrlParts("A=1\n", "B")).toThrow("does not exist");
+	});
+
+	it("swaps only the host of a URL value", () => {
+		expect(
+			replaceEnvironmentUrlHost(
+				'A=1\nDB="postgres://user:hunter2@Old.Example.net:5432/app?x=1"\nB=2\n',
+				"DB",
+				"old.example.net",
+				"new.example.net",
+			),
+		).toBe(
+			'A=1\nDB="postgres://user:hunter2@new.example.net:5432/app?x=1"\nB=2\n',
+		);
+		expect(
+			replaceEnvironmentUrlHost(
+				"export BASE=https://old.example.com\r\n",
+				"BASE",
+				"old.example.com",
+				"new.example.com",
+			),
+		).toBe("export BASE=https://new.example.com\r\n");
+	});
+
+	it("refuses a host that is not the expected one without echoing the value", () => {
+		const cases: Array<[string, string]> = [
+			["U=https://other.example.com/old.example.com\n", "old.example.com"],
+			["U=https://old.example.com.evil.example/\n", "old.example.com"],
+			["U=not-a-url-hunter2\n", "old.example.com"],
+		];
+		for (const [document, from] of cases) {
+			let error: unknown;
+			try {
+				replaceEnvironmentUrlHost(document, "U", from, "new.example.com");
+			} catch (caught) {
+				error = caught;
+			}
+			expect(error).toMatchObject({ code: "ENV_URL_HOST_MISMATCH" });
+			expect(String((error as Error).message)).not.toContain("hunter2");
+			expect(String((error as Error).message)).not.toContain("other");
+		}
+		expect(() =>
+			replaceEnvironmentUrlHost(
+				"U=https://old.example.com\n",
+				"U",
+				"old.example.com",
+				"new.example.com/path",
+			),
+		).toThrow("--to must be a bare hostname");
 	});
 
 	it("lists only names and masked previews", async () => {
@@ -693,6 +742,77 @@ describe("environment approval outside the deploy policy", () => {
 		await program.parseAsync(setArgs);
 		expect(dialogs).toHaveLength(0);
 		expect(postSpy).toHaveBeenCalledOnce();
+	});
+
+	describe("env replace-host", () => {
+		const replaceArgs = (from: string) => [
+			"node",
+			"cli",
+			"application",
+			"env",
+			"replace-host",
+			"--applicationId",
+			"app-1",
+			"--name",
+			"API_URL",
+			"--from",
+			from,
+			"--to",
+			"new.example.com",
+			"--json",
+		];
+
+		it("writes after approval and shows only the hosts", async () => {
+			const dialogs = answerDialog("approved");
+			const { program, postSpy } = setup([outsideApp, outsideApp]);
+
+			await program.parseAsync(replaceArgs("old.example.com"));
+
+			expect(postSpy).toHaveBeenCalledWith("application.saveEnvironment", {
+				applicationId: "app-1",
+				env: "API_URL=https://new.example.com\nSECRET=old-value\n",
+				buildArgs: null,
+				buildSecrets: null,
+				createEnvFile: false,
+			});
+			expect(dialogs[0]).toContain(
+				"- API_URL host old.example.com\n+ API_URL host new.example.com",
+			);
+			expect(dialogs[0]).not.toContain("old-value");
+		});
+
+		it("prompts before checking the host outside the policy", async () => {
+			const dialogs = answerDialog("denied");
+			const { program, postSpy } = setup([outsideApp]);
+
+			await expect(
+				program.parseAsync(replaceArgs("guess.example.com")),
+			).rejects.toMatchObject({ code: "AGENT_APPROVAL_DENIED" });
+			expect(dialogs).toHaveLength(1);
+			expect(postSpy).not.toHaveBeenCalled();
+		});
+
+		it("checks the host after approval", async () => {
+			answerDialog("approved");
+			const { program, postSpy } = setup([outsideApp, outsideApp]);
+
+			await expect(
+				program.parseAsync(replaceArgs("guess.example.com")),
+			).rejects.toMatchObject({ code: "ENV_URL_HOST_MISMATCH" });
+			expect(postSpy).not.toHaveBeenCalled();
+		});
+
+		it("keeps the hard block when approval is disabled", async () => {
+			const { program, postSpy } = setup([outsideApp], {
+				enabled: false,
+				timeoutSeconds: 90,
+			});
+
+			await expect(
+				program.parseAsync(replaceArgs("guess.example.com")),
+			).rejects.toMatchObject({ code: "AGENT_POLICY_BLOCKED" });
+			expect(postSpy).not.toHaveBeenCalled();
+		});
 	});
 
 	describe("env rename", () => {

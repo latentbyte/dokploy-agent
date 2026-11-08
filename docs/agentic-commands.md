@@ -121,6 +121,15 @@ dokploy-agent application env copy \
   --reason "move backend from compose to an application" \
   --json
 
+# swaps only the host of a URL value; credentials, port, path, query, and quoting stay
+dokploy-agent application env replace-host \
+  --applicationId APP_ID \
+  --name API_BASE_URL \
+  --from old.example.com \
+  --to new.example.com \
+  --reason "point at the renamed API host" \
+  --json
+
 # inserts comment lines before one unambiguous existing key
 dokploy-agent application env comment \
   --applicationId APP_ID \
@@ -140,6 +149,7 @@ Safety behavior:
 - rename changes only the key name; prefix, quoting, raw value, position, and comments stay. References to the old name (compose `${OLD_KEY}`, app code) are not rewritten
 - rename asks the user even inside the deploy policy when the new name starts with a client-bundle prefix (`NEXT_PUBLIC_`, `NUXT_PUBLIC_`, `VITE_`, `REACT_APP_`, `EXPO_PUBLIC_`, `GATSBY_`, `VUE_APP_`, `PUBLIC_`) the old name lacks, or when it turns a secret-looking name into one log redaction no longer matches. Hosts without a dialog keep `AGENT_POLICY_BLOCKED`
 - `env copy` takes `--names A,B` or `--all`, copies raw assignments so quoting and `${{project.X}}` references survive, and shows one dialog for the batch with key names and masked previews. It always asks, even inside the deploy policy, because anything the target runs can read the values. Approval is bound to the source and target env: `AGENT_APPROVAL_STALE` if either changed. Source and target must share an environment. Fails on missing or duplicated source keys and on keys the target already has, and is denied when the batch does not fit the dialog (18 keys), so split it with `--names`. Keys with a client-bundle prefix are flagged in the dialog
+- `replace-host` needs the current host in `--from` and fails with `ENV_URL_HOST_MISMATCH` (without echoing the value) when the URL host differs. Outside the policy the dialog opens before the host is compared, so a denied or disabled approval reveals nothing about the value
 - multiline comment input is prefixed line-by-line to prevent assignment injection
 - `list` works on any service; `url` prints only scheme, host, port, and database (database schemes only), never userinfo, query, or fragment, and fails with `INVALID_ENV_URL` without echoing a non-URL value
 - agent-safe builds enforce configured project and server policy before writes and `url` reads; compose and databases must be in a deploy project (expanded allowlists cover applications only)
