@@ -9,7 +9,7 @@ const socketFactory = {
 };
 
 import type { Command } from "commander";
-import { CliError } from "../agent/errors.js";
+import { agentPolicyBlocked, CliError, cliErrorCode } from "../agent/errors.js";
 import { apiGet, formatCliError, readAuthConfig } from "../client.js";
 import { filterLogString, limitLogString, redactString } from "../redact.js";
 import { asObject } from "./json.js";
@@ -118,8 +118,12 @@ function entityServerId(entity: unknown): string | undefined {
 
 async function resolveSourceServerId(
 	opts: DeploymentLogOptions,
+	agentSafe: boolean,
 ): Promise<string | undefined> {
-	if (opts.serverId) return opts.serverId;
+	// agent-safe: --serverId names the server only when it is the selector, so
+	// a stored log path cannot be read from a server the agent picked
+	if (opts.serverId && (!agentSafe || !hasNonServerSelector(opts)))
+		return opts.serverId;
 
 	if (opts.applicationId) {
 		return entityServerId(
@@ -146,10 +150,22 @@ async function resolveSourceServerId(
 	return undefined;
 }
 
+function hasNonServerSelector(opts: DeploymentLogOptions): boolean {
+	return Boolean(
+		opts.applicationId || opts.composeId || (opts.id && opts.type),
+	);
+}
+
 export async function fetchDeployments(
 	opts: Pick<
 		DeploymentLogOptions,
-		"applicationId" | "composeId" | "serverId" | "id" | "type" | "deploymentId"
+		| "applicationId"
+		| "composeId"
+		| "serverId"
+		| "id"
+		| "type"
+		| "deploymentId"
+		| "logPath"
 	>,
 ): Promise<DeploymentRecord[]> {
 	let data: unknown;
@@ -168,7 +184,7 @@ export async function fetchDeployments(
 			id: opts.id,
 			type: opts.type,
 		});
-	} else if (opts.deploymentId) {
+	} else if (opts.deploymentId || opts.logPath) {
 		data = await apiGet("deployment.allCentralized");
 	} else {
 		throw new Error(
@@ -184,8 +200,11 @@ export async function fetchDeployments(
 
 async function resolveDeploymentLogCandidates(
 	opts: DeploymentLogOptions,
+	agentSafe: boolean,
 ): Promise<ResolvedDeploymentLog[]> {
-	if (opts.logPath) {
+	// the server tails whatever path it is given, so agent-safe builds read only
+	// log paths a deployment record names, on that deployment's server
+	if (opts.logPath && !agentSafe) {
 		return [
 			{
 				logPath: opts.logPath,
@@ -196,15 +215,24 @@ async function resolveDeploymentLogCandidates(
 	}
 
 	const deployments = await fetchDeployments(opts);
-	const sourceServerId = await resolveSourceServerId(opts);
-	const candidates = opts.deploymentId
-		? deployments.filter(
-				(deployment) => deployment.deploymentId === opts.deploymentId,
-			)
-		: [...deployments].sort(
-				(a, b) => deploymentTimeValue(b) - deploymentTimeValue(a),
-			);
+	const sourceServerId = await resolveSourceServerId(opts, agentSafe);
+	const candidates = (
+		opts.deploymentId
+			? deployments.filter(
+					(deployment) => deployment.deploymentId === opts.deploymentId,
+				)
+			: [...deployments].sort(
+					(a, b) => deploymentTimeValue(b) - deploymentTimeValue(a),
+				)
+	).filter(
+		(deployment) => !opts.logPath || deployment.logPath === opts.logPath,
+	);
 
+	if (candidates.length === 0 && opts.logPath) {
+		throw agentPolicyBlocked(
+			"--logPath must be the logPath of a deployment the selector returns; pass --deploymentId or a source selector instead",
+		);
+	}
 	if (candidates.length === 0) {
 		throw new Error("No matching deployment found.");
 	}
@@ -436,7 +464,10 @@ function formatDeploymentLogOutput(
 	return limitLogString(filtered, tail, maxChars);
 }
 
-export function registerDeploymentLogsCommand(program: Command): void {
+export function registerDeploymentLogsCommand(
+	program: Command,
+	{ agentSafe }: { agentSafe: boolean },
+): void {
 	const deployment =
 		program.commands.find((command) => command.name() === "deployment") ??
 		program.command("deployment").description("deployment commands");
@@ -465,7 +496,10 @@ export function registerDeploymentLogsCommand(program: Command): void {
 		.action(async (opts: DeploymentLogOptions) => {
 			try {
 				const exactLog = Boolean(opts.logPath || opts.deploymentId);
-				const candidates = await resolveDeploymentLogCandidates(opts);
+				const candidates = await resolveDeploymentLogCandidates(
+					opts,
+					agentSafe,
+				);
 				let resolved = candidates[0];
 				let logs = "";
 				let skippedMissingLogs = 0;
@@ -516,6 +550,7 @@ export function registerDeploymentLogsCommand(program: Command): void {
 
 				console.log(output || chalk.green("OK"));
 			} catch (error) {
+				if (cliErrorCode(error) === "AGENT_POLICY_BLOCKED") throw error;
 				throw new CliError("DEPLOYMENT_LOG_ERROR", formatCliError(error));
 			}
 		});
@@ -528,5 +563,6 @@ export const deploymentLogsInternals = {
 	formatDeploymentLogOutput,
 	isMissingDeploymentLog,
 	readDeploymentLogWebSocket,
+	resolveDeploymentLogCandidates,
 	socketFactory,
 };

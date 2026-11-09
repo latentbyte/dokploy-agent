@@ -73,8 +73,8 @@ registerServiceEnvCommands(program, {
 registerDomainMoveCommand(program, {
 	agentSafe: AGENT_SAFE_BUILD,
 });
-registerApplicationLogCommands(program);
-registerDeploymentLogsCommand(program);
+registerApplicationLogCommands(program, { agentSafe: AGENT_SAFE_BUILD });
+registerDeploymentLogsCommand(program, { agentSafe: AGENT_SAFE_BUILD });
 registerDeploymentWaitCommand(program);
 registerServiceInventoryCommands(program);
 registerComposeToolCommands(program);

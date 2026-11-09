@@ -1,5 +1,55 @@
-import { describe, expect, it } from "vitest";
-import { applicationLogsInternals } from "../src/commands/application-logs.js";
+import { Command } from "commander";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as client from "../src/client.js";
+import {
+	applicationLogsInternals,
+	registerApplicationLogCommands,
+} from "../src/commands/application-logs.js";
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
+
+describe("application logs --search", () => {
+	const run = async (agentSafe: boolean) => {
+		const program = new Command();
+		program.exitOverride();
+		program.command("application");
+		registerApplicationLogCommands(program, { agentSafe });
+		const get = vi
+			.spyOn(client, "apiGet")
+			.mockResolvedValue("boot ok\nAPI_TOKEN=hunter2\nready\n");
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		await program.parseAsync([
+			"node",
+			"cli",
+			"application",
+			"logs",
+			"--applicationId",
+			"app-1",
+			"--search",
+			"ready",
+		]);
+		return { get, printed: log.mock.calls.flat().join("\n") };
+	};
+
+	it("filters locally after redaction in agent-safe builds", async () => {
+		const { get, printed } = await run(true);
+		expect(get).toHaveBeenCalledWith("application.readLogs", {
+			applicationId: "app-1",
+		});
+		expect(printed).toContain("ready");
+		expect(printed).not.toContain("boot ok");
+	});
+
+	it("passes --search to the server in the full build", async () => {
+		const { get } = await run(false);
+		expect(get).toHaveBeenCalledWith("application.readLogs", {
+			applicationId: "app-1",
+			search: "ready",
+		});
+	});
+});
 
 describe("application log helpers", () => {
 	it("collects application candidates from search output", () => {

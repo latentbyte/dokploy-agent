@@ -117,6 +117,79 @@ describe("deployment log helpers", () => {
 		expect(output).not.toContain("super-secret-value");
 	});
 
+	describe("agent-safe log paths", () => {
+		const deployments = [
+			{
+				deploymentId: "dep-1",
+				logPath: "/etc/dokploy/logs/web/web-1.log",
+				serverId: "srv-a",
+				startedAt: "2026-01-01T00:00:00Z",
+			},
+			{
+				deploymentId: "dep-2",
+				logPath: "/etc/dokploy/logs/web/web-2.log",
+				startedAt: "2026-01-02T00:00:00Z",
+			},
+		];
+		const resolve = (opts: Record<string, string>, agentSafe = true) =>
+			deploymentLogsInternals.resolveDeploymentLogCandidates(opts, agentSafe);
+
+		it("accepts a log path only when a deployment record names it", async () => {
+			const get = vi
+				.spyOn(client, "apiGet")
+				.mockResolvedValueOnce(deployments)
+				.mockResolvedValueOnce({ serverId: "srv-app" });
+			const [candidate] = await resolve({
+				applicationId: "app-1",
+				logPath: "/etc/dokploy/logs/web/web-1.log",
+				serverId: "srv-agent",
+			});
+			expect(candidate).toMatchObject({
+				deploymentId: "dep-1",
+				logPath: "/etc/dokploy/logs/web/web-1.log",
+				serverId: "srv-a",
+			});
+			expect(get).toHaveBeenCalledWith("deployment.all", {
+				applicationId: "app-1",
+			});
+		});
+
+		it("uses the service's server, not --serverId, for records without one", async () => {
+			vi.spyOn(client, "apiGet")
+				.mockResolvedValueOnce(deployments)
+				.mockResolvedValueOnce({ serverId: "srv-app" });
+			const [candidate] = await resolve({
+				applicationId: "app-1",
+				deploymentId: "dep-2",
+				serverId: "srv-agent",
+			});
+			expect(candidate.serverId).toBe("srv-app");
+		});
+
+		it("refuses a log path no deployment record names", async () => {
+			vi.spyOn(client, "apiGet").mockResolvedValue(deployments);
+			for (const logPath of [
+				"/etc/dokploy/.env",
+				"/etc/dokploy/logs/web/../../.env",
+			]) {
+				await expect(resolve({ logPath })).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+				});
+			}
+			expect(client.apiGet).toHaveBeenCalledWith("deployment.allCentralized");
+		});
+
+		it("passes raw log paths through in the full build", async () => {
+			const get = vi.spyOn(client, "apiGet");
+			await expect(
+				resolve({ logPath: "/tmp/x.log", serverId: "srv-1" }, false),
+			).resolves.toEqual([
+				{ logPath: "/tmp/x.log", deploymentId: undefined, serverId: "srv-1" },
+			]);
+			expect(get).not.toHaveBeenCalled();
+		});
+	});
+
 	describe("readDeploymentLogWebSocket idle timeout", () => {
 		it("keeps stream open while frames arrive before idle timeout", async () => {
 			const fakeSocket = makeSocketFactory();

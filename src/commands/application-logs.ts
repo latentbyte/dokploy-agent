@@ -302,7 +302,10 @@ function toReadLogOptions(opts: Record<string, unknown>): ReadLogOptions {
 	};
 }
 
-export function registerApplicationLogCommands(program: Command): void {
+export function registerApplicationLogCommands(
+	program: Command,
+	{ agentSafe }: { agentSafe: boolean },
+): void {
 	const application = program.commands.find(
 		(command) => command.name() === "application",
 	);
@@ -320,7 +323,12 @@ export function registerApplicationLogCommands(program: Command): void {
 		.option("--limit <value>", "search result limit")
 		.option("--tail <value>", "tail")
 		.option("--since <value>", "since")
-		.option("--search <value>", "server-side search")
+		.option(
+			"--search <value>",
+			agentSafe
+				? "filter logs locally after redaction (same as --local-search)"
+				: "server-side search",
+		)
 		.option(
 			"--local-search <value>",
 			"filter returned logs locally after redaction",
@@ -338,7 +346,9 @@ export function registerApplicationLogCommands(program: Command): void {
 			const readOpts: Record<string, unknown> = { applicationId };
 			if (opts.tail !== undefined) readOpts.tail = opts.tail;
 			if (opts.since) readOpts.since = opts.since;
-			if (opts.search) readOpts.search = opts.search;
+			// agent-safe: a server-side match would reveal text redaction hides
+			if (opts.search && agentSafe) localLogOptions.logSearch ??= opts.search;
+			else if (opts.search) readOpts.search = opts.search;
 			const data = await apiGet("application.readLogs", readOpts);
 			printOutput(data, jsonOutput, localLogOptions);
 		});

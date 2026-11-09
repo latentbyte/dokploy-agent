@@ -656,6 +656,38 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
+	it("filters --search locally instead of on the server", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			const program = new Command();
+			program.exitOverride();
+			registerGeneratedCommands(program);
+			const get = vi
+				.spyOn(client, "apiGet")
+				.mockResolvedValue("boot ok\nAPI_TOKEN=hunter2\nready\n");
+			const log = vi.spyOn(console, "log").mockImplementation(() => {});
+			await program.parseAsync([
+				"node",
+				"cli",
+				"postgres",
+				"read-logs",
+				"--postgresId",
+				"pg-1",
+				"--search",
+				"hunter2",
+			]);
+			expect(get).toHaveBeenCalledWith("postgres.readLogs", {
+				postgresId: "pg-1",
+			});
+			// the line holding the value is redacted before the filter runs
+			expect(log.mock.calls.flat().join("\n")).not.toContain("hunter2");
+			expect(log.mock.calls.flat().join("\n")).not.toContain("API_TOKEN");
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
 	it("guards expanded operations with the expanded projects allowlist", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();

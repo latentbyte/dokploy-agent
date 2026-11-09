@@ -38,7 +38,7 @@ Aliases, clearly marked in help:
 
 Reads runtime logs without requiring a separate ID lookup. Selectors: `--applicationId`, `--appName`, `--name`, or `--q`. Refine ambiguous matches with `--project` and `--env`.
 
-Local filtering after redaction: `--local-search`, `--local-context`, `--local-tail`, and `--local-max-chars`.
+Local filtering after redaction: `--local-search`, `--local-context`, `--local-tail`, and `--local-max-chars`. In `dokploy-agent`, `--search` also filters locally after redaction; it is never sent to the server.
 
 ## `compose effective --composeId ID --json`
 

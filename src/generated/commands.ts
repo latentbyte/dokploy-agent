@@ -45,15 +45,18 @@ function parseJsonOption(value: unknown, name: string, kind: "array" | "object")
 	return parsed;
 }
 
+// server-side search would answer "does this text appear" about lines
+// redaction later hides, so --search filters locally after redaction too
 function extractAgentLogOptions(opts: Record<string, any>) {
 	const options = {
-		logSearch: opts.localSearch,
+		logSearch: opts.localSearch ?? opts.search,
 		logContext: opts.localContext == null ? undefined : Number(opts.localContext),
 		logCaseSensitive: opts.localCaseSensitive === true || opts.localCaseSensitive === "true",
 		maxLogLines: opts.localTail == null ? undefined : Number(opts.localTail),
 		maxLogChars: opts.localMaxChars == null ? undefined : Number(opts.localMaxChars),
 	};
 	delete opts.localSearch;
+	delete opts.search;
 	delete opts.localContext;
 	delete opts.localCaseSensitive;
 	delete opts.localTail;
