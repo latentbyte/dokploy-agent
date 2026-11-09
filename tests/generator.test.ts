@@ -1787,6 +1787,8 @@ describe("generator", () => {
 			for (const [group, action] of [
 				["docker", "read-container-file"],
 				["docker-volume", "read-volume-file"],
+				["patch", "read-repo-file"],
+				["settings", "read-traefik-file"],
 			]) {
 				await expect(
 					program.parseAsync(["node", "cli", group, action, "--path", "/x"]),

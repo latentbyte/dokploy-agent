@@ -22,6 +22,8 @@ export const MUTATING_GET_ENDPOINTS: ReadonlySet<string> = new Set([
 export const SECRET_READ_GET_ENDPOINTS: ReadonlySet<string> = new Set([
 	"docker.readContainerFile",
 	"dockerVolume.readVolumeFile",
+	"patch.readRepoFile",
+	"settings.readTraefikFile",
 ]);
 
 // update fields agents must change through constrained commands instead

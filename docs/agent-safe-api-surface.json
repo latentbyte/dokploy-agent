@@ -1,8 +1,8 @@
 {
 	"generated": {
 		"total": 603,
-		"safe_count": 249,
-		"disallowed_count": 188,
+		"safe_count": 247,
+		"disallowed_count": 190,
 		"hidden_count": 166,
 		"safe": {
 			"ai": [
@@ -1254,13 +1254,6 @@
 					"action": "read-repo-directories",
 					"method": "get",
 					"reason": "read-only endpoint"
-				},
-				{
-					"endpoint": "patch.readRepoFile",
-					"group": "patch",
-					"action": "read-repo-file",
-					"method": "get",
-					"reason": "read-only endpoint"
 				}
 			],
 			"port": [
@@ -1768,13 +1761,6 @@
 					"endpoint": "settings.readTraefikEnv",
 					"group": "settings",
 					"action": "read-traefik-env",
-					"method": "get",
-					"reason": "read-only endpoint"
-				},
-				{
-					"endpoint": "settings.readTraefikFile",
-					"group": "settings",
-					"action": "read-traefik-file",
 					"method": "get",
 					"reason": "read-only endpoint"
 				},
@@ -2884,6 +2870,13 @@
 					"risk": "side-effect"
 				},
 				{
+					"endpoint": "patch.readRepoFile",
+					"group": "patch",
+					"action": "read-repo-file",
+					"method": "get",
+					"reason": "get endpoint returns raw file contents that may hold secrets"
+				},
+				{
 					"endpoint": "patch.saveFileAsPatch",
 					"group": "patch",
 					"action": "save-file-as-patch",
@@ -3316,6 +3309,13 @@
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
+				},
+				{
+					"endpoint": "settings.readTraefikFile",
+					"group": "settings",
+					"action": "read-traefik-file",
+					"method": "get",
+					"reason": "get endpoint returns raw file contents that may hold secrets"
 				},
 				{
 					"endpoint": "settings.reloadServer",
