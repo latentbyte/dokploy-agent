@@ -21,6 +21,7 @@ import {
 	AGENT_METADATA_UPDATE_FIELDS,
 	AGENT_PROTECTED_UPDATE_FIELDS,
 	MUTATING_GET_ENDPOINTS,
+	PERSONAL_DATA_GET_ENDPOINTS,
 	SAFE_POST_ENDPOINTS,
 	SECRET_READ_GET_ENDPOINTS,
 } from "../src/agent/policy.js";
@@ -405,6 +406,12 @@ function classifyCommand(cmd: CommandInfo): {
 			return {
 				allowed: false,
 				reason: "get endpoint returns raw file contents that may hold secrets",
+			};
+		}
+		if (PERSONAL_DATA_GET_ENDPOINTS.has(cmd.endpoint)) {
+			return {
+				allowed: false,
+				reason: "get endpoint returns other users' personal data",
 			};
 		}
 		return {

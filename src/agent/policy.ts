@@ -26,6 +26,13 @@ export const SECRET_READ_GET_ENDPOINTS: ReadonlySet<string> = new Set([
 	"settings.readTraefikFile",
 ]);
 
+// GET endpoints returning other users' personal data (emails, IPs, user
+// agents, passkey names); deploy work never needs them
+export const PERSONAL_DATA_GET_ENDPOINTS: ReadonlySet<string> = new Set([
+	"user.listPasskeys",
+	"user.listSessions",
+]);
+
 // update fields agents must change through constrained commands instead
 export const AGENT_PROTECTED_UPDATE_FIELDS: ReadonlyMap<
 	string,

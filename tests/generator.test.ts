@@ -1893,6 +1893,14 @@ describe("generator", () => {
 					message: expect.stringContaining("raw file contents"),
 				});
 			}
+			for (const action of ["list-sessions", "list-passkeys"]) {
+				await expect(
+					program.parseAsync(["node", "cli", "user", action]),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining("personal data"),
+				});
+			}
 			expect(getSpy).not.toHaveBeenCalled();
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });

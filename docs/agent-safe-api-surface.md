@@ -55,7 +55,7 @@ All commands below are `apiGet` based and considered safe-by-default in agent-sa
 
 Note: `cluster add-manager` and `cluster add-worker` are exposed as `apiGet` in the generator, but names imply mutation and they are treated as side-effect and blocked.
 
-`docker read-container-file`, `docker-volume read-volume-file`, `patch read-repo-file`, and `settings read-traefik-file` are also blocked: they return raw file contents, such as mounted secrets or `/proc/*/environ`, that key-based redaction cannot vet. Directory listings stay available.
+`docker read-container-file`, `docker-volume read-volume-file`, `patch read-repo-file`, and `settings read-traefik-file` are also blocked: they return raw file contents, such as mounted secrets or `/proc/*/environ`, that key-based redaction cannot vet. Directory listings stay available. `user list-sessions` and `user list-passkeys` are blocked because they return other users' emails, IPs, and user agents.
 
 Classification tables (`MUTATING_GET_ENDPOINTS`, `SECRET_READ_GET_ENDPOINTS`, `SAFE_POST_ENDPOINTS`, protected update fields) live in `src/agent/policy.ts` alongside the runtime guards.
 

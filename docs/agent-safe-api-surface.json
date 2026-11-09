@@ -1,8 +1,8 @@
 {
 	"generated": {
 		"total": 603,
-		"safe_count": 247,
-		"disallowed_count": 190,
+		"safe_count": 245,
+		"disallowed_count": 192,
 		"hidden_count": 166,
 		"safe": {
 			"ai": [
@@ -1843,22 +1843,6 @@
 					"reason": "read-only endpoint"
 				}
 			],
-			"user": [
-				{
-					"endpoint": "user.listPasskeys",
-					"group": "user",
-					"action": "list-passkeys",
-					"method": "get",
-					"reason": "read-only endpoint"
-				},
-				{
-					"endpoint": "user.listSessions",
-					"group": "user",
-					"action": "list-sessions",
-					"method": "get",
-					"reason": "read-only endpoint"
-				}
-			],
 			"vault-provider": [
 				{
 					"endpoint": "vaultProvider.all",
@@ -3449,6 +3433,20 @@
 				}
 			],
 			"user": [
+				{
+					"endpoint": "user.listPasskeys",
+					"group": "user",
+					"action": "list-passkeys",
+					"method": "get",
+					"reason": "get endpoint returns other users' personal data"
+				},
+				{
+					"endpoint": "user.listSessions",
+					"group": "user",
+					"action": "list-sessions",
+					"method": "get",
+					"reason": "get endpoint returns other users' personal data"
+				},
 				{
 					"endpoint": "user.revokeSession",
 					"group": "user",
