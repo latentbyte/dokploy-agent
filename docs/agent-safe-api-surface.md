@@ -223,6 +223,8 @@ Unavailable means command exists in `openapi.json` but is not generated into `sr
 
 Full machine-readable list is in `docs/agent-safe-api-surface.json`.
 
+The hand-written `auth` command is not registered in agent-safe builds: it rewrites the config file that holds the token and `agentDeployPolicy`.
+
 ### Disallowed (generated but blocked)
 
 - use `generated.disallowed` in the JSON file for a full per-group list

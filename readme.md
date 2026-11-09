@@ -73,6 +73,8 @@ The rest of this README comes from the upstream project. Examples use the upstre
 dokploy auth -u https://panel.dokploy.com -t YOUR_API_KEY
 ```
 
+The agent-safe build (`dokploy-agent`) has no `auth` command, so an agent cannot rewrite the config that holds the key and policy. Run `auth` from the full build (`node dist/index.js auth ...` after `just build`) or edit the config file.
+
 ### Option 2: Environment variables
 
 ```bash

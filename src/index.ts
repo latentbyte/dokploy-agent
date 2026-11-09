@@ -65,7 +65,7 @@ program
 
 if (AGENT_SAFE_BUILD) setCwdEnvFileEnabled(false);
 
-registerAuthCommand(program);
+registerAuthCommand(program, { agentSafe: AGENT_SAFE_BUILD });
 registerGeneratedCommands(program);
 registerServiceEnvCommands(program, {
 	agentSafe: AGENT_SAFE_BUILD,

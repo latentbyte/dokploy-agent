@@ -4,7 +4,14 @@ import type { Command } from "commander";
 import { CliError } from "../agent/errors.js";
 import { formatCliError, saveAuthConfig } from "../client.js";
 
-export function registerAuthCommand(program: Command) {
+// agent-safe builds leave auth out: it rewrites the config file that holds
+// the token and agentDeployPolicy, so an agent could point the CLI at a
+// server or credentials of its choosing
+export function registerAuthCommand(
+	program: Command,
+	{ agentSafe }: { agentSafe: boolean },
+) {
+	if (agentSafe) return;
 	program
 		.command("auth")
 		.description("Authenticate with your Dokploy server")
