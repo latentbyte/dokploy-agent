@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import { CommanderError, program } from "commander";
 import { cliExitCode, formatJsonError } from "./agent/errors.js";
-import { formatCliError } from "./client.js";
+import { formatCliError, setCwdEnvFileEnabled } from "./client.js";
 import { registerApplicationLogCommands } from "./commands/application-logs.js";
 import { registerAuthCommand } from "./commands/auth.js";
 import { registerComposeToolCommands } from "./commands/compose-tools.js";
@@ -62,6 +62,8 @@ program
 	.showHelpAfterError()
 	.showSuggestionAfterError()
 	.exitOverride();
+
+if (AGENT_SAFE_BUILD) setCwdEnvFileEnabled(false);
 
 registerAuthCommand(program);
 registerGeneratedCommands(program);

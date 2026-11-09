@@ -81,6 +81,42 @@ describe("readAuthConfig", () => {
 		});
 	});
 
+	it("ignores .env when the cwd env file is disabled", async () => {
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-env-"));
+		process.chdir(tempDir);
+		process.env.XDG_CONFIG_HOME = path.join(tempDir, "config");
+		fs.mkdirSync(path.join(tempDir, "config", "dokploy"), { recursive: true });
+		fs.writeFileSync(
+			path.join(tempDir, "config", "dokploy", "config.json"),
+			JSON.stringify({
+				url: "https://config.example.com",
+				token: "config-key",
+			}),
+		);
+		fs.writeFileSync(
+			path.join(tempDir, ".env"),
+			[
+				"DOKPLOY_URL=https://repo.example.net",
+				"DOKPLOY_API_KEY=repo-key",
+				"DOKPLOY_CONFIG_PATH=./policy.json",
+			].join("\n"),
+		);
+
+		const { readAuthConfig, setCwdEnvFileEnabled } = await import(
+			"../src/client.js"
+		);
+		setCwdEnvFileEnabled(false);
+		try {
+			expect(readAuthConfig()).toEqual({
+				url: "https://config.example.com",
+				token: "config-key",
+			});
+			expect(process.env.DOKPLOY_CONFIG_PATH).toBeUndefined();
+		} finally {
+			setCwdEnvFileEnabled(true);
+		}
+	});
+
 	it("should prefer shell env vars over .env values", async () => {
 		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dokploy-env-"));
 		process.chdir(tempDir);

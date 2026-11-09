@@ -206,7 +206,17 @@ function parseEnvValue(raw: string): string {
 	return trimmed.replace(/\s+#.*$/, "").trim();
 }
 
+let cwdEnvFileEnabled = true;
+
+// agent-safe builds take credentials only from the shell env or the config
+// file: a .env in whatever repo the agent runs in could otherwise swap the
+// server, the API key, or the policy file (DOKPLOY_CONFIG_PATH)
+export function setCwdEnvFileEnabled(enabled: boolean): void {
+	cwdEnvFileEnabled = enabled;
+}
+
 function loadEnvFile(): void {
+	if (!cwdEnvFileEnabled) return;
 	const envPath = path.resolve(process.cwd(), ".env");
 	if (!fs.existsSync(envPath)) return;
 
