@@ -386,6 +386,9 @@ export function detectApprovalBackend(
 	const exists = options.exists ?? fs.existsSync;
 	// nobody watches the console of a host the agent reached over SSH
 	if (env.SSH_CONNECTION || env.SSH_TTY) return undefined;
+	// tests and headless runs: no dialog, so approvable denials stay blocked.
+	// it can only remove the prompt, never grant a write
+	if (env.DOKPLOY_APPROVAL_BACKEND === "none") return undefined;
 	if (platform === "darwin") {
 		return exists(OSASCRIPT) ? macosBackend(env) : undefined;
 	}

@@ -12,6 +12,9 @@ vi.mock("../src/agent/approval-backends.js", async (importOriginal) => ({
 	detectApprovalBackend: vi.fn(() => undefined),
 }));
 
+// child processes (built CLI runs) inherit this and never open a dialog
+process.env.DOKPLOY_APPROVAL_BACKEND = "none";
+
 process.env.XDG_STATE_HOME = fs.mkdtempSync(
 	path.join(os.tmpdir(), "dokploy-agent-state-"),
 );

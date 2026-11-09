@@ -118,6 +118,17 @@ function auditLog(): Array<Record<string, unknown>> {
 describe("approval backend detection", () => {
 	const exists = (paths: string[]) => (file: string) => paths.includes(file);
 
+	it("offers no dialog when DOKPLOY_APPROVAL_BACKEND is none", () => {
+		expect(process.env.DOKPLOY_APPROVAL_BACKEND).toBe("none");
+		expect(
+			actual.detectApprovalBackend({
+				platform: "darwin",
+				env: { DOKPLOY_APPROVAL_BACKEND: "none" },
+				exists: () => true,
+			}),
+		).toBeUndefined();
+	});
+
 	it("never offers a dialog over SSH", () => {
 		expect(
 			actual.detectApprovalBackend({
