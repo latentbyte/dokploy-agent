@@ -7,6 +7,10 @@ import {
 	isApplicationExpandedAllowed,
 	readAgentDeployPolicyConfig,
 } from "../client.js";
+import {
+	composeFileProblems,
+	forbiddenTraefikLabels,
+} from "./compose-policy.js";
 import { agentPolicyBlocked, CliError, cliErrorCode } from "./errors.js";
 import { approvePerimeterPost, type PerimeterTarget } from "./post-approval.js";
 
@@ -990,6 +994,71 @@ async function assertAgentMetadataUpdate(
 	}
 }
 
+// a compose file can reach the host or route any domain; an update may keep
+// problems the stored file already has (operator-made stacks) but adds none
+function assertAgentComposeFile(
+	endpoint: string,
+	composeFile: unknown,
+	storedComposeFile?: unknown,
+) {
+	if (typeof composeFile !== "string" || !composeFile.trim()) return;
+	const existing = new Set(
+		typeof storedComposeFile === "string" && storedComposeFile.trim()
+			? composeFileProblems(storedComposeFile)
+			: [],
+	);
+	const problems = composeFileProblems(composeFile).filter(
+		(problem) => !existing.has(problem),
+	);
+	if (problems.length === 0) return;
+	throw agentPolicyBlocked(
+		`agent-safe ${endpoint} rejects compose file: ${problems.join("; ")}`,
+	);
+}
+
+// swarm service labels feed Traefik too, so router labels would skip the
+// domain policy
+function assertNoNewTraefikLabels(
+	endpoint: string,
+	labels: unknown,
+	storedLabels: unknown,
+) {
+	if (labels == null) return;
+	const existing = new Set(forbiddenTraefikLabels(storedLabels));
+	const added = forbiddenTraefikLabels(labels).filter(
+		(key) => !existing.has(key),
+	);
+	if (added.length === 0) return;
+	throw agentPolicyBlocked(
+		`agent-safe ${endpoint} rejects Traefik labels ${added.join(", ")}; route through domain create`,
+	);
+}
+
+// bind mounts expose the host. named volumes are global per Docker host, so
+// a new one must carry the application's unique appName to keep agents off
+// Dokploy's own and other services' volumes
+function assertAgentMountAllowed(opts: Record<string, any>, application: any) {
+	if (opts.type === "file") return;
+	if (opts.type !== "volume") {
+		throw agentPolicyBlocked(
+			`agent-safe mounts.create allows volume and file mounts, not ${opts.type}`,
+		);
+	}
+	const appName = stringValue(application?.appName);
+	const volumeName = stringValue(opts.volumeName);
+	if (
+		appName &&
+		volumeName &&
+		(volumeName === appName ||
+			volumeName.startsWith(`${appName}-`) ||
+			volumeName.startsWith(`${appName}_`))
+	)
+		return;
+	throw agentPolicyBlocked(
+		`agent-safe mounts.create requires volumeName to start with the application's appName${appName ? ` (${appName}-<name>)` : ""}`,
+	);
+}
+
 // Dokploy deploys when micromatch(changedFiles, watchPaths) matches, with no
 // options: files are repo-relative, so "/src/**" or a bare "src/" never match,
 // and an empty pattern makes micromatch throw
@@ -1096,6 +1165,8 @@ async function guardAgentPerimeterPost(
 		return policy;
 	}
 	const databaseKind = databaseKindForEndpoint(endpoint);
+	if (endpoint === "compose.create")
+		assertAgentComposeFile(endpoint, opts.composeFile);
 	if (
 		endpoint === "application.create" ||
 		endpoint === "compose.create" ||
@@ -1136,7 +1207,11 @@ async function guardAgentPerimeterPost(
 				"agent-safe mounts.create allows only allowlisted applications",
 			);
 		}
-		await assertExpandedApplicationAllowed(policy, opts.serviceId);
+		const application = await assertExpandedApplicationAllowed(
+			policy,
+			opts.serviceId,
+		);
+		assertAgentMountAllowed(opts, application);
 		return policy;
 	}
 	if (endpoint === "port.create") {
@@ -1171,14 +1246,24 @@ async function guardAgentPerimeterPost(
 			scope,
 		);
 		if (endpoint.startsWith("application.")) {
-			await assertApplicationWritable(policy, opts.applicationId, scope);
+			const application = await assertApplicationWritable(
+				policy,
+				opts.applicationId,
+				scope,
+			);
+			assertNoNewTraefikLabels(
+				endpoint,
+				opts.labelsSwarm,
+				application?.labelsSwarm,
+			);
 		} else {
-			await assertAgentServiceInDeployProject(
+			const compose = await assertAgentServiceInDeployProject(
 				policy,
 				"compose",
 				opts.composeId,
 				scope,
 			);
+			assertAgentComposeFile(endpoint, opts.composeFile, compose?.composeFile);
 		}
 		await assertAgentGitProvidersConfigured(opts);
 		return policy;

@@ -1716,6 +1716,168 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
+	it("rejects compose files, labels, and mounts that reach the host", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		const inProject = {
+			environmentId: "env-1",
+			environment: { project: { name: "agent-project" } },
+		};
+		const storedCompose = [
+			"services:",
+			"  agent:",
+			"    image: monitor:1",
+			"    volumes:",
+			"      - /var/run/docker.sock:/var/run/docker.sock",
+		].join("\n");
+		try {
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [],
+				allowAnyServer: true,
+				domainSuffixes: [".apps.example.net"],
+				expandedProjects: [],
+				expandedApplicationIds: ["app-1"],
+				expandedApplicationNames: [],
+			});
+			vi.spyOn(client, "apiGet").mockImplementation(async (endpoint) => {
+				if (endpoint === "compose.one")
+					return { ...inProject, composeFile: storedCompose };
+				if (endpoint === "application.one")
+					return {
+						...inProject,
+						appName: "web-a1b2c3",
+						labelsSwarm: { "traefik.http.routers.old.rule": "x" },
+					};
+				throw new Error(`unexpected endpoint ${endpoint}`);
+			});
+			const postSpy = vi
+				.spyOn(client, "apiPost")
+				.mockResolvedValue({ ok: true });
+			const run = async (...args: string[]) => {
+				const program = new Command();
+				registerGeneratedCommands(program);
+				await program.parseAsync(["node", "cli", ...args]);
+			};
+			const privileged =
+				"services:\n  x:\n    image: alpine\n    privileged: true";
+
+			for (const [args, message] of [
+				[
+					["compose", "create", "--name", "x", "--composeFile", privileged],
+					"service x sets privileged",
+				],
+				[
+					[
+						"compose",
+						"update",
+						"--composeId",
+						"compose-1",
+						"--composeFile",
+						`${storedCompose}\n    privileged: true`,
+					],
+					"service agent sets privileged",
+				],
+				[
+					[
+						"application",
+						"update",
+						"--applicationId",
+						"app-1",
+						"--labelsSwarm",
+						'{"traefik.http.routers.new.rule":"Host(`example.com`)"}',
+					],
+					"traefik.http.routers.new.rule",
+				],
+				[
+					[
+						"mounts",
+						"create",
+						"--type",
+						"bind",
+						"--hostPath",
+						"/",
+						"--mountPath",
+						"/host",
+						"--serviceType",
+						"application",
+						"--serviceId",
+						"app-1",
+					],
+					"not bind",
+				],
+				[
+					[
+						"mounts",
+						"create",
+						"--type",
+						"volume",
+						"--volumeName",
+						"dokploy-postgres-database",
+						"--mountPath",
+						"/data",
+						"--serviceType",
+						"application",
+						"--serviceId",
+						"app-1",
+					],
+					"web-a1b2c3-<name>",
+				],
+			] as const) {
+				await expect(run(...args)).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining(message),
+				});
+			}
+			expect(postSpy).not.toHaveBeenCalled();
+
+			// stored problems stay editable; new volumes carry the appName
+			await run(
+				"compose",
+				"update",
+				"--composeId",
+				"compose-1",
+				"--composeFile",
+				storedCompose.replace("monitor:1", "monitor:2"),
+			);
+			await run(
+				"application",
+				"update",
+				"--applicationId",
+				"app-1",
+				"--labelsSwarm",
+				'{"traefik.http.routers.old.rule":"x","traefik.enable":"true"}',
+			);
+			await run(
+				"mounts",
+				"create",
+				"--type",
+				"volume",
+				"--volumeName",
+				"web-a1b2c3-cache",
+				"--mountPath",
+				"/cache",
+				"--serviceType",
+				"application",
+				"--serviceId",
+				"app-1",
+			);
+			expect(postSpy.mock.calls.map(([endpoint]) => endpoint)).toEqual([
+				"compose.update",
+				"application.update",
+				"mounts.create",
+			]);
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
 	it("matches label glob domain patterns per server", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();
