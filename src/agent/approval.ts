@@ -277,6 +277,13 @@ export async function requireUserApproval(
 			`${blocked.message}; no approval dialog available on this host`,
 		);
 	}
+	if (result === "synthetic") {
+		throw new CliError(
+			"AGENT_APPROVAL_SYNTHETIC",
+			`the Approve click was posted by another process, not the user's mouse or keyboard; ${blocked.message}`,
+			2,
+		);
+	}
 	if (result === "timeout") {
 		throw new CliError(
 			"AGENT_APPROVAL_TIMEOUT",

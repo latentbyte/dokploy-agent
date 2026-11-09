@@ -59,8 +59,8 @@ function fakeBackend(answer: string): backends.ApprovalBackend {
 			parse: (status, stdout) =>
 				status === 0 && stdout === "approved"
 					? "approved"
-					: stdout === "timeout"
-						? "timeout"
+					: stdout === "timeout" || stdout === "synthetic"
+						? stdout
 						: "denied",
 		}),
 	};
@@ -258,6 +258,7 @@ describe("approval backend invocations", () => {
 		const parse = actual.macosBackend({}).invocation(dialog).parse;
 		expect(parse(0, "approved\n")).toBe("approved");
 		expect(parse(0, "timeout\n")).toBe("timeout");
+		expect(parse(0, "synthetic\n")).toBe("synthetic");
 		expect(parse(1, "approved")).toBe("denied");
 		expect(parse(0, "yes")).toBe("denied");
 		expect(parse(null, "")).toBe("denied");
@@ -399,6 +400,23 @@ describe("requireUserApproval", () => {
 		await expect(
 			requireUserApproval(config, request, blocked),
 		).rejects.toMatchObject({ code: "AGENT_APPROVAL_TIMEOUT", exitCode: 2 });
+	});
+
+	it("rejects an Approve click another process posted", async () => {
+		// the dialog script checks the click's source pid; posted events carry it
+		const script = actual.macosBackend({}).invocation(dialog).args[3];
+		expect(script).toContain("CGEventGetIntegerValueField(event.CGEvent, 41)");
+		expect(script).toContain('source === 0 ? "approved" : "synthetic"');
+		vi.mocked(backends.detectApprovalBackend).mockReturnValue(
+			fakeBackend("synthetic"),
+		);
+		await expect(
+			requireUserApproval(config, request, blocked),
+		).rejects.toMatchObject({
+			code: "AGENT_APPROVAL_SYNTHETIC",
+			exitCode: 2,
+			message: expect.stringContaining("posted by another process"),
+		});
 	});
 });
 

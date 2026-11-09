@@ -6,7 +6,12 @@ import type { Span } from "./word-diff.js";
 // from fixed system paths and run with a minimal env, so PATH, LD_PRELOAD,
 // or similar overrides cannot swap in a fake approver
 
-export type ApprovalResult = "approved" | "denied" | "timeout" | "unavailable";
+export type ApprovalResult =
+	| "approved"
+	| "denied"
+	| "timeout"
+	| "unavailable"
+	| "synthetic";
 
 // styling hint only; the text itself carries any +/- markers so plain-text
 // backends lose nothing
@@ -108,6 +113,7 @@ function baseEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 // to the native timeout (abortModal); Approve arms after a short delay so a
 // click meant for another window cannot land on it
 const MACOS_SCRIPT = String.raw`ObjC.import("Cocoa");
+ObjC.import("CoreGraphics");
 function run(argv) {
 	const spec = JSON.parse(argv[0]);
 	const app = $.NSApplication.sharedApplication;
@@ -187,7 +193,17 @@ function run(argv) {
 	const response = Number(alert.runModal);
 	tick.invalidate;
 	if (response === -1001) return "timeout";
-	return response === 1001 ? "approved" : "denied";
+	if (response !== 1001) return "denied";
+	// System Events cannot see this background-only window, but a process with
+	// Accessibility rights can still CGEventPost a click on it. Such an event
+	// carries the poster's pid (kCGEventSourceUnixProcessID); hardware input
+	// carries 0. Fail closed when the triggering event is missing
+	const event = app.currentEvent;
+	if (!event || event.isNil()) return "synthetic";
+	const source = Number($.CGEventGetIntegerValueField(event.CGEvent, 41));
+	// WindowServer stamps the real poster even when the event claims a HID
+	// source or overwrites the field
+	return source === 0 ? "approved" : "synthetic";
 }`;
 
 // same argv-as-data rule as the dialog script
@@ -209,6 +225,7 @@ export function macosBackend(env: NodeJS.ProcessEnv): ApprovalBackend {
 				const out = stdout.trim();
 				if (status === 0 && out === "approved") return "approved";
 				if (status === 0 && out === "timeout") return "timeout";
+				if (status === 0 && out === "synthetic") return "synthetic";
 				return "denied";
 			},
 		}),
