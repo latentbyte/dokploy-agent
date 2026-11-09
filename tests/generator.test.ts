@@ -1621,6 +1621,101 @@ describe("generator", () => {
 		}
 	}, 15_000);
 
+	it("rejects domain fields that could rewrite Traefik routing", async () => {
+		const { registerGeneratedCommands, tempDir } =
+			await loadAgentSafeGeneratedCommands();
+		try {
+			vi.spyOn(client, "readAgentDeployPolicyConfig").mockReturnValue({
+				projects: [
+					{
+						projectName: "agent-project",
+						environmentName: "production",
+						environmentId: "env-1",
+					},
+				],
+				servers: [{ serverId: "srv-allowed" }],
+				domainSuffixes: [".apps.example.net"],
+				expandedProjects: [],
+				expandedApplicationIds: [],
+				expandedApplicationNames: [],
+			});
+			vi.spyOn(client, "apiGet").mockImplementation(async (endpoint) => {
+				if (endpoint === "application.one") {
+					return {
+						environmentId: "env-1",
+						environment: { project: { name: "agent-project" } },
+						serverId: "srv-allowed",
+					};
+				}
+				if (endpoint === "project.all") return [];
+				throw new Error(`unexpected endpoint ${endpoint}`);
+			});
+			const postSpy = vi
+				.spyOn(client, "apiPost")
+				.mockResolvedValue({ ok: true });
+			const base = [
+				"node",
+				"cli",
+				"domain",
+				"create",
+				"--applicationId",
+				"app-1",
+				"--host",
+			];
+
+			for (const [args, message] of [
+				[
+					["new.apps.example.net", "--path", "/x`) || Host(`example.com"],
+					"path",
+				],
+				[["new.apps.example.net", "--internalPath", "/a b"], "internalPath"],
+				[["a`)&&Host(`new.apps.example.net"], "bare hostname"],
+				[
+					["new.apps.example.net", "--middlewares", '["auth@file"]'],
+					"middlewares",
+				],
+				[
+					["new.apps.example.net", "--customEntrypoint", "traefik"],
+					"customEntrypoint",
+				],
+				[
+					["new.apps.example.net", "--customCertResolver", "other"],
+					"customCertResolver",
+				],
+			] as const) {
+				const program = new Command();
+				registerGeneratedCommands(program);
+				await expect(
+					program.parseAsync([...base, ...args]),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining(message),
+				});
+			}
+			expect(postSpy).not.toHaveBeenCalled();
+
+			const program = new Command();
+			registerGeneratedCommands(program);
+			await program.parseAsync([
+				...base,
+				"new.apps.example.net",
+				"--path",
+				"/api/v1",
+				"--middlewares",
+				"[]",
+			]);
+			expect(postSpy).toHaveBeenCalledWith(
+				"domain.create",
+				expect.objectContaining({
+					host: "new.apps.example.net",
+					path: "/api/v1",
+				}),
+			);
+		} finally {
+			fs.rmSync(tempDir, { recursive: true, force: true });
+		}
+	}, 15_000);
+
 	it("matches label glob domain patterns per server", async () => {
 		const { registerGeneratedCommands, tempDir } =
 			await loadAgentSafeGeneratedCommands();

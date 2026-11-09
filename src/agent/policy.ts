@@ -721,6 +721,46 @@ function assertAgentDomainHost(
 	);
 }
 
+// Dokploy splices path into a Traefik rule, PathPrefix(`${path}`), without
+// escaping, so a backtick or paren could append Host() rules for any domain
+const AGENT_DOMAIN_PATH = /^\/[A-Za-z0-9._~%/-]*$/;
+const AGENT_DOMAIN_HOST = /^[A-Za-z0-9.-]+$/;
+// routing knobs that reach past the agent's own router: other entrypoints,
+// cert resolvers, or middlewares defined elsewhere
+const AGENT_DOMAIN_FORBIDDEN_FIELDS = [
+	"customEntrypoint",
+	"customCertResolver",
+	"middlewares",
+] as const;
+
+function assertAgentDomainFields(opts: Record<string, any>) {
+	const host = stringValue(opts.host)?.trim();
+	if (host && !AGENT_DOMAIN_HOST.test(host)) {
+		throw agentPolicyBlocked(
+			`agent-safe domain.create rejects host ${JSON.stringify(opts.host)}; use a bare hostname`,
+		);
+	}
+	for (const field of ["path", "internalPath"]) {
+		const value = opts[field];
+		if (value == null || value === "") continue;
+		if (typeof value !== "string" || !AGENT_DOMAIN_PATH.test(value)) {
+			throw agentPolicyBlocked(
+				`agent-safe domain.create rejects ${field} ${JSON.stringify(value)}; use a plain path like /api`,
+			);
+		}
+	}
+	const forbidden = AGENT_DOMAIN_FORBIDDEN_FIELDS.filter((field) => {
+		const value = opts[field];
+		if (value == null || value === "") return false;
+		return !(Array.isArray(value) && value.length === 0);
+	});
+	if (forbidden.length > 0) {
+		throw agentPolicyBlocked(
+			`agent-safe domain.create rejects ${forbidden.join(", ")}; ask the operator to set them in Dokploy`,
+		);
+	}
+}
+
 function collectDokployDomainHosts(
 	value: unknown,
 	hosts = new Set<string>(),
@@ -1137,6 +1177,7 @@ async function guardAgentPerimeterPost(
 		return policy;
 	}
 	if (AGENT_DEPLOY_DOMAIN_MUTATION_SET.has(endpoint)) {
+		assertAgentDomainFields(opts);
 		const service = await assertAgentDomainInDeployProject(policy, opts, scope);
 		assertAgentDomainHost(policy, opts.host, serviceServerId(service), scope);
 		await assertAgentDomainHostUnused(opts.host);

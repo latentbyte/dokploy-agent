@@ -103,6 +103,7 @@ Runtime policy:
 - expanded operations include delete, source-provider/build/environment changes, disconnect, token refresh, queue/deployment cleanup, move, cancel, and application Traefik config updates
 - domain hosts must match an entry in `agentDeployPolicy.domainSuffixes`, where `*` matches one or more characters inside a single label: `demo.apps.example.net` matches `*.apps.example.net`, `api-srv.example.net` matches `*-srv.example.net`, and neither pattern matches extra labels. A bare suffix (`apps.example.net` or `.apps.example.net`) means `*.apps.example.net`
 - before creation, the CLI reads all Dokploy projects and rejects a host already attached to any service, including services outside agent deployment projects
+- domain create takes a bare hostname (`[A-Za-z0-9.-]`) and plain `path`/`internalPath` values (`/` then `[A-Za-z0-9._~%/-]`), since Dokploy splices both into Traefik rules unescaped; `middlewares`, `customEntrypoint`, and `customCertResolver` are rejected
 - domain delete mirrors create: the domain's parent application or compose must be in a configured project (expanded rights do not apply) and the host must match the agent domain suffix policy
 - domain update stays blocked. `domain move` is the one way to move an existing domain: always prompted, target application in the same environment and server, and it skips the suffix and in-use checks for that record only
 - Dokploy's create operation remains the final uniqueness check if two clients race after the inventory check
