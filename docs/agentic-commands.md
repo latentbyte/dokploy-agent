@@ -179,6 +179,7 @@ Safety behavior:
 - agents should batch related changes into as few calls as practical and tell the user a dialog is coming, since each write outside the policy is a separate prompt
 - generic `application update` hides env, build-secret, password, and refresh-token fields
 - generic `compose update` hides env and refresh-token fields
+- `project update` and database `update` (`postgres update`, ...; not `libsql`) take only the ID, `--name`, and `--description`
 
 Dokploy exposes replacement-style environment writes. These commands perform read-modify-write internally. Application writes preserve `buildArgs`, `buildSecrets`, and `createEnvFile`; compose writes send only `env`. Concurrent panel edits can still race because Dokploy does not expose compare-and-swap for this operation.
 
@@ -215,7 +216,7 @@ The generator detects these endpoints from the spec (a `<group>Id` update with a
 
 ## Approval for service writes outside the policy
 
-Writes that the agent may already make inside `agentDeployPolicy` prompt the user instead of failing when only the scope is wrong (project/environment, server, or expanded allowlist): `application|compose update`, `deploy`, `redeploy`, `compose isolated-deployment`, `start`, `stop`, `reload`, database `deploy`, the deploy-project `application save-*` and `cancel-deployment|kill-build|clean-queues` commands, and `domain create`. These commands take `--reason <text>`:
+Writes that the agent may already make inside `agentDeployPolicy` prompt the user instead of failing when only the scope is wrong (project/environment, server, or expanded allowlist): `application|compose update`, `deploy`, `redeploy`, `compose isolated-deployment`, `start`, `stop`, `reload`, database `deploy`, the deploy-project `application save-*` and `cancel-deployment|kill-build|clean-queues` commands, `domain create`, and the label-only `project update` and database `update` (a project rename prompts inside the policy too). These commands take `--reason <text>`:
 
 ```bash
 dokploy-agent compose update --composeId ID --composeType stack --reason "kutt needs swarm overlay networks" --json

@@ -1,8 +1,8 @@
 {
 	"generated": {
 		"total": 603,
-		"safe_count": 243,
-		"disallowed_count": 194,
+		"safe_count": 249,
+		"disallowed_count": 188,
 		"hidden_count": 166,
 		"safe": {
 			"ai": [
@@ -995,6 +995,14 @@
 					"method": "post",
 					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mariadb.update",
+					"group": "mariadb",
+					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
 				}
 			],
 			"mongo": [
@@ -1056,6 +1064,14 @@
 					"endpoint": "mongo.stop",
 					"group": "mongo",
 					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mongo.update",
+					"group": "mongo",
+					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
@@ -1151,6 +1167,14 @@
 					"endpoint": "mysql.stop",
 					"group": "mysql",
 					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "mysql.update",
+					"group": "mysql",
+					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
@@ -1318,6 +1342,14 @@
 					"method": "post",
 					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
+				},
+				{
+					"endpoint": "postgres.update",
+					"group": "postgres",
+					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
 				}
 			],
 			"preview-deployment": [
@@ -1378,6 +1410,14 @@
 					"action": "search",
 					"method": "get",
 					"reason": "read-only endpoint"
+				},
+				{
+					"endpoint": "project.update",
+					"group": "project",
+					"action": "update",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
 				}
 			],
 			"redirects": [
@@ -1448,6 +1488,14 @@
 					"endpoint": "redis.stop",
 					"group": "redis",
 					"action": "stop",
+					"method": "post",
+					"reason": "side-effect endpoint guarded by agent deploy policy",
+					"risk": "side-effect"
+				},
+				{
+					"endpoint": "redis.update",
+					"group": "redis",
+					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint guarded by agent deploy policy",
 					"risk": "side-effect"
@@ -2616,14 +2664,6 @@
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mariadb.update",
-					"group": "mariadb",
-					"action": "update",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
 				}
 			],
 			"mongo": [
@@ -2679,14 +2719,6 @@
 					"endpoint": "mongo.saveExternalPort",
 					"group": "mongo",
 					"action": "save-external-port",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mongo.update",
-					"group": "mongo",
-					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2763,14 +2795,6 @@
 					"endpoint": "mysql.saveExternalPort",
 					"group": "mysql",
 					"action": "save-external-port",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "mysql.update",
-					"group": "mysql",
-					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -2958,14 +2982,6 @@
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
-				},
-				{
-					"endpoint": "postgres.update",
-					"group": "postgres",
-					"action": "update",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
 				}
 			],
 			"preview-deployment": [
@@ -3015,14 +3031,6 @@
 					"endpoint": "project.remove",
 					"group": "project",
 					"action": "remove",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "project.update",
-					"group": "project",
-					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"
@@ -3107,14 +3115,6 @@
 					"endpoint": "redis.saveExternalPort",
 					"group": "redis",
 					"action": "save-external-port",
-					"method": "post",
-					"reason": "side-effect endpoint not allowlisted",
-					"risk": "side-effect"
-				},
-				{
-					"endpoint": "redis.update",
-					"group": "redis",
-					"action": "update",
 					"method": "post",
 					"reason": "side-effect endpoint not allowlisted",
 					"risk": "side-effect"

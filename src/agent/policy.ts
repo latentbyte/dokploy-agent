@@ -45,6 +45,11 @@ export const AGENT_PROTECTED_UPDATE_FIELDS: ReadonlyMap<
 	["compose.update", new Set(["env", "refreshToken"])],
 ]);
 
+export const AGENT_METADATA_UPDATE_FIELDS: ReadonlySet<string> = new Set([
+	"name",
+	"description",
+]);
+
 const AGENT_GIT_SOURCE_TYPES: ReadonlySet<string> = new Set([
 	"bitbucket",
 	"git",
@@ -142,6 +147,20 @@ export const AGENT_DATABASE_KINDS = [
 export type AgentDatabaseKind = (typeof AGENT_DATABASE_KINDS)[number];
 export type AgentServiceKind = "application" | "compose" | AgentDatabaseKind;
 
+// label-only updates for records agents cannot edit any other way: the body
+// is the id plus AGENT_METADATA_UPDATE_FIELDS. outside the deploy projects
+// each write asks first. libsql.update is left out: its spec defaults
+// dockerImage and enableNamespaces, so a label write could reset them
+export const AGENT_METADATA_UPDATE_ENDPOINTS: ReadonlyMap<
+	string,
+	"project" | AgentDatabaseKind
+> = new Map([
+	["project.update", "project"],
+	...AGENT_DATABASE_KINDS.filter((kind) => kind !== "libsql").map(
+		(kind) => [`${kind}.update`, kind] as [string, AgentDatabaseKind],
+	),
+]);
+
 const AGENT_DEPLOY_SERVICE_MUTATIONS = [
 	"application.deploy",
 	"application.redeploy",
@@ -186,6 +205,7 @@ export const SAFE_POST_ENDPOINTS: ReadonlySet<string> = new Set([
 		`${kind}.create`,
 		`${kind}.deploy`,
 	]),
+	...AGENT_METADATA_UPDATE_ENDPOINTS.keys(),
 ]);
 
 const AGENT_DEPLOY_SERVICE_MUTATION_SET: ReadonlySet<string> = new Set(
@@ -220,6 +240,7 @@ export const AGENT_APPROVABLE_ENDPOINTS: ReadonlySet<string> = new Set([
 	...AGENT_DEPLOY_PROJECT_APPLICATION_ENDPOINTS,
 	...AGENT_DATABASE_KINDS.map((kind) => `${kind}.deploy`),
 	...AGENT_DEPLOY_DOMAIN_MUTATIONS,
+	...AGENT_METADATA_UPDATE_ENDPOINTS.keys(),
 ]);
 
 // collects perimeter misses. strict throws at once; deferred records them so
@@ -237,7 +258,11 @@ class PerimeterScope {
 
 	// the record a write lands on, for the dialog and its stale check; a create
 	// has no service yet and lands on its environment
-	see(kind: AgentServiceKind | "environment", id: string, record: any) {
+	see(
+		kind: AgentServiceKind | "environment" | "project",
+		id: string,
+		record: any,
+	) {
 		if (this.deferred) this.target ??= { kind, id, record };
 	}
 }
@@ -859,6 +884,63 @@ async function assertAgentVolumeBackupWritable(
 	return assertAgentVolumeBackupParentWritable(policy, backup ?? {}, endpoint);
 }
 
+// projects and databases have no other agent write path, so these endpoints
+// take labels only. a project rename always asks: deploy and expanded policy
+// entries without a projectId match projects by name
+async function assertAgentMetadataUpdate(
+	policy: AgentDeployPolicyConfig,
+	endpoint: string,
+	kind: "project" | AgentDatabaseKind,
+	opts: Record<string, any>,
+	scope: PerimeterScope,
+) {
+	const idKey = `${kind}Id`;
+	const id = stringValue(opts[idKey]);
+	if (!id) throw agentPolicyBlocked(`agent-safe ${endpoint} requires ${idKey}`);
+	const otherFields = Object.keys(opts).filter(
+		(field) =>
+			field !== idKey &&
+			!AGENT_METADATA_UPDATE_FIELDS.has(field) &&
+			opts[field] !== undefined,
+	);
+	if (otherFields.length > 0) {
+		throw agentPolicyBlocked(
+			`agent-safe ${endpoint} changes only ${[...AGENT_METADATA_UPDATE_FIELDS].join(" and ")}; rejects: ${otherFields.join(", ")}`,
+		);
+	}
+	if (kind !== "project") {
+		await assertAgentServiceInDeployProject(policy, kind, id, scope);
+		return;
+	}
+	const project = await apiGet("project.one", { projectId: id });
+	if (!project)
+		throw agentPolicyBlocked(
+			`agent-safe ${endpoint} could not read project ${id}`,
+		);
+	scope.see("project", id, project);
+	// same match as serviceMatchesAgentDeployProject: the configured
+	// environment must belong to the project
+	const inDeployProject = policy.projects.some(
+		(deployProject) =>
+			(deployProject.projectId
+				? deployProject.projectId === id
+				: deployProject.projectName === project.name) &&
+			(project.environments ?? []).some(
+				(environment: any) =>
+					environment?.environmentId === deployProject.environmentId,
+			),
+	);
+	if (!inDeployProject) {
+		scope.deny(
+			`agent-safe deploy policy rejects project ${id} (${project.name ?? "unknown"}); allowed projects: ${policy.projects.map(agentDeployProjectLabel).join(", ")}`,
+		);
+	} else if (opts.name !== undefined && opts.name !== project.name) {
+		scope.deny(
+			`agent-safe ${endpoint} asks before renaming project ${id}; policy entries can match projects by name`,
+		);
+	}
+}
+
 // Dokploy deploys when micromatch(changedFiles, watchPaths) matches, with no
 // options: files are repo-relative, so "/src/**" or a bare "src/" never match,
 // and an empty pattern makes micromatch throw
@@ -953,6 +1035,17 @@ async function guardAgentPerimeterPost(
 		);
 	}
 	const policy = readAgentDeployPolicyConfig();
+	const metadataKind = AGENT_METADATA_UPDATE_ENDPOINTS.get(endpoint);
+	if (metadataKind) {
+		await assertAgentMetadataUpdate(
+			policy,
+			endpoint,
+			metadataKind,
+			opts,
+			scope,
+		);
+		return policy;
+	}
 	const databaseKind = databaseKindForEndpoint(endpoint);
 	if (
 		endpoint === "application.create" ||

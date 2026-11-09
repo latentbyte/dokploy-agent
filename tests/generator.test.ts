@@ -2533,6 +2533,203 @@ describe("approval for perimeter misses", () => {
 		}
 	}, 15_000);
 
+	describe("label-only updates for projects and databases", () => {
+		const storefront = {
+			projectId: "proj-other",
+			name: "storefront",
+			description: "",
+			environments: [{ environmentId: "env-other", name: "production" }],
+		};
+		const sandbox = {
+			projectId: "proj-agent",
+			name: "agent_sandbox",
+			description: "",
+			environments: [{ environmentId: "env-agent", name: "production" }],
+		};
+		const outsideDb = {
+			...outside,
+			postgresId: "pg-other",
+			name: "db",
+			appName: "storefront-db-a1b2c3",
+			description: null,
+		};
+
+		it("exposes only the id, name, and description", async () => {
+			const { program, tempDir } = await setup([storefront]);
+			try {
+				for (const [group, idFlag] of [
+					["project", "--projectId"],
+					["postgres", "--postgresId"],
+				]) {
+					const update = program.commands
+						.find((command) => command.name() === group)
+						?.commands.find((command) => command.name() === "update");
+					expect(update?.options.map((option) => option.long).sort()).toEqual(
+						[idFlag, "--name", "--description", "--reason", "--json"].sort(),
+					);
+				}
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("asks once per project outside the policy and writes only labels", async () => {
+			const dialogs = answerDialog("approved");
+			const { program, postSpy, tempDir } = await setup([storefront]);
+			try {
+				await run(
+					program,
+					"project",
+					"update",
+					"--projectId",
+					"proj-other",
+					"--name",
+					"store-front",
+					"--description",
+					"Customer storefront",
+					"--reason",
+					"naming cleanup",
+				);
+				expect(postSpy).toHaveBeenCalledExactlyOnceWith("project.update", {
+					projectId: "proj-other",
+					name: "store-front",
+					description: "Customer storefront",
+				});
+				expect(dialogs).toHaveLength(1);
+				expect(dialogs[0]).toContain("Approve update on project storefront?");
+				expect(dialogs[0]).toContain("- name: storefront\n+ name: store-front");
+				expect(dialogs[0]).toContain("+ description: Customer storefront");
+				expect(dialogs[0]).toContain("rejects project proj-other");
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("asks before renaming a deploy project but not for its description", async () => {
+			const dialogs = answerDialog("approved");
+			const { program, postSpy, tempDir } = await setup([sandbox]);
+			try {
+				await run(
+					program,
+					"project",
+					"update",
+					"--projectId",
+					"proj-agent",
+					"--description",
+					"Agent-managed apps",
+				);
+				expect(dialogs).toHaveLength(0);
+				await run(
+					program,
+					"project",
+					"update",
+					"--projectId",
+					"proj-agent",
+					"--name",
+					"agent-apps",
+				);
+				expect(dialogs).toHaveLength(1);
+				expect(dialogs[0]).toContain("asks before renaming project");
+				expect(postSpy).toHaveBeenCalledTimes(2);
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("leaves libsql out because its spec defaults would reset fields", async () => {
+			const { SAFE_POST_ENDPOINTS } = await import("../src/agent/policy.js");
+			expect(SAFE_POST_ENDPOINTS.has("postgres.update")).toBe(true);
+			expect(SAFE_POST_ENDPOINTS.has("libsql.update")).toBe(false);
+		});
+
+		it("writes database labels inside the policy without asking", async () => {
+			const dialogs = answerDialog("approved");
+			const { program, postSpy, tempDir } = await setup([
+				{
+					...outsideDb,
+					environmentId: "env-agent",
+					environment: {
+						name: "production",
+						project: { name: "agent_sandbox", projectId: "proj-agent" },
+					},
+				},
+			]);
+			try {
+				await run(
+					program,
+					"postgres",
+					"update",
+					"--postgresId",
+					"pg-other",
+					"--name",
+					"sandbox-db",
+				);
+				expect(postSpy).toHaveBeenCalledExactlyOnceWith("postgres.update", {
+					postgresId: "pg-other",
+					name: "sandbox-db",
+				});
+				expect(dialogs).toHaveLength(0);
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("asks for databases outside the policy", async () => {
+			const dialogs = answerDialog("approved");
+			const { program, postSpy, tempDir } = await setup([outsideDb]);
+			try {
+				await run(
+					program,
+					"postgres",
+					"update",
+					"--postgresId",
+					"pg-other",
+					"--description",
+					"Storefront Postgres",
+				);
+				expect(postSpy).toHaveBeenCalledExactlyOnceWith("postgres.update", {
+					postgresId: "pg-other",
+					description: "Storefront Postgres",
+				});
+				expect(dialogs).toHaveLength(1);
+				expect(dialogs[0]).toContain("rejects postgres pg-other in storefront");
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+
+		it("rejects any other field before asking", async () => {
+			const dialogs = answerDialog("approved");
+			const { postSpy, tempDir } = await setup([outsideDb]);
+			try {
+				const { guardAgentSafePost } = await import("../src/agent/policy.js");
+				await expect(
+					guardAgentSafePost("postgres.update", {
+						postgresId: "pg-other",
+						name: "db",
+						databasePassword: "hunter2hunter2",
+					}),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining("rejects: databasePassword"),
+				});
+				await expect(
+					guardAgentSafePost("project.update", {
+						projectId: "proj-other",
+						env: "KEY=value",
+					}),
+				).rejects.toMatchObject({
+					code: "AGENT_POLICY_BLOCKED",
+					message: expect.stringContaining("rejects: env"),
+				});
+				expect(dialogs).toHaveLength(0);
+				expect(postSpy).not.toHaveBeenCalled();
+			} finally {
+				fs.rmSync(tempDir, { recursive: true, force: true });
+			}
+		}, 15_000);
+	});
+
 	it("keeps the denial when approval is disabled", async () => {
 		const dialogs = answerDialog("approved");
 		const { program, postSpy, tempDir } = await setup([kutt], {

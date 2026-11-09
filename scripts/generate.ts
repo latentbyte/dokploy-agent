@@ -17,6 +17,8 @@ import { fileURLToPath } from "node:url";
 import {
 	AGENT_APPROVABLE_ENDPOINTS,
 	AGENT_DATABASE_KINDS,
+	AGENT_METADATA_UPDATE_ENDPOINTS,
+	AGENT_METADATA_UPDATE_FIELDS,
 	AGENT_PROTECTED_UPDATE_FIELDS,
 	MUTATING_GET_ENDPOINTS,
 	SAFE_POST_ENDPOINTS,
@@ -622,10 +624,18 @@ function generateCoercion(opt: OptionInfo): string {
 function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 	const actionName = camelToKebab(cmd.action);
 	const protectedFields = AGENT_PROTECTED_UPDATE_FIELDS.get(cmd.endpoint);
-	const commandOptions =
-		isAgentSafeBuild && protectedFields
-			? cmd.options.filter((option) => !protectedFields.has(option.name))
-			: cmd.options;
+	const metadataKind = AGENT_METADATA_UPDATE_ENDPOINTS.get(cmd.endpoint);
+	const commandOptions = !isAgentSafeBuild
+		? cmd.options
+		: metadataKind
+			? cmd.options.filter(
+					(option) =>
+						option.name === `${metadataKind}Id` ||
+						AGENT_METADATA_UPDATE_FIELDS.has(option.name),
+				)
+			: protectedFields
+				? cmd.options.filter((option) => !protectedFields.has(option.name))
+				: cmd.options;
 	const agentLogOptionLines =
 		isAgentSafeBuild && isLogCommand(cmd)
 			? [
