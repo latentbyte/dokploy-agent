@@ -119,6 +119,69 @@ describe("agent redaction", () => {
 		expect(output).not.toContain("b3BlbnNzaC1rZXk");
 	});
 
+	it("masks every value in build args and build secrets", () => {
+		const output = sanitizeForAgent({
+			buildArgs: "SALT=pepperpepper99\nNODE_ENV=production",
+			buildSecrets: "SESSION=abcdefghijklmnop\nSIGNING=s3cr3tvalue12345",
+			previewBuildArgs: "COOKIE=chocolatechip123",
+			previewBuildSecrets: "HMAC=abcdefabcdef",
+			hasSecrets: true,
+		});
+
+		expect(output).toEqual({
+			buildArgs: "SALT=pepp*** (14 chars)\nNODE_ENV=*** (10 chars)",
+			buildSecrets: "SESSION=abcd*** (16 chars)\nSIGNING=s3cr*** (16 chars)",
+			previewBuildArgs: "COOKIE=choc*** (16 chars)",
+			previewBuildSecrets: "HMAC=abcd*** (12 chars)",
+			hasSecrets: "*** (4 chars)",
+		});
+	});
+
+	it("masks compose environment blocks under any key name", () => {
+		const reference = `$${"{PUBLIC_HOST}"}`;
+		const compose = [
+			"services:",
+			"  web:",
+			"    image: nginx:1.27",
+			"    environment:",
+			"      SESSION: hunter2hunter2",
+			'      HOST: "0.0.0.0"',
+			`      APP_HOST: ${reference}`,
+			"      # rotate quarterly",
+			"      CERT: |",
+			"        line-one",
+			"    ports:",
+			"      - 80:80",
+			"  worker:",
+			"    environment:",
+			"    - SALT=pepperpepper",
+			"    - EMPTY=",
+			"    command: run",
+		].join("\n");
+
+		expect(sanitizeForAgent({ composeFile: compose })).toEqual({
+			composeFile: [
+				"services:",
+				"  web:",
+				"    image: nginx:1.27",
+				"    environment:",
+				"      SESSION: hunt*** (14 chars)",
+				"      HOST: *** (7 chars)",
+				`      APP_HOST: ${reference}`,
+				"      # [comment hidden]",
+				"      CERT: *** (1 chars)",
+				"        [line hidden]",
+				"    ports:",
+				"      - 80:80",
+				"  worker:",
+				"    environment:",
+				"    - SALT=pepp*** (12 chars)",
+				"    - EMPTY=",
+				"    command: run",
+			].join("\n"),
+		});
+	});
+
 	it("detects sensitive env key parts", () => {
 		expect(isSensitiveKey("POSTGRES_PASSWORD")).toBe(true);
 		expect(isSensitiveKey("apiUrl")).toBe(true);

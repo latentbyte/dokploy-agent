@@ -21,6 +21,7 @@ const SECRET_KEY_PARTS = new Set([
 	"uri",
 	"token",
 	"secret",
+	"secrets",
 	"password",
 	"passworkd",
 	"passwd",
@@ -61,7 +62,15 @@ const PUBLIC_IDENTIFIER_KEYS = new Set([
 ]);
 const ENV_KEY_PATTERN =
 	/(?:api|key|token|secret|password|passworkd|passwd|pass|pwd|credential|private|authorization|webhook|dsn|url|uri)/i;
-const ENV_DOCUMENT_KEYS = new Set(["env", "previewenv"]);
+// env-style documents: every value is hidden, whatever its name
+const ENV_DOCUMENT_KEYS = new Set([
+	"env",
+	"previewenv",
+	"buildargs",
+	"buildsecrets",
+	"previewbuildargs",
+	"previewbuildsecrets",
+]);
 // optional quote after the key covers JSON text; NUL covers /proc/*/environ
 const ENV_ASSIGNMENT_PATTERN =
 	/(^|[\s([{,;'"\0-])([A-Za-z_][A-Za-z0-9_.-]*)("?\s*[:=]\s*)((?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"',}\]\0]+))/gm;
@@ -188,8 +197,56 @@ export function isSensitiveEnvKey(key: string): boolean {
 	);
 }
 
+const YAML_ENVIRONMENT_HEADER = /^\s*-?\s*environment\s*:\s*(?:#.*)?$/;
+const YAML_ENVIRONMENT_ENTRY =
+	/^(\s*(?:-\s*)?)(["']?[A-Za-z_][A-Za-z0-9_.-]*["']?)(\s*[:=]\s*)(.*)$/;
+// a value that is only ${VAR} references names a variable, not a secret
+const YAML_INTERPOLATION_ONLY = /^["']?(?:\$\{[^}]*\})+["']?$/;
+
+function redactYamlEnvironmentEntry(line: string): string {
+	const trimmed = line.trim();
+	if (trimmed.startsWith("#"))
+		return line.replace(/#.*$/, "# [comment hidden]");
+	const match = line.match(YAML_ENVIRONMENT_ENTRY);
+	if (!match)
+		return `${line.slice(0, line.length - line.trimStart().length)}[line hidden]`;
+	const [, prefix, key, separator, rawValue] = match;
+	const value = rawValue.replace(/\s+#.*$/, "").trim();
+	if (!value || YAML_INTERPOLATION_ONLY.test(value)) return line;
+	return `${prefix}${key}${separator}${maskSecret(stripQuotedValue(value))}`;
+}
+
+// compose environment blocks hold secrets under any name, so every value in
+// one is masked; block scalars and other stray lines inside are hidden
+function redactYamlEnvironmentBlocks(input: string): string {
+	if (!/^\s*-?\s*environment\s*:\s*(?:#.*)?$/m.test(input)) return input;
+	let blockIndent: number | undefined;
+	return input
+		.split("\n")
+		.map((rawLine) => {
+			const line = rawLine.replace(/\r$/, "");
+			const eol = rawLine.length > line.length ? "\r" : "";
+			const trimmed = line.trim();
+			const indent = line.length - line.trimStart().length;
+			if (blockIndent !== undefined) {
+				if (!trimmed) return rawLine;
+				// "environment:" may be followed by "- KEY=value" at its own indent
+				if (
+					indent > blockIndent ||
+					(indent === blockIndent && trimmed.startsWith("- "))
+				)
+					return `${redactYamlEnvironmentEntry(line)}${eol}`;
+				blockIndent = undefined;
+			}
+			if (YAML_ENVIRONMENT_HEADER.test(line))
+				blockIndent = indent + (trimmed.startsWith("-") ? 2 : 0);
+			return rawLine;
+		})
+		.join("\n");
+}
+
 export function redactString(input: string): string {
-	let output = input;
+	let output = redactYamlEnvironmentBlocks(input);
 	for (const [pattern, replacer] of STRING_SECRET_PATTERNS) {
 		output = output.replace(pattern, replacer);
 	}
