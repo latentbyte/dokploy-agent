@@ -15,6 +15,7 @@ import {
 	runDetached,
 } from "./approval-backends.js";
 import { agentPolicyBlocked, CliError } from "./errors.js";
+import { escapeForDisplay } from "./text.js";
 import { type Span, wordDiff } from "./word-diff.js";
 
 export interface ApprovalTarget {
@@ -69,10 +70,15 @@ export const MAX_APPROVAL_LINES = 20;
 const MAX_REASON_CHARS = 500;
 const MAX_REASON_LINES = 8;
 
-function truncate(line: string): string {
-	return line.length > MAX_LINE_CHARS
-		? `${line.slice(0, MAX_LINE_CHARS - 3)}...`
-		: line;
+const TRUNCATED_MARK = " [truncated]";
+
+// one dialog row: unsafe characters escaped so nothing hides or reorders
+// text, and a cut marked as a cut rather than a plain "..."
+function truncate(line: string, max = MAX_LINE_CHARS): string {
+	const text = escapeForDisplay(line);
+	return text.length > max
+		? `${text.slice(0, max - TRUNCATED_MARK.length)}${TRUNCATED_MARK}`
+		: text;
 }
 
 function reasonLines(reason: string | undefined): string[] {
@@ -80,11 +86,14 @@ function reasonLines(reason: string | undefined): string[] {
 	if (!text) return ["(none given)"];
 	const clipped =
 		text.length > MAX_REASON_CHARS
-			? `${text.slice(0, MAX_REASON_CHARS - 3)}...`
+			? `${text.slice(0, MAX_REASON_CHARS)}${TRUNCATED_MARK}`
 			: text;
-	const lines = clipped.split("\n");
+	const lines = clipped.split("\n").map((line) => truncate(line));
 	return lines.length > MAX_REASON_LINES
-		? [...lines.slice(0, MAX_REASON_LINES), "..."]
+		? [
+				...lines.slice(0, MAX_REASON_LINES),
+				`(${lines.length - MAX_REASON_LINES} more lines not shown)`,
+			]
 		: lines;
 }
 
@@ -167,20 +176,17 @@ export function buildApprovalDialog(
 	}
 	const names = [target.name, target.appName].filter(Boolean).join(" / ");
 	const shortName = target.name ?? target.appName ?? target.id;
-	const headingName =
-		shortName.length > MAX_HEADING_NAME_CHARS
-			? `${shortName.slice(0, MAX_HEADING_NAME_CHARS - 3)}...`
-			: shortName;
+	const headingName = truncate(shortName, MAX_HEADING_NAME_CHARS);
 	const targetLines: DialogLine[] = [
 		{ kind: "text", text: truncate(`dokploy: ${dokployUrl}`) },
 		{
 			kind: "text",
-			text: `${target.kind}: ${names || target.id} (${target.id})`,
+			text: truncate(`${target.kind}: ${names || target.id} (${target.id})`),
 		},
 		...(location
-			? [{ kind: "text" as const, text: `project: ${location}` }]
+			? [{ kind: "text" as const, text: truncate(`project: ${location}`) }]
 			: []),
-		{ kind: "text", text: `server: ${target.server ?? "local"}` },
+		{ kind: "text", text: truncate(`server: ${target.server ?? "local"}`) },
 	];
 	return {
 		title: "dokploy-agent approval",

@@ -9,6 +9,7 @@ import {
 } from "../src/agent/approval.js";
 import * as backends from "../src/agent/approval-backends.js";
 import { agentPolicyBlocked } from "../src/agent/errors.js";
+import { firstUnsafeChar } from "../src/agent/text.js";
 
 const actual = await vi.importActual<typeof backends>(
 	"../src/agent/approval-backends.js",
@@ -504,7 +505,9 @@ describe("buildApprovalDialog", () => {
 		expect(message).toContain(`TARGET\ndokploy: ${DOKPLOY_URL}\n`);
 		expect(message).toContain("application: web (app-1)");
 		expect(message).toContain("project: storefront/production");
-		expect(message).toContain(`CHANGE\n- ${"x".repeat(195)}...\n+ y\n`);
+		expect(message).toContain(
+			`CHANGE\n- ${"x".repeat(186)} [truncated]\n+ y\n`,
+		);
 		expect(message).toContain("(6 more lines not shown)");
 		expect(message).toContain(
 			"BLOCKED BECAUSE\nagent-safe deploy policy rejects app-1",
@@ -561,10 +564,32 @@ describe("buildApprovalDialog", () => {
 		expect(message).toContain(
 			"AGENT'S REASON (unverified)\nrotate the key\nstep 0\n",
 		);
-		expect(message).toContain("step 6\n...\n");
+		expect(message).toContain("step 6\n(5 more lines not shown)\n");
 		expect(message).not.toContain("step 7");
 		expect(message).not.toContain("\r");
 		expect(message).toContain("REQUESTED FROM (unverified)\n/work/repo");
+	});
+
+	it("escapes characters that could hide or reorder dialog text", () => {
+		const built = buildApprovalDialog(
+			{
+				...request,
+				target: { ...request.target, name: "web\u202eevil" },
+				lines: [{ kind: "add", text: "A=1\u2028B=2\tC\u0007" }],
+				reason: "ok\u200b",
+			},
+			"blocked\nreason",
+			30,
+			context,
+		);
+		const message = text(built);
+		expect(built.heading).toBe(
+			"Approve env set on application web<U+202E>evil?",
+		);
+		expect(message).toContain("+ A=1<U+2028>B=2\\tC<U+0007>");
+		expect(message).toContain("ok<U+200B>");
+		expect(message).toContain("BLOCKED BECAUSE\nblocked\\nreason");
+		expect(firstUnsafeChar(message)).toBeUndefined();
 	});
 
 	it("names the service in the heading, falling back to appName and id", () => {
@@ -597,7 +622,7 @@ describe("buildApprovalDialog", () => {
 			"Approve env set on compose c-1?",
 		);
 		expect(heading({ kind: "compose", id: "c-1", name: "n".repeat(80) })).toBe(
-			`Approve env set on compose ${"n".repeat(57)}...?`,
+			`Approve env set on compose ${"n".repeat(48)} [truncated]?`,
 		);
 	});
 });

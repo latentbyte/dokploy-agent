@@ -14,6 +14,7 @@ import {
 	type AgentServiceKind,
 	servicePerimeterDenial,
 } from "../agent/policy.js";
+import { firstUnsafeChar } from "../agent/text.js";
 import {
 	apiGet,
 	apiPost,
@@ -127,7 +128,18 @@ function lineEnding(document: string): string {
 	return document.includes("\r\n") ? "\r\n" : "\n";
 }
 
+// a comment holding a control or line-separator character could smuggle in
+// an assignment that only the server-side env parser sees
+function assertPlainText(value: string, label: string): void {
+	const unsafe = firstUnsafeChar(value);
+	if (!unsafe) return;
+	throw new Error(
+		`${label} contains control or line-separator character ${unsafe}; use plain text`,
+	);
+}
+
 function commentLines(comment: string, eol: string): string {
+	assertPlainText(comment.replaceAll("\r\n", "\n"), "Comment");
 	const lines = comment.replaceAll("\r", "").split("\n");
 	if (lines.every((line) => !line.trim())) {
 		throw new Error("Comment must not be empty.");
@@ -342,6 +354,38 @@ export function environmentRenameRisk(
 	return undefined;
 }
 
+// ${{project.X}} pulls a shared value the agent never saw into this service;
+// under a client-bundle prefix that publishes it
+export function environmentReferenceRisk(
+	name: string,
+	value: string,
+): string | undefined {
+	const prefix = publicEnvPrefix(name);
+	if (prefix && value.includes("${{")) {
+		return `${name} references a shared variable and publishes it through the ${prefix} client-bundle prefix`;
+	}
+	return undefined;
+}
+
+// moving a URL that carries credentials sends them to the new host on the
+// next deploy, and any host may be one the agent runs
+export function environmentUrlCredentialRisk(
+	document: string,
+	name: string,
+	to: string,
+): string | undefined {
+	const [line] = matchingAssignments(document, name);
+	if (!line) return undefined;
+	let url: URL | undefined;
+	try {
+		url = new URL(unquoteEnvValue(line.assignment.value));
+	} catch {
+		return undefined;
+	}
+	if (!url.username && !url.password) return undefined;
+	return `${name} carries credentials that would be sent to ${to}`;
+}
+
 export interface EnvironmentUrlParts {
 	scheme: string;
 	host: string;
@@ -389,6 +433,14 @@ export function environmentUrlParts(
 		throw new CliError(
 			"INVALID_ENV_URL",
 			`Environment variable ${name} is not a URL with a host.`,
+		);
+	}
+	// an unencoded "/" in a password can push "pass@host" into the path, so a
+	// path or query holding "@" may carry credentials
+	if (`${url.pathname}${url.search}`.includes("@")) {
+		throw new CliError(
+			"INVALID_ENV_URL",
+			`Environment variable ${name} has "@" after the host; its credentials may be unencoded, so nothing is shown.`,
 		);
 	}
 	const scheme = url.protocol.replace(/:$/, "");
@@ -640,7 +692,10 @@ type EnvDescribe = (
 	opts: Record<string, unknown>,
 ) => ApprovalLine[];
 // why an otherwise permitted write still needs the user
-type EnvRisk = (opts: Record<string, unknown>) => string | undefined;
+type EnvRisk = (
+	opts: Record<string, unknown>,
+	document: string,
+) => string | undefined;
 // value-blind validation for edits whose own errors reveal the value; with it,
 // the edit runs only after any approval
 type EnvPrecheck = (document: string, opts: Record<string, unknown>) => void;
@@ -807,10 +862,6 @@ function registerEnvCommands(
 			const id = String(opts[idKey]);
 			const name = String(opts.name);
 			const record = await fetchService(kind, id);
-			const parts = environmentUrlParts(
-				environmentDocument(kind, record),
-				name,
-			);
 			const policy = options.agentSafe
 				? readAgentDeployPolicyConfig()
 				: undefined;
@@ -843,6 +894,11 @@ function registerEnvCommands(
 					blocked,
 				);
 			}
+			// parsed only after any approval: its errors say something about the value
+			const parts = environmentUrlParts(
+				environmentDocument(kind, record),
+				name,
+			);
 			printResult({ [idKey]: id, name, ...parts }, opts.json === true);
 		});
 
@@ -1030,7 +1086,7 @@ function registerEnvCommands(
 				precheck?.(document, opts);
 				const nextEnv = precheck ? undefined : edit(document, opts);
 				const blockedReasons = policy
-					? [risk?.(opts), outside?.message].filter(
+					? [risk?.(opts, document), outside?.message].filter(
 							(reason): reason is string => reason !== undefined,
 						)
 					: [];
@@ -1097,6 +1153,7 @@ function registerEnvCommands(
 			quotedAssignment(String(opts.name), String(opts.value)),
 		],
 		[["--comment <value>", "comment placed before the new variable"]],
+		(opts) => environmentReferenceRisk(String(opts.name), String(opts.value)),
 	);
 	mutation(
 		"set",
@@ -1112,6 +1169,8 @@ function registerEnvCommands(
 			...maskedAssignments(document, String(opts.name), "remove"),
 			quotedAssignment(String(opts.name), String(opts.value)),
 		],
+		[],
+		(opts) => environmentReferenceRisk(String(opts.name), String(opts.value)),
 	);
 	mutation(
 		"unset",
@@ -1196,7 +1255,12 @@ function registerEnvCommands(
 			},
 		],
 		[],
-		undefined,
+		(opts, document) =>
+			environmentUrlCredentialRisk(
+				document,
+				String(opts.name),
+				String(opts.to),
+			),
 		(document, opts) => {
 			hostnameArgument(String(opts.from), "--from");
 			hostnameArgument(String(opts.to), "--to");

@@ -12,7 +12,9 @@ import {
 	copyEnvironmentVariables,
 	environmentCopyNames,
 	environmentPresence,
+	environmentReferenceRisk,
 	environmentRenameRisk,
+	environmentUrlCredentialRisk,
 	environmentUrlParts,
 	matchCheckFromOptions,
 	registerServiceEnvCommands,
@@ -55,6 +57,24 @@ describe("service environment mutations", () => {
 				"note\nINJECT=value",
 			),
 		).toBe("\n\n# note\n# INJECT=value\nFOO=secret\n");
+	});
+
+	it("rejects comments with line separators or control characters", () => {
+		for (const comment of [
+			"note\u2028INJECT=value",
+			"note\u0085X=1",
+			"a\u202eb",
+		]) {
+			expect(() =>
+				annotateEnvironmentVariable("FOO=secret\n", "FOO", comment),
+			).toThrow(/control or line-separator character U\+/);
+			expect(() => appendEnvironmentVariable("", "NEW", "v", comment)).toThrow(
+				/use plain text/,
+			);
+		}
+		expect(
+			appendEnvironmentVariable("", "NEW", "v", "line one\r\nline two"),
+		).toBe('# line one\n# line two\nNEW="v"\n');
 	});
 
 	it("fails closed when annotation target is duplicated", () => {
@@ -182,6 +202,35 @@ describe("service environment mutations", () => {
 		expect(environmentRenameRisk("LOG_LEVEL", "LOGGING_LEVEL")).toBe(undefined);
 	});
 
+	it("flags shared-variable references under a client-bundle prefix", () => {
+		const reference = `$${"{{project.DB_PASSWORD}}"}`;
+		expect(environmentReferenceRisk("NEXT_PUBLIC_DB", reference)).toContain(
+			"NEXT_PUBLIC_ client-bundle prefix",
+		);
+		expect(environmentReferenceRisk("DB_PASSWORD", reference)).toBe(undefined);
+		expect(environmentReferenceRisk("VITE_TITLE", "Shop")).toBe(undefined);
+	});
+
+	it("flags moving a URL that carries credentials to another host", () => {
+		const document =
+			'DB="postgres://user:hunter2@old.example.net/app"\nAPI=https://old.example.com\n';
+		const risk = environmentUrlCredentialRisk(
+			document,
+			"DB",
+			"new.example.net",
+		);
+		expect(risk).toBe(
+			"DB carries credentials that would be sent to new.example.net",
+		);
+		expect(risk).not.toContain("hunter2");
+		expect(
+			environmentUrlCredentialRisk(document, "API", "new.example.com"),
+		).toBe(undefined);
+		expect(environmentUrlCredentialRisk(document, "MISSING", "x")).toBe(
+			undefined,
+		);
+	});
+
 	it("keeps CRLF line endings when replacing a value", () => {
 		expect(setEnvironmentVariable("FOO=old\r\nBAR=1\r\n", "FOO", "new")).toBe(
 			'FOO="new"\r\nBAR=1\r\n',
@@ -266,6 +315,20 @@ describe("service environment mutations", () => {
 		expect(error).toMatchObject({ code: "INVALID_ENV_URL" });
 		expect(String((error as Error).message)).not.toContain("hunter2");
 		expect(() => environmentUrlParts("A=1\n", "B")).toThrow("does not exist");
+	});
+
+	it("refuses URLs with an @ after the host without echoing them", () => {
+		let error: unknown;
+		try {
+			environmentUrlParts(
+				"DB=postgres://user:hun/ter2@db.example.net/app\n",
+				"DB",
+			);
+		} catch (caught) {
+			error = caught;
+		}
+		expect(error).toMatchObject({ code: "INVALID_ENV_URL" });
+		expect(String((error as Error).message)).not.toContain("ter2");
 	});
 
 	it("swaps only the host of a URL value", () => {
@@ -793,6 +856,30 @@ describe("environment approval outside the deploy policy", () => {
 		await program.parseAsync(setArgs);
 		expect(dialogs).toHaveLength(0);
 		expect(postSpy).toHaveBeenCalledOnce();
+	});
+
+	it("asks before publishing a shared variable inside the deploy project", async () => {
+		const dialogs = answerDialog("denied");
+		const inside = {
+			...outsideApp,
+			environmentId: "allowed-env",
+			environment: {
+				name: "production",
+				project: { name: "allowed-project" },
+			},
+		};
+		const { program, postSpy } = setup([inside]);
+		const args = [...setArgs];
+		args[args.indexOf("API_URL")] = "NEXT_PUBLIC_API";
+		args[args.indexOf("https://new.example.com")] =
+			`$${"{{project.API_TOKEN}}"}`;
+
+		await expect(program.parseAsync(args)).rejects.toMatchObject({
+			code: "AGENT_APPROVAL_DENIED",
+		});
+		expect(dialogs).toHaveLength(1);
+		expect(dialogs[0]).toContain("references a shared variable");
+		expect(postSpy).not.toHaveBeenCalled();
 	});
 
 	describe("env checks", () => {
@@ -1392,6 +1479,20 @@ describe("environment approval outside the deploy policy", () => {
 
 	it("keeps the URL read blocked without a dialog backend", async () => {
 		const { program } = setup([dbApp]);
+
+		await expect(program.parseAsync(urlArgs)).rejects.toMatchObject({
+			code: "AGENT_POLICY_BLOCKED",
+		});
+		expect(console.log).not.toHaveBeenCalled();
+	});
+
+	it("keeps URL parse errors behind the approval", async () => {
+		const { program } = setup([
+			{
+				...dbApp,
+				env: "DATABASE_URL=postgres://app:hun/ter2@db.example.net/app\n",
+			},
+		]);
 
 		await expect(program.parseAsync(urlArgs)).rejects.toMatchObject({
 			code: "AGENT_POLICY_BLOCKED",
