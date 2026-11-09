@@ -7,6 +7,7 @@ import {
 	isApplicationExpandedAllowed,
 	readAgentDeployPolicyConfig,
 } from "../client.js";
+import type { ApprovalInput } from "./approval.js";
 import {
 	composeFileProblems,
 	forbiddenTraefikLabels,
@@ -1101,11 +1102,11 @@ async function agentWatchPathOnlyWrite(
 	};
 }
 
-// reason is the agent's --reason, shown in the approval dialog
+// input carries the agent's --reason and --thread-url for the approval dialog
 export async function guardAgentSafePost(
 	endpoint: string,
 	opts: Record<string, any>,
-	reason?: string,
+	input: ApprovalInput = {},
 ) {
 	if (opts.watchPaths != null) assertAgentWatchPaths(opts.watchPaths);
 	const watchPathWrite = await agentWatchPathOnlyWrite(endpoint, opts);
@@ -1119,7 +1120,7 @@ export async function guardAgentSafePost(
 				opts,
 				target: scope.target,
 				denials: scope.denials,
-				reason,
+				input,
 			});
 		}
 	} catch (error) {

@@ -1,6 +1,7 @@
 import { type AgentApprovalConfig, apiGet } from "../client.js";
 import { sanitizeForAgent } from "../redact.js";
 import {
+	type ApprovalInput,
 	type ApprovalLine,
 	approvalTarget,
 	requireUserApproval,
@@ -18,7 +19,7 @@ export interface PerimeterApproval {
 	opts: Record<string, any>;
 	target: PerimeterTarget | undefined;
 	denials: string[];
-	reason: string | undefined;
+	input: ApprovalInput;
 }
 
 // unchanged lines kept around each change in a multi-line field diff
@@ -163,7 +164,7 @@ function actionTitle(endpoint: string, kind: string): string {
 // lands in and the service to be made; ids stay in the audit entry
 async function approveEnvironmentCreate(
 	config: AgentApprovalConfig | undefined,
-	{ endpoint, opts, reason }: PerimeterApproval,
+	{ endpoint, opts, input }: PerimeterApproval,
 	{ id, record }: PerimeterTarget,
 	blocked: CliError,
 ): Promise<void> {
@@ -201,7 +202,7 @@ async function approveEnvironmentCreate(
 			},
 			lines,
 			audit: { fields, environmentId: id, serverId },
-			reason,
+			...input,
 		},
 		blocked,
 	);
@@ -220,7 +221,7 @@ export async function approvePerimeterPost(
 	config: AgentApprovalConfig | undefined,
 	approval: PerimeterApproval,
 ): Promise<void> {
-	const { endpoint, opts, target, denials, reason } = approval;
+	const { endpoint, opts, target, denials, input } = approval;
 	const blocked = agentPolicyBlocked(denials.join("; "));
 	if (!target) throw blocked;
 	if (target.kind === "environment") {
@@ -255,7 +256,7 @@ export async function approvePerimeterPost(
 			target: approvalTarget(target.kind, target.id, record),
 			lines,
 			audit: { fields },
-			reason,
+			...input,
 		},
 		blocked,
 	);

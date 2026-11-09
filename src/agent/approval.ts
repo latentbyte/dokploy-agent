@@ -50,7 +50,68 @@ export interface ApprovalLine {
 	text: string;
 }
 
-export interface ApprovalRequest {
+// agent-supplied context for the dialog; shown and logged as unverified
+export interface ApprovalInput {
+	reason?: string;
+	// link to the agent's conversation, e.g. a T3 Code thread
+	threadUrl?: string;
+}
+
+export const THREAD_URL_OPTION_HELP =
+	"http(s) link to the agent's conversation, shown as a clickable link in the approval dialog; a T3 Code t3-thread:// link becomes its app.t3.codes URL";
+
+const MAX_THREAD_URL_CHARS = 200;
+const T3_HOSTED_APP_URL = "https://app.t3.codes";
+const T3_THREAD_LINK = /^t3-thread:\/\/v2\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)$/;
+
+function invalidThreadUrl(message: string): CliError {
+	return new CliError("INVALID_THREAD_URL", `--thread-url ${message}`);
+}
+
+// http(s) only, so a click opens a page and never hands a custom scheme to
+// another app; the dialog shows the exact URL a click opens
+export function parseThreadUrl(value: unknown): string | undefined {
+	if (value === undefined) return undefined;
+	if (typeof value !== "string" || !value.trim()) {
+		throw invalidThreadUrl("needs a URL");
+	}
+	const raw = value.trim();
+	const t3 = T3_THREAD_LINK.exec(raw);
+	let url: URL;
+	try {
+		url = new URL(t3 ? `${T3_HOSTED_APP_URL}/threads/${t3[1]}/${t3[2]}` : raw);
+	} catch {
+		throw invalidThreadUrl("is not a valid URL");
+	}
+	if (url.protocol !== "https:" && url.protocol !== "http:") {
+		throw invalidThreadUrl(
+			`must be an http(s) or t3-thread://v2 link, got ${escapeForDisplay(url.protocol)}`,
+		);
+	}
+	if (url.username || url.password) {
+		throw invalidThreadUrl("must not carry credentials");
+	}
+	if (url.href.length > MAX_THREAD_URL_CHARS) {
+		throw invalidThreadUrl(`is longer than ${MAX_THREAD_URL_CHARS} chars`);
+	}
+	return url.href;
+}
+
+// reads and removes --reason and --thread-url, so generated commands do not
+// send them to the API
+export function takeApprovalInput(
+	opts: Record<string, unknown>,
+): ApprovalInput {
+	const { reason, threadUrl } = opts;
+	delete opts.reason;
+	delete opts.threadUrl;
+	return {
+		reason: typeof reason === "string" ? reason : undefined,
+		threadUrl: parseThreadUrl(threadUrl),
+	};
+}
+
+export interface ApprovalRequest extends ApprovalInput {
 	endpoint: string;
 	// action phrase for the heading, e.g. "env set" or "deploy"
 	title: string;
@@ -60,8 +121,6 @@ export interface ApprovalRequest {
 	lines: ApprovalLine[];
 	// written to the audit log, so names only, never values
 	audit: Record<string, unknown>;
-	// agent-supplied explanation; shown and logged as unverified
-	reason?: string;
 }
 
 const MAX_LINE_CHARS = 200;
@@ -95,6 +154,13 @@ function reasonLines(reason: string | undefined): string[] {
 				`(${lines.length - MAX_REASON_LINES} more lines not shown)`,
 			]
 		: lines;
+}
+
+// parseThreadUrl already bounded the URL, so the row shows all of it
+function threadLines(threadUrl: string | undefined): DialogLine[] {
+	return threadUrl
+		? [{ kind: "link", text: threadUrl, url: threadUrl }]
+		: notes(["(none given)"]);
 }
 
 const DIFF_MARKERS = { text: "  ", add: "+ ", remove: "- " };
@@ -201,6 +267,7 @@ export function buildApprovalDialog(
 				"AGENT'S REASON (unverified)",
 				notes(reasonLines(request.reason)),
 			),
+			...section("AGENT THREAD (unverified)", threadLines(request.threadUrl)),
 			...section(
 				"REQUESTED FROM (unverified)",
 				notes([truncate(requestedFrom)]),
@@ -231,6 +298,7 @@ function appendApprovalLog(
 		target: request.target,
 		...request.audit,
 		reason: request.reason,
+		threadUrl: request.threadUrl,
 		cwd: process.cwd(),
 		result,
 	});

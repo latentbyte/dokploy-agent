@@ -761,6 +761,8 @@ describe("environment approval outside the deploy policy", () => {
 			...setArgs,
 			"--reason",
 			"point the app at the new API host",
+			"--thread-url",
+			"t3-thread://v2/env-1/thread-1",
 		]);
 
 		expect(postSpy).toHaveBeenCalledWith("application.saveEnvironment", {
@@ -778,6 +780,9 @@ describe("environment approval outside the deploy policy", () => {
 		);
 		expect(dialogs[0]).toContain(
 			"AGENT'S REASON (unverified)\npoint the app at the new API host",
+		);
+		expect(dialogs[0]).toContain(
+			"AGENT THREAD (unverified)\nhttps://app.t3.codes/threads/env-1/thread-1\n",
 		);
 		expect(dialogs[0]).not.toContain("old-value");
 		expect(dialogs[0]).not.toContain("https://old.example.com");

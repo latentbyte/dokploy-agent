@@ -247,11 +247,15 @@ describe("generator", () => {
 			);
 			expect(generatedContent).toContain('apiPost("domain.delete"');
 			expect(generatedContent).toContain(
-				'await guardAgentSafePost("application.update", opts, reason);',
+				'await guardAgentSafePost("application.update", opts, approval);',
 			);
 			expect(generatedContent).toContain(
-				'await guardAgentSafePost("application.create", opts, reason);',
+				'await guardAgentSafePost("application.create", opts, approval);',
 			);
+			expect(generatedContent).toContain(
+				"const approval = takeApprovalInput(opts);",
+			);
+			expect(generatedContent).toContain(".option('--thread-url <url>'");
 			expect(generatedContent).toMatch(/from "[^"]*\/agent\/policy\.js"/);
 			expect(generatedContent).toContain(
 				"registerAgentSafetyCommands(program, AGENT_SAFETY_REPORT)",
@@ -2864,7 +2868,14 @@ describe("approval for perimeter misses", () => {
 						.find((command) => command.name() === group)
 						?.commands.find((command) => command.name() === "update");
 					expect(update?.options.map((option) => option.long).sort()).toEqual(
-						[idFlag, "--name", "--description", "--reason", "--json"].sort(),
+						[
+							idFlag,
+							"--name",
+							"--description",
+							"--reason",
+							"--thread-url",
+							"--json",
+						].sort(),
 					);
 				}
 			} finally {

@@ -1,12 +1,15 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { Command } from "commander";
 import {
+	type ApprovalInput,
 	type ApprovalLine,
 	type ApprovalRequest,
 	appendAgentLog,
 	approvalTarget,
 	MAX_APPROVAL_LINES,
 	requireUserApproval,
+	THREAD_URL_OPTION_HELP,
+	takeApprovalInput,
 } from "../agent/approval.js";
 import { agentPolicyBlocked, CliError, cliErrorCode } from "../agent/errors.js";
 import {
@@ -665,7 +668,7 @@ function envApprovalRequest(
 	operation: string,
 	names: string[],
 	lines: ApprovalLine[],
-	reason: unknown,
+	input: ApprovalInput,
 ): ApprovalRequest {
 	return {
 		endpoint: `${kind}.saveEnvironment`,
@@ -673,7 +676,7 @@ function envApprovalRequest(
 		target: approvalTarget(kind, id, record),
 		lines,
 		audit: { operation, names },
-		reason: typeof reason === "string" ? reason : undefined,
+		...input,
 	};
 }
 
@@ -742,6 +745,7 @@ function registerEnvCopyCommand(
 			"--reason <text>",
 			"why this copy is needed; always shown in the approval dialog",
 		)
+		.option("--thread-url <url>", THREAD_URL_OPTION_HELP)
 		.option("--json", "Output JSON")
 		.action(async (opts: Record<string, unknown>) => {
 			const composeId = String(opts.fromCompose);
@@ -785,7 +789,7 @@ function registerEnvCopyCommand(
 							"copy",
 							names,
 							lines,
-							opts.reason,
+							takeApprovalInput(opts),
 						),
 						audit: { operation: "copy", names, fromComposeId: composeId },
 					},
@@ -857,6 +861,7 @@ function registerEnvCommands(
 			"--reason <text>",
 			"why this read is needed; shown in the approval dialog when the service is outside the agent policy",
 		)
+		.option("--thread-url <url>", THREAD_URL_OPTION_HELP)
 		.option("--json", "Output JSON")
 		.action(async (opts: Record<string, unknown>) => {
 			const id = String(opts[idKey]);
@@ -887,7 +892,7 @@ function registerEnvCommands(
 									text: "credentials and query string stay hidden",
 								},
 							],
-							opts.reason,
+							takeApprovalInput(opts),
 						),
 						endpoint: `${kind}.one`,
 					},
@@ -954,8 +959,10 @@ function registerEnvCommands(
 				"--reason <text>",
 				"why this check is needed; always shown in the approval dialog",
 			)
+			.option("--thread-url <url>", THREAD_URL_OPTION_HELP)
 			.option("--json", "Output JSON")
 			.action(async (opts: Record<string, unknown>) => {
+				const input = takeApprovalInput(opts);
 				const id = String(opts[idKey]);
 				const name = String(opts.name);
 				const check = toCheck(opts);
@@ -992,7 +999,7 @@ function registerEnvCommands(
 											text: "the agent learns only true or false; the value is not printed",
 										},
 									],
-									opts.reason,
+									input,
 								),
 								endpoint: `${kind}.one`,
 								audit,
@@ -1018,7 +1025,7 @@ function registerEnvCommands(
 					logCheck({
 						...audit,
 						target: approvalTarget(kind, id, record),
-						reason: typeof opts.reason === "string" ? opts.reason : undefined,
+						...input,
 						result,
 					});
 				}
@@ -1073,6 +1080,7 @@ function registerEnvCommands(
 				"--reason <text>",
 				"why this change is needed; shown in the approval dialog when the service is outside the agent policy",
 			)
+			.option("--thread-url <url>", THREAD_URL_OPTION_HELP)
 			.option("--json", "Output JSON")
 			.action(async (opts: Record<string, unknown>) => {
 				const id = String(opts[idKey]);
@@ -1103,7 +1111,7 @@ function registerEnvCommands(
 							name,
 							names,
 							describe(document, opts),
-							opts.reason,
+							takeApprovalInput(opts),
 						),
 						agentPolicyBlocked(blockedReasons.join("; ")),
 					);

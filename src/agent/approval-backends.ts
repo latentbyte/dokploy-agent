@@ -15,7 +15,13 @@ export type ApprovalResult =
 
 // styling hint only; the text itself carries any +/- markers so plain-text
 // backends lose nothing
-export type DialogLineKind = "heading" | "text" | "note" | "add" | "remove";
+export type DialogLineKind =
+	| "heading"
+	| "text"
+	| "note"
+	| "add"
+	| "remove"
+	| "link";
 
 export interface DialogLine {
 	kind: DialogLineKind;
@@ -23,6 +29,9 @@ export interface DialogLine {
 	// changed spans of a paired add/remove row, emphasized where the backend
 	// can style text
 	highlights?: Span[];
+	// http(s) target of a link row; its text is the same URL, so backends that
+	// cannot make it clickable still show where it goes
+	url?: string;
 }
 
 export interface ApprovalDialog {
@@ -163,6 +172,12 @@ function run(argv) {
 		store.addAttributeValueRange($.NSFontAttributeName, fonts[line.kind] || mono, range);
 		store.addAttributeValueRange($.NSForegroundColorAttributeName, colors[line.kind] || $.NSColor.labelColor, range);
 		if (rows[line.kind]) store.addAttributeValueRange($.NSParagraphStyleAttributeName, rows[line.kind], range);
+		// selectable text views open links through NSWorkspace; the click does
+		// not end the modal, so the dialog keeps waiting for an answer
+		if (line.kind === "link" && line.url) {
+			const url = $.NSURL.URLWithString(line.url);
+			if (!url.isNil()) store.addAttributeValueRange($.NSLinkAttributeName, url, range);
+		}
 		for (const [start, end] of marks[line.kind] ? line.highlights || [] : []) {
 			store.addAttributeValueRange($.NSBackgroundColorAttributeName, marks[line.kind], $.NSMakeRange(at + start, end - start));
 		}

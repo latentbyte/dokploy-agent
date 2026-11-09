@@ -34,6 +34,7 @@ const samples: Record<string, ApprovalRequest> = {
 		],
 		audit: {},
 		reason: "Rotate the Stripe key after the leak reported in ticket 42.",
+		threadUrl: "https://app.t3.codes/threads/env-1/thread-42",
 	},
 	"compose-update": {
 		endpoint: "compose.update",
@@ -66,7 +67,10 @@ const samples: Record<string, ApprovalRequest> = {
 const SHOW_MARKER = "\tapp.activateIgnoringOtherApps(true);";
 
 for (const [name, request] of Object.entries(samples)) {
-	const dialog = buildApprovalDialog(request, denial, 90, "/home/dev/shop");
+	const dialog = buildApprovalDialog(request, denial, 90, {
+		dokployUrl: "https://dokploy.example.com",
+		requestedFrom: "/home/dev/shop",
+	});
 	const script = macosBackend({}).invocation(dialog).args[3];
 	const cut = script.indexOf(SHOW_MARKER);
 	if (cut < 0)

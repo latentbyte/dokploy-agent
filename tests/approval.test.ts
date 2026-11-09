@@ -5,7 +5,9 @@ import {
 	type ApprovalRequest,
 	approvalTarget,
 	buildApprovalDialog,
+	parseThreadUrl,
 	requireUserApproval,
+	takeApprovalInput,
 } from "../src/agent/approval.js";
 import * as backends from "../src/agent/approval-backends.js";
 import { agentPolicyBlocked } from "../src/agent/errors.js";
@@ -363,7 +365,11 @@ describe("requireUserApproval", () => {
 		);
 		await requireUserApproval(
 			config,
-			{ ...request, reason: "rotate the leaked key" },
+			{
+				...request,
+				reason: "rotate the leaked key",
+				threadUrl: "https://app.t3.codes/threads/env-1/thread-1",
+			},
 			blocked,
 		);
 		const entry = auditLog().at(-1);
@@ -373,6 +379,7 @@ describe("requireUserApproval", () => {
 			operation: "set",
 			names: ["API_KEY"],
 			reason: "rotate the leaked key",
+			threadUrl: "https://app.t3.codes/threads/env-1/thread-1",
 			cwd: process.cwd(),
 			result: "approved",
 		});
@@ -513,11 +520,13 @@ describe("buildApprovalDialog", () => {
 			"BLOCKED BECAUSE\nagent-safe deploy policy rejects app-1",
 		);
 		expect(message).toContain("AGENT'S REASON (unverified)\n(none given)");
+		expect(message).toContain("AGENT THREAD (unverified)\n(none given)");
 		expect(message).toContain(`REQUESTED FROM (unverified)\n${process.cwd()}`);
 		const kinds = built.lines.map((line) => line.kind);
 		expect(kinds.filter((kind) => kind === "remove")).toHaveLength(1);
 		expect(kinds.filter((kind) => kind === "add")).toHaveLength(19);
-		expect(kinds.filter((kind) => kind === "heading")).toHaveLength(5);
+		expect(kinds.filter((kind) => kind === "heading")).toHaveLength(6);
+		expect(kinds).not.toContain("link");
 	});
 
 	it("highlights the words that differ between paired rows", () => {
@@ -568,6 +577,22 @@ describe("buildApprovalDialog", () => {
 		expect(message).not.toContain("step 7");
 		expect(message).not.toContain("\r");
 		expect(message).toContain("REQUESTED FROM (unverified)\n/work/repo");
+	});
+
+	it("shows the agent's thread as a link row", () => {
+		const url = "https://app.t3.codes/threads/env-1/thread-1";
+		const built = buildApprovalDialog(
+			{ ...request, threadUrl: url },
+			"blocked",
+			30,
+			context,
+		);
+		expect(text(built)).toContain(`AGENT THREAD (unverified)\n${url}\n`);
+		expect(built.lines.filter((line) => line.kind === "link")).toEqual([
+			{ kind: "link", text: url, url },
+		]);
+		const script = actual.macosBackend({}).invocation(built).args[3];
+		expect(script).toContain("$.NSLinkAttributeName");
 	});
 
 	it("escapes characters that could hide or reorder dialog text", () => {
@@ -624,5 +649,50 @@ describe("buildApprovalDialog", () => {
 		expect(heading({ kind: "compose", id: "c-1", name: "n".repeat(80) })).toBe(
 			`Approve env set on compose ${"n".repeat(48)} [truncated]?`,
 		);
+	});
+});
+
+describe("parseThreadUrl", () => {
+	it("keeps http(s) links and maps T3 thread links to the hosted app", () => {
+		expect(parseThreadUrl(undefined)).toBeUndefined();
+		expect(parseThreadUrl(" https://example.com/chat/1 ")).toBe(
+			"https://example.com/chat/1",
+		);
+		expect(parseThreadUrl("http://localhost:3773/t/1")).toBe(
+			"http://localhost:3773/t/1",
+		);
+		expect(parseThreadUrl("t3-thread://v2/env-1/thread-1")).toBe(
+			"https://app.t3.codes/threads/env-1/thread-1",
+		);
+	});
+
+	it("rejects other schemes, credentials, and overlong links", () => {
+		for (const value of [
+			"",
+			"not a url",
+			"file:///etc/passwd",
+			"javascript:alert(1)",
+			"t3-thread://v1/thread-1",
+			"vscode://file/tmp/x",
+			"https://user:pw@example.com/",
+			`https://example.com/${"a".repeat(200)}`,
+		]) {
+			expect(() => parseThreadUrl(value), value).toThrow(
+				expect.objectContaining({ code: "INVALID_THREAD_URL" }),
+			);
+		}
+	});
+
+	it("removes both approval options so they never reach the API", () => {
+		const opts: Record<string, unknown> = {
+			applicationId: "app-1",
+			reason: "why",
+			threadUrl: "https://example.com/t/1",
+		};
+		expect(takeApprovalInput(opts)).toEqual({
+			reason: "why",
+			threadUrl: "https://example.com/t/1",
+		});
+		expect(opts).toEqual({ applicationId: "app-1" });
 	});
 });

@@ -3,6 +3,8 @@ import {
 	type ApprovalLine,
 	approvalTarget,
 	requireUserApproval,
+	THREAD_URL_OPTION_HELP,
+	takeApprovalInput,
 } from "../agent/approval.js";
 import { agentPolicyBlocked, CliError } from "../agent/errors.js";
 import {
@@ -190,6 +192,7 @@ export function registerDomainMoveCommand(
 			"--reason <text>",
 			"why this move is needed; always shown in the approval dialog",
 		)
+		.option("--thread-url <url>", THREAD_URL_OPTION_HELP)
 		.option("--json", "Output JSON")
 		.action(async (opts: Record<string, unknown>) => {
 			const domainId = String(opts.domainId);
@@ -263,7 +266,7 @@ export function registerDomainMoveCommand(
 							fromKind: parent.kind,
 							fromId: parent.id,
 						},
-						reason: typeof opts.reason === "string" ? opts.reason : undefined,
+						...takeApprovalInput(opts),
 					},
 					agentPolicyBlocked(
 						[

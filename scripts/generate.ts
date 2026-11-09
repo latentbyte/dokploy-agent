@@ -14,6 +14,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import { THREAD_URL_OPTION_HELP } from "../src/agent/approval.js";
 import {
 	AGENT_APPROVABLE_ENDPOINTS,
 	AGENT_DATABASE_KINDS,
@@ -658,6 +659,7 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 	const approvalOptionLines = approvable
 		? [
 				".option('--reason <text>', 'why this change is needed; shown in the approval dialog when the target is outside the agent policy')",
+				`.option('--thread-url <url>', '${escapeSingleQuoted(THREAD_URL_OPTION_HELP)}')`,
 			]
 		: [];
 	const optionLines = [
@@ -674,7 +676,7 @@ function generateCommandCode(cmd: CommandInfo, groupVar: string): string {
 	const agentPostGuard =
 		isAgentSafeBuild && cmd.method === "post"
 			? approvable
-				? `\n\t\t\tconst reason = opts.reason; delete opts.reason;\n\t\t\tawait guardAgentSafePost("${cmd.endpoint}", opts, reason);`
+				? `\n\t\t\tconst approval = takeApprovalInput(opts);\n\t\t\tawait guardAgentSafePost("${cmd.endpoint}", opts, approval);`
 				: `\n\t\t\tawait guardAgentSafePost("${cmd.endpoint}", opts);`
 			: "";
 	const recordFill = cmd.recordLookup
@@ -802,7 +804,8 @@ function generateFile(
 		return relative.startsWith(".") ? relative : `./${relative}`;
 	};
 	const agentImports = isAgentSafeBuild
-		? `import { guardAgentSafePost } from "${relativeImport("agent", "policy.js")}";
+		? `import { takeApprovalInput } from "${relativeImport("agent", "approval.js")}";
+import { guardAgentSafePost } from "${relativeImport("agent", "policy.js")}";
 import { type AgentSafetyReport, registerAgentSafetyCommands } from "${relativeImport("agent", "safety-commands.js")}";
 `
 		: "";
